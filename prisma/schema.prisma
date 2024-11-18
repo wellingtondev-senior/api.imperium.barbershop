@@ -30,10 +30,10 @@ model User {
 }
 
 model Professional {
-  id     Int     @id @default(autoincrement())
-  name   String
-  email  String  @unique
-  avatar String?
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  avatar    String?
   create_at DateTime @default(now())
   update_at DateTime @updatedAt
   userId    Int
@@ -77,13 +77,39 @@ model SessionHash {
 }
 
 model Service {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  description String?
-  price       Float
-  duration    Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
+  id             Int           @id @default(autoincrement())
+  name           String        @unique
+  description    String?
+  price          Float
+  duration       Int
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  profissionalId Int
+  profissional   User          @relation(fields: [profissionalId], references: [id])
+  appointment    Appointment[]
+  payment        Payment[]
+}
+
+model Appointment {
+  id             Int      @id @default(autoincrement())
+  date           DateTime // Data e horário do agendamento
+  status         String   @default("pending") // pending, confirmed, completed, canceled
+  professionalId Int
+  serviceId      Int
+  fanId          Int
+  paymentId      Int?
+  create_at      DateTime @default(now())
+  update_at      DateTime @updatedAt
+  service        Service  @relation(fields: [serviceId], references: [id])
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  amount    Float // Valor do pagamento
+  status    String   @default("pending") // pending, completed, failed
+  method    String // Ex: credit_card, pix, cash
+  create_at DateTime @default(now())
+  update_at DateTime @updatedAt
+  Service   Service? @relation(fields: [serviceId], references: [id])
+  serviceId Int?
 }
