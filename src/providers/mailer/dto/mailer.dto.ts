@@ -1,7 +1,7 @@
 export class MailerDto { }
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsString, IsBoolean, IsNotEmpty, IsDate, IsOptional, IsEmail } from 'class-validator';
-import { AdmDto } from 'src/providers/adm/dto/create-adm.dto';
+import { AdmDto } from 'src/providers/adm/dto/adm.dto';
 
 export class MailerTesteEmailDto {
 

@@ -21,7 +21,6 @@ model User {
   id           Int            @id @default(autoincrement())
   role         String
   active       Boolean        @default(false)
-  fans         Fans[]
   credenciais  Credenciais[]
   adm          Adm[]
   sessionHash  SessionHash[]
@@ -34,22 +33,22 @@ model Professional {
   name      String
   email     String   @unique
   avatar    String?
+  document  String
+  type_doc  String
   create_at DateTime @default(now())
   update_at DateTime @updatedAt
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
 }
 
-model Fans {
+model Client {
   id     Int     @id @default(autoincrement())
   name   String
   email  String  @unique
-  avatar String?
+  telefone String?
 
   create_at DateTime @default(now())
   update_at DateTime @updatedAt
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Adm {

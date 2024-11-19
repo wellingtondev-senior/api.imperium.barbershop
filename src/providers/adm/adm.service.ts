@@ -1,6 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { UpdateAdmDto } from './dto/update-adm.dto';
-import { AdmDto } from './dto/create-adm.dto';
+import { AdmDto } from './dto/adm.dto';
 import { PrismaService } from 'src/modulos/prisma/prisma.service';
 import { LoggerCustomService } from 'src/modulos/logger/logger.service';
 import * as bcrypt from 'bcrypt';
@@ -82,7 +81,7 @@ export class AdmService {
     throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
 }
   }
-  findAll(admDto: AdmDto) {
+  findAll() {
     return `This action returns all adm`;
   }
  

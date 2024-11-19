@@ -70,8 +70,8 @@ export class AuthService {
 
       let userDetails;
       switch (userRole) {
-        case Role.CLIENT:
-          userDetails = await this.prismaService.fans.findMany({ where: { email } });
+        case Role.PROFESSIONAL:
+          userDetails = await this.prismaService.professional.findMany({ where: { email } });
           break;
         case Role.ADM:
           userDetails = await this.prismaService.adm.findMany({ where: { email } });

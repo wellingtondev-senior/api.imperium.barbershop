@@ -46,7 +46,7 @@ export class MailerService {
           where: { id: userId },
           include: {
             credenciais: true,
-            fans: true,
+            professional: true,
             adm: true,
           },
         }),
@@ -87,10 +87,10 @@ export class MailerService {
           sendEmail(mailerConfirmationRegisterEmailDto);
           break;
           
-        case Role.CLIENT:
+        case Role.PROFESSIONAL:
           mailerConfirmationRegisterEmailDto = {
-            destino: resultCredenciais[0].fans?.[0]?.email,
-            name: resultCredenciais[0].fans?.[0]?.name,
+            destino: resultCredenciais[0].professional?.[0]?.email,
+            name: resultCredenciais[0].professional?.[0]?.name,
             hash,
             codigo,
             assunto: 'Confirmação de cadastro',

@@ -1,8 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, HttpCode } from '@nestjs/common';
 import { AdmService } from './adm.service';
-import { UpdateAdmDto } from './dto/update-adm.dto';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AdmDto } from './dto/create-adm.dto';
+import { AdmDto } from './dto/adm.dto';
 import { Role } from 'src/enums/role.enum';
 import { Roles } from 'src/decorator/roles.decorator';
 import { RoleGuard } from 'src/guards/role.guard';
@@ -26,14 +25,13 @@ export class AdmController {
   }
 
   @Version('1')
-  @Get("all")
+  @Get()
   @ApiOperation({ summary: 'Cria um administrador para a aplicação' })
-  @ApiBody({description: 'Objeto JSON contendo dados', type: AdmDto })
   @Roles(Role.MASTER, Role.ADM)
   @UseGuards(RoleGuard)
   @HttpCode(201)
   @ApiResponse(AdminSuccessResponse) 
-  cfindAll(@Body() admDto : AdmDto ) {
-    return this.admService.findAll(admDto);
+  findAll() {
+    return this.admService.findAll();
   }
 }

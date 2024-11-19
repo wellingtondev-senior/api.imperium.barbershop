@@ -13,7 +13,7 @@ export class AdmDto {
   email: string;
 
   @ApiProperty({ example: '*********',required: true })
-  @IsEmail()
+  @IsString()
   password: string;
 
   @ApiProperty({ example: 0, required: true})
