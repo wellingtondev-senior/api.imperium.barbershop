@@ -1,10 +1,10 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { MailerConfirmationRegisterEmailDto, MailerTesteEmailDto } from './dto/mailer.dto';
-import { PrismaService } from 'src/modulos/prisma/prisma.service';
-import { LoggerCustomService } from 'src/modulos/logger/logger.service';
-import { SendMailProducerService } from 'src/modulos/jobs/sendmail.producer.service';
+import { PrismaService } from '../../modulos/prisma/prisma.service';
+import { LoggerCustomService } from '../../modulos/logger/logger.service';
+import { SendMailProducerService } from '../../modulos/jobs/sendmail.producer.service';
 import { SessionHashService } from '../session-hash/session-hash.service';
-import { Role } from 'src/enums/role.enum';
+import { Role } from '../../enums/role.enum';
 
 @Injectable()
 export class MailerService {

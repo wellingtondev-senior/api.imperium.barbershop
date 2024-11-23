@@ -29,22 +29,31 @@ model User {
 }
 
 model Professional {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  avatar    String?
-  document  String
-  type_doc  String
-  create_at DateTime @default(now())
-  update_at DateTime @updatedAt
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  name            String
+  email           String        @unique
+  phone           String
+  password        String
+  avatarUrl       String?
+  cpf             String?       @unique
+  experienceYears Int?
+  specialties     String[]
+  rating          Float?        @default(0)
+  location        String?
+  bio             String?
+  isAvailable     Boolean       @default(true)
+  workingHours    WorkingHours?
+  socialMedia     SocialMedia?
+  create_at       DateTime      @default(now())
+  update_at       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id])
 }
 
 model Client {
-  id     Int     @id @default(autoincrement())
-  name   String
-  email  String  @unique
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String  @unique
   telefone String?
 
   create_at DateTime @default(now())
@@ -111,4 +120,37 @@ model Payment {
   update_at DateTime @updatedAt
   Service   Service? @relation(fields: [serviceId], references: [id])
   serviceId Int?
+}
+
+model WorkingHours {
+  id             Int          @id @default(autoincrement())
+  mondayStart    String?      // Horário de início segunda-feira
+  mondayEnd      String?      // Horário de término segunda-feira
+  tuesdayStart   String?      // Horário de início terça-feira
+  tuesdayEnd     String?      // Horário de término terça-feira
+  wednesdayStart String?      // Horário de início quarta-feira
+  wednesdayEnd   String?      // Horário de término quarta-feira
+  thursdayStart  String?      // Horário de início quinta-feira
+  thursdayEnd    String?      // Horário de término quinta-feira
+  fridayStart    String?      // Horário de início sexta-feira
+  fridayEnd      String?      // Horário de término sexta-feira
+  saturdayStart  String?      // Horário de início sábado
+  saturdayEnd    String?      // Horário de término sábado
+  sundayStart    String?      // Horário de início domingo
+  sundayEnd      String?      // Horário de término domingo
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId Int          @unique // Um profissional só pode ter um horário de trabalho
+  create_at      DateTime     @default(now())
+  update_at      DateTime     @updatedAt
+}
+
+model SocialMedia {
+  id             Int          @id @default(autoincrement())
+  instagram      String? // Link para o perfil no Instagram
+  facebook       String? // Link para o perfil no Facebook
+  linkedin       String? // Link para o perfil no LinkedIn
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId Int          @unique // Um profissional só pode ter uma rede social
+  create_at      DateTime     @default(now())
+  update_at      DateTime     @updatedAt
 }

@@ -1,0 +1,16 @@
+### Variáveis
+@baseUrl = http://127.0.0.1:58055/v1/auth
+@authToken = seu_token_jwt_aqui
+
+@email = barbershop@barbershop.com
+@password = Ss121212#
+
+### Login
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+

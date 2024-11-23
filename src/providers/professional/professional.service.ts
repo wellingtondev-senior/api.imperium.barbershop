@@ -1,16 +1,16 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ProfessionalDto } from './dto/professional.dto';
-import { PrismaService } from 'src/modulos/prisma/prisma.service';
-import { LoggerCustomService } from 'src/modulos/logger/logger.service';
+import { PrismaService } from '../../modulos/prisma/prisma.service';
+import { LoggerCustomService } from '../../modulos/logger/logger.service';
 import { SessionHashService } from '../session-hash/session-hash.service';
 import { MailerService } from '../mailer/mailer.service';
 import * as bcrypt from 'bcrypt';
-import { Role } from 'src/enums/role.enum';
+import { Role } from '../../enums/role.enum';
 
 @Injectable()
 export class ProfessionalService {
-
-  private className: string
+  private className: string;
+  
   constructor(
     private readonly prismaService: PrismaService,
     private readonly loggerService: LoggerCustomService,
@@ -41,14 +41,50 @@ export class ProfessionalService {
           data: {
             name: professionalDto.name,
             email: professionalDto.email,
-            document: professionalDto.document,
-            type_doc: professionalDto.type_doc,
-            avatar: professionalDto.avatar,
+            phone: professionalDto.phone,
+            password: passCrypt,
+            avatarUrl: professionalDto.avatarUrl,
+            cpf: professionalDto.cpf,
+            experienceYears: professionalDto.experienceYears,
+            specialties: professionalDto.specialties || [],
+            rating: professionalDto.rating,
+            location: professionalDto.location,
+            bio: professionalDto.bio,
+            isAvailable: professionalDto.isAvailable ?? true,
             user: {
               connect: {
                 id: createUser.id
               }
-            }
+            },
+            ...(professionalDto.workingHours && {
+              workingHours: {
+                create: {
+                  mondayStart: professionalDto.workingHours.monday?.start,
+                  mondayEnd: professionalDto.workingHours.monday?.end,
+                  tuesdayStart: professionalDto.workingHours.tuesday?.start,
+                  tuesdayEnd: professionalDto.workingHours.tuesday?.end,
+                  wednesdayStart: professionalDto.workingHours.wednesday?.start,
+                  wednesdayEnd: professionalDto.workingHours.wednesday?.end,
+                  thursdayStart: professionalDto.workingHours.thursday?.start,
+                  thursdayEnd: professionalDto.workingHours.thursday?.end,
+                  fridayStart: professionalDto.workingHours.friday?.start,
+                  fridayEnd: professionalDto.workingHours.friday?.end,
+                  saturdayStart: professionalDto.workingHours.saturday?.start,
+                  saturdayEnd: professionalDto.workingHours.saturday?.end,
+                  sundayStart: professionalDto.workingHours.sunday?.start,
+                  sundayEnd: professionalDto.workingHours.sunday?.end
+                }
+              }
+            }),
+            ...(professionalDto.socialMedia && {
+              socialMedia: {
+                create: {
+                  instagram: professionalDto.socialMedia.instagram,
+                  facebook: professionalDto.socialMedia.facebook,
+                  linkedin: professionalDto.socialMedia.linkedin
+                }
+              }
+            })
           }
         });
 
@@ -72,12 +108,12 @@ export class ProfessionalService {
             active: createUser.active,
             user: [createProfessional]
           }
-        }
+        };
       } else {
         return {
           statusCode: HttpStatus.OK,
-          message: "Esse email já estar cadastrado"
-        }
+          message: "Esse email já está cadastrado"
+        };
       }
     } catch (error) {
       this.loggerService.error({
@@ -88,17 +124,20 @@ export class ProfessionalService {
       throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
     }
   }
+
   async findAll() {
     try {
       const professionals = await this.prismaService.professional.findMany({
         include: {
-          user: true
+          user: true,
+          workingHours: true,
+          socialMedia: true
         }
       });
       return {
         statusCode: HttpStatus.OK,
         message: professionals
-      }
+      };
     } catch (error) {
       this.loggerService.error({
         className: this.className,
@@ -106,7 +145,6 @@ export class ProfessionalService {
         message: `Error fetching professionals: ${error.message}`
       });
       throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
-
     }
   }
 
@@ -115,7 +153,9 @@ export class ProfessionalService {
       const professional = await this.prismaService.professional.findUnique({
         where: { id },
         include: {
-          user: true
+          user: true,
+          workingHours: true,
+          socialMedia: true
         }
       });
       if (!professional) {
@@ -124,7 +164,7 @@ export class ProfessionalService {
       return {
         statusCode: HttpStatus.OK,
         message: professional
-      }
+      };
     } catch (error) {
       this.loggerService.error({
         className: this.className,
@@ -132,7 +172,6 @@ export class ProfessionalService {
         message: `Error fetching professional: ${error.message}`
       });
       throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
-
     }
   }
 
@@ -140,17 +179,89 @@ export class ProfessionalService {
     try {
       const professional = await this.prismaService.professional.update({
         where: { id },
-        data: professionalDto
+        data: {
+          name: professionalDto.name,
+          email: professionalDto.email,
+          phone: professionalDto.phone,
+          avatarUrl: professionalDto.avatarUrl,
+          cpf: professionalDto.cpf,
+          experienceYears: professionalDto.experienceYears,
+          specialties: professionalDto.specialties,
+          rating: professionalDto.rating,
+          location: professionalDto.location,
+          bio: professionalDto.bio,
+          isAvailable: professionalDto.isAvailable,
+          ...(professionalDto.workingHours && {
+            workingHours: {
+              upsert: {
+                create: {
+                  mondayStart: professionalDto.workingHours.monday?.start,
+                  mondayEnd: professionalDto.workingHours.monday?.end,
+                  tuesdayStart: professionalDto.workingHours.tuesday?.start,
+                  tuesdayEnd: professionalDto.workingHours.tuesday?.end,
+                  wednesdayStart: professionalDto.workingHours.wednesday?.start,
+                  wednesdayEnd: professionalDto.workingHours.wednesday?.end,
+                  thursdayStart: professionalDto.workingHours.thursday?.start,
+                  thursdayEnd: professionalDto.workingHours.thursday?.end,
+                  fridayStart: professionalDto.workingHours.friday?.start,
+                  fridayEnd: professionalDto.workingHours.friday?.end,
+                  saturdayStart: professionalDto.workingHours.saturday?.start,
+                  saturdayEnd: professionalDto.workingHours.saturday?.end,
+                  sundayStart: professionalDto.workingHours.sunday?.start,
+                  sundayEnd: professionalDto.workingHours.sunday?.end
+                },
+                update: {
+                  mondayStart: professionalDto.workingHours.monday?.start,
+                  mondayEnd: professionalDto.workingHours.monday?.end,
+                  tuesdayStart: professionalDto.workingHours.tuesday?.start,
+                  tuesdayEnd: professionalDto.workingHours.tuesday?.end,
+                  wednesdayStart: professionalDto.workingHours.wednesday?.start,
+                  wednesdayEnd: professionalDto.workingHours.wednesday?.end,
+                  thursdayStart: professionalDto.workingHours.thursday?.start,
+                  thursdayEnd: professionalDto.workingHours.thursday?.end,
+                  fridayStart: professionalDto.workingHours.friday?.start,
+                  fridayEnd: professionalDto.workingHours.friday?.end,
+                  saturdayStart: professionalDto.workingHours.saturday?.start,
+                  saturdayEnd: professionalDto.workingHours.saturday?.end,
+                  sundayStart: professionalDto.workingHours.sunday?.start,
+                  sundayEnd: professionalDto.workingHours.sunday?.end
+                }
+              }
+            }
+          }),
+          ...(professionalDto.socialMedia && {
+            socialMedia: {
+              upsert: {
+                create: {
+                  instagram: professionalDto.socialMedia.instagram,
+                  facebook: professionalDto.socialMedia.facebook,
+                  linkedin: professionalDto.socialMedia.linkedin
+                },
+                update: {
+                  instagram: professionalDto.socialMedia.instagram,
+                  facebook: professionalDto.socialMedia.facebook,
+                  linkedin: professionalDto.socialMedia.linkedin
+                }
+              }
+            }
+          })
+        },
+        include: {
+          workingHours: true,
+          socialMedia: true
+        }
       });
+
       this.loggerService.log({
         className: this.className,
         functionName: 'update',
         message: `Updated professional with ID: ${professional.id}`
       });
+      
       return {
         statusCode: HttpStatus.OK,
         message: professional
-      }
+      };
     } catch (error) {
       this.loggerService.error({
         className: this.className,
@@ -158,24 +269,34 @@ export class ProfessionalService {
         message: `Error updating professional: ${error.message}`
       });
       throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
-
     }
   }
 
   async remove(id: number) {
     try {
+      // Primeiro, excluir registros relacionados
+      await this.prismaService.workingHours.deleteMany({
+        where: { professionalId: id }
+      });
+      
+      await this.prismaService.socialMedia.deleteMany({
+        where: { professionalId: id }
+      });
+
       const professional = await this.prismaService.professional.delete({
         where: { id }
       });
+
       this.loggerService.log({
         className: this.className,
         functionName: 'remove',
         message: `Deleted professional with ID: ${professional.id}`
       });
+      
       return {
         statusCode: HttpStatus.OK,
         message: professional
-      }
+      };
     } catch (error) {
       this.loggerService.error({
         className: this.className,
@@ -183,7 +304,6 @@ export class ProfessionalService {
         message: `Error deleting professional: ${error.message}`
       });
       throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
-
     }
   }
 
@@ -192,13 +312,15 @@ export class ProfessionalService {
       const professional = await this.prismaService.professional.findUnique({
         where: { email },
         include: {
-          user: true
+          user: true,
+          workingHours: true,
+          socialMedia: true
         }
       });
       return {
         statusCode: HttpStatus.OK,
         message: professional
-      }
+      };
     } catch (error) {
       this.loggerService.error({
         className: this.className,
@@ -206,7 +328,6 @@ export class ProfessionalService {
         message: `Error fetching professional by email: ${error.message}`
       });
       throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
-
     }
   }
 }

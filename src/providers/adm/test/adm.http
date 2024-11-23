@@ -1,0 +1,38 @@
+### Variáveis
+@baseUrl = http://127.0.0.1:58055/v1/adm
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MCwiZW1haWwiOiJiYXJiZXJzaG9wQGJhcmJlcnNob3AuY29tIiwicm9sZSI6Ik1BU1RFUiIsInVzZXIiOltdLCJpYXQiOjE3MzI0MDQ3OTQsImV4cCI6MTczMjQ2MTE5NH0.JQMySSMwPsKq597hEpJS4lgKiRo3iHtkpZ77Qik4q_k
+
+### Criar novo administrador
+POST {{baseUrl}}/create
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "name": "Admin Teste",
+    "email": "admin@example.com",
+    "password": "Senha123#",
+    "userId": 0 
+}
+
+### Listar todos os administradores
+GET {{baseUrl}}
+Authorization: Bearer {{authToken}}
+
+### Buscar administrador por ID
+GET {{baseUrl}}/1
+Authorization: Bearer {{authToken}}
+
+### Atualizar administrador
+PATCH {{baseUrl}}/1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "name": "Admin Atualizado",
+    "email": "admin.updated@example.com",
+    "password": "NovaSenha123#"
+}
+
+### Remover administrador
+DELETE {{baseUrl}}/1
+Authorization: Bearer {{authToken}}

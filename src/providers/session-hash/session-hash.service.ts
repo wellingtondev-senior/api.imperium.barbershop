@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/modulos/prisma/prisma.service';
-import { LoggerCustomService } from 'src/modulos/logger/logger.service';
+import { PrismaService } from '../../modulos/prisma/prisma.service';
+import { LoggerCustomService } from '../../modulos/logger/logger.service';
 import * as crypto from 'crypto';
 import { CreateSessionHashDto } from './dto/session-hash.dto';
 

@@ -13,25 +13,59 @@ export class AdmController {
   constructor(private readonly admService: AdmService) {}
 
   @Version('1')
-  @Post("create")
+  @Post('create')
   @ApiOperation({ summary: 'Cria um administrador para a aplicação' })
-  @ApiBody({description: 'Objeto JSON contendo dados', type: AdmDto })
+  @ApiBody({ description: 'Objeto JSON contendo dados', type: AdmDto })
   @Roles(Role.MASTER, Role.ADM)
   @UseGuards(RoleGuard)
   @HttpCode(201)
-  @ApiResponse(AdminSuccessResponse) 
-  create(@Body() admDto : AdmDto ) {
+  @ApiResponse(AdminSuccessResponse)
+  create(@Body() admDto: AdmDto) {
     return this.admService.create(admDto);
   }
 
   @Version('1')
   @Get()
-  @ApiOperation({ summary: 'Cria um administrador para a aplicação' })
+  @ApiOperation({ summary: 'Lista todos os administradores' })
   @Roles(Role.MASTER, Role.ADM)
   @UseGuards(RoleGuard)
-  @HttpCode(201)
-  @ApiResponse(AdminSuccessResponse) 
+  @HttpCode(200)
+  @ApiResponse(AdminSuccessResponse)
   findAll() {
     return this.admService.findAll();
+  }
+
+  @Version('1')
+  @Get(':id')
+  @ApiOperation({ summary: 'Busca um administrador pelo ID' })
+  @Roles(Role.MASTER, Role.ADM)
+  @UseGuards(RoleGuard)
+  @HttpCode(200)
+  @ApiResponse(AdminSuccessResponse)
+  findOne(@Param('id') id: string) {
+    return this.admService.findOne(+id);
+  }
+
+  @Version('1')
+  @Patch(':id')
+  @ApiOperation({ summary: 'Atualiza um administrador' })
+  @ApiBody({ description: 'Objeto JSON contendo dados', type: AdmDto })
+  @Roles(Role.MASTER, Role.ADM)
+  @UseGuards(RoleGuard)
+  @HttpCode(200)
+  @ApiResponse(AdminSuccessResponse)
+  update(@Param('id') id: string, @Body() admDto: AdmDto) {
+    return this.admService.update(+id, admDto);
+  }
+
+  @Version('1')
+  @Delete(':id')
+  @ApiOperation({ summary: 'Remove um administrador' })
+  @Roles(Role.MASTER, Role.ADM)
+  @UseGuards(RoleGuard)
+  @HttpCode(200)
+  @ApiResponse(AdminSuccessResponse)
+  remove(@Param('id') id: string) {
+    return this.admService.remove(+id);
   }
 }
