@@ -49,6 +49,29 @@ export class AuthService {
     };
   }
 
+  async register(credenciaisDto: CredenciaisDto) {
+    try {
+      const result = await this.credenciaisService.create(credenciaisDto);
+      
+      // Enviar email de confirmação apenas para ADM e PROFESSIONAL
+      if (result.message.user.role === Role.ADM || result.message.user.role === Role.PROFESSIONAL) {
+        await this.mailerService.sendEmailConfirmRegister(
+          result.message.user.id,
+          Role[result.message.user.role]
+        );
+      }
+
+      return result;
+    } catch (error) {
+      this.loggerService.error({
+        className: this.className,
+        functionName: 'register',
+        message: error.message,
+      });
+      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
+    }
+  }
+
   async authentication(email: string, password: string) {
     try {
       if (email === process.env.EMAIL_MASTER && password === process.env.PASSWORD_MASTER) {
@@ -64,8 +87,32 @@ export class AuthService {
       const userData = resultCredenciais.message[0];
       const userRole = Role[userData.user.role];
 
-      if (!userData.user.active) {
-        await this.mailerService.sendEmailConfirmRegister(userData.user.id, userRole);
+      // Verificar status do usuário e enviar email apenas para ADM e PROFESSIONAL
+      if (!userData.user.active && (userRole === Role.ADM || userRole === Role.PROFESSIONAL)) {
+        // Verificar se existe hash válido
+        const validHash = await this.prismaService.sessionHash.findFirst({
+          where: {
+            userId: userData.user.id,
+            action: 'confirm-register',
+            status: true,
+            validate: { gte: new Date() },
+          },
+        });
+
+        if (!validHash) {
+          // Se não houver hash válido, atualizar hash existente e enviar novo email
+          await this.prismaService.sessionHash.updateMany({
+            where: {
+              userId: userData.user.id,
+              action: 'confirm-register',
+            },
+            data: {
+              status: false,
+            },
+          });
+
+          await this.mailerService.sendEmailConfirmRegister(userData.user.id, userRole);
+        }
       }
 
       let userDetails;

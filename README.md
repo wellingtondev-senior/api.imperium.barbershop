@@ -1,7 +1,7 @@
 # API Imperium Barbershop
 
 ## Descrição
-API REST desenvolvida com NestJS para gerenciamento de barbearia, incluindo agendamentos, profissionais e serviços.
+API REST desenvolvida com NestJS para gerenciamento de barbearia, incluindo agendamentos, profissionais, serviços e pagamentos.
 
 ## Tecnologias Principais
 - NestJS
@@ -11,53 +11,79 @@ API REST desenvolvida com NestJS para gerenciamento de barbearia, incluindo agen
 - Redis Cache
 - Bull Queue
 - Mailer
+- Blockchain Integration
+- Elasticsearch
 
 ## Estrutura da API
 
-### 1. Autenticação
-- **POST** `/api/v1/auth/login`
+### 1. Autenticação (`/api/v1/auth`)
+- **POST** `/login`
   - Login de usuários
   - Retorna token JWT
+- **POST** `/refresh-token`
+  - Atualiza token JWT expirado
+- **POST** `/logout`
+  - Realiza logout do usuário
 
-### 2. Profissionais
-- **GET** `/api/v1/professional`
+### 2. Profissionais (`/api/v1/professional`)
+- **GET** `/`
   - Lista todos os profissionais
-- **GET** `/api/v1/professional/:id`
+- **GET** `/:id`
   - Busca profissional por ID
-- **GET** `/api/v1/professional/email/:email`
+- **GET** `/email/:email`
   - Busca profissional por email
-- **POST** `/api/v1/professional`
+- **POST** `/`
   - Cria novo profissional
-- **PATCH** `/api/v1/professional/:id`
+- **PATCH** `/:id`
   - Atualiza dados do profissional
-- **DELETE** `/api/v1/professional/:id`
+- **DELETE** `/:id`
   - Remove profissional
 
-### 3. Agendamentos
-- **GET** `/api/v1/services-schedule`
+### 3. Agendamentos (`/api/v1/services-schedule`)
+- **GET** `/`
   - Lista todos os agendamentos
-- **GET** `/api/v1/services-schedule/:id`
+- **GET** `/:id`
   - Busca agendamento específico
-- **GET** `/api/v1/services-schedule/professional/:id`
+- **GET** `/professional/:id`
   - Lista agendamentos por profissional
-- **POST** `/api/v1/services-schedule`
+- **POST** `/`
   - Cria novo agendamento
-- **PATCH** `/api/v1/services-schedule/:id`
+- **PATCH** `/:id`
   - Atualiza agendamento
-- **DELETE** `/api/v1/services-schedule/:id`
+- **DELETE** `/:id`
   - Cancela agendamento
 
-### 4. Administração
-- **GET** `/api/v1/adm`
+### 4. Administração (`/api/v1/adm`)
+- **GET** `/`
   - Lista administradores
-- **POST** `/api/v1/adm`
+- **POST** `/`
   - Cria novo administrador
+- **PATCH** `/:id`
+  - Atualiza administrador
+- **DELETE** `/:id`
+  - Remove administrador
 
-### 5. Sistema de Email
-- **POST** `/api/v1/mailer/test`
+### 5. Sistema de Email (`/api/v1/mailer`)
+- **POST** `/test`
   - Testa envio de email
-- **POST** `/api/v1/mailer/confirm-register/:userId`
+- **POST** `/confirm-register/:userId`
   - Envia email de confirmação de registro
+- **POST** `/reset-password`
+  - Envia email de redefinição de senha
+
+### 6. Pagamentos (`/api/v1/payment`)
+- **POST** `/process`
+  - Processa novo pagamento
+- **GET** `/status/:id`
+  - Verifica status do pagamento
+- **POST** `/webhook`
+  - Recebe notificações de pagamento
+
+### 7. Sessões (`/api/v1/session-hash`)
+- **GET** `/validate/:hash`
+  - Valida hash de sessão
+- **POST** `/create`
+  - Cria nova sessão
 
 ## Autenticação e Autorização
 
@@ -70,6 +96,13 @@ Authorization: Bearer <token>
 - `ADMIN`: Acesso total ao sistema
 - `PROFESSIONAL`: Acesso às funcionalidades do profissional
 - `CLIENT`: Acesso limitado para clientes
+
+## Cache e Performance
+
+A API utiliza Redis para cache de dados frequentemente acessados:
+- Cache de profissionais ativos
+- Cache de horários disponíveis
+- Cache de configurações do sistema
 
 ## Documentação Swagger
 
@@ -84,6 +117,8 @@ http://seu-dominio/api/docs
 2. Instale as dependências:
 ```bash
 npm install
+# ou
+yarn install
 ```
 
 3. Configure as variáveis de ambiente (.env):
@@ -95,6 +130,8 @@ REDIS_PORT=
 SMTP_HOST=
 SMTP_USER=
 SMTP_PASS=
+BLOCKCHAIN_API_KEY=
+ELASTICSEARCH_NODE=
 ```
 
 4. Execute as migrações do Prisma:
@@ -108,30 +145,28 @@ npx prisma migrate dev
 npm run start:dev
 
 # produção
+npm run build
 npm run start:prod
 ```
 
-## Cache e Filas
+## Monitoramento e Logs
 
-- Redis é utilizado para cache de dados frequentemente acessados
-- Bull Queue para processamento de tarefas assíncronas (emails, notificações)
-
-## Logs e Monitoramento
-
-O sistema possui um serviço de logging personalizado que registra:
-- Erros de sistema
+A API possui sistema de logging integrado que registra:
+- Requisições e respostas
+- Erros e exceções
+- Performance e métricas
 - Tentativas de autenticação
-- Operações críticas
-- Performance de endpoints
 
-## Segurança
+## Integração com Blockchain
 
-- Rate limiting para prevenir abusos
-- Validação de dados com class-validator
-- Sanitização de inputs
-- CORS configurado
-- Proteção contra ataques comuns (XSS, CSRF)
+A API possui integração com blockchain para:
+- Registro seguro de transações
+- Validação de pagamentos
+- Contratos inteligentes
 
-## Suporte
+## Elasticsearch
 
-Para suporte, entre em contato através do email: wrm.net@gmail.com
+Utilizado para:
+- Busca avançada de agendamentos
+- Análise de dados
+- Monitoramento em tempo real

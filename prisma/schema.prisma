@@ -48,6 +48,7 @@ model Professional {
   create_at       DateTime      @default(now())
   update_at       DateTime      @updatedAt
   user            User          @relation(fields: [userId], references: [id])
+  Appointment     Appointment[]
 }
 
 model Client {
@@ -56,8 +57,9 @@ model Client {
   email    String  @unique
   telefone String?
 
-  create_at DateTime @default(now())
-  update_at DateTime @updatedAt
+  create_at   DateTime      @default(now())
+  update_at   DateTime      @updatedAt
+  Appointment Appointment[]
 }
 
 model Adm {
@@ -102,42 +104,58 @@ model Appointment {
   id             Int      @id @default(autoincrement())
   date           DateTime // Data e horário do agendamento
   status         String   @default("pending") // pending, confirmed, completed, canceled
+  notes          String? // Notas ou observações sobre o agendamento
   professionalId Int
+  clientId       Int // Alterado de fanId para clientId para melhor clareza
   serviceId      Int
-  fanId          Int
-  paymentId      Int?
-  create_at      DateTime @default(now())
-  update_at      DateTime @updatedAt
-  service        Service  @relation(fields: [serviceId], references: [id])
+  paymentId      Int?     @unique // Relação única com o pagamento
+
+  // Relacionamentos
+  professional Professional @relation(fields: [professionalId], references: [id])
+  client       Client       @relation(fields: [clientId], references: [id])
+  service      Service      @relation(fields: [serviceId], references: [id])
+  payment      Payment?     @relation(fields: [paymentId], references: [id])
+
+  // Campos de auditoria
+  create_at DateTime @default(now())
+  update_at DateTime @updatedAt
+
+  @@index([date]) // Índice para otimizar busca por data
+  @@index([status]) // Índice para otimizar busca por status
 }
 
 model Payment {
-  id        Int      @id @default(autoincrement())
-  amount    Float // Valor do pagamento
-  status    String   @default("pending") // pending, completed, failed
-  method    String // Ex: credit_card, pix, cash
-  create_at DateTime @default(now())
-  update_at DateTime @updatedAt
-  Service   Service? @relation(fields: [serviceId], references: [id])
-  serviceId Int?
+  id          Int          @id @default(autoincrement())
+  amount      Float // Valor do pagamento
+  status      String      @default("pending") // pending, confirmed, cancelled
+  value       Float
+  method      String // Ex: credit_card, pix, cash
+  stripePaymentId String? // ID do pagamento no Stripe
+  appointment Appointment?
+  serviceId   Int?
+  Service     Service?     @relation(fields: [serviceId], references: [id])
+  create_at   DateTime     @default(now())
+  update_at   DateTime     @updatedAt
+
+  @@index([status]) // Índice para otimizar busca por status
 }
 
 model WorkingHours {
   id             Int          @id @default(autoincrement())
-  mondayStart    String?      // Horário de início segunda-feira
-  mondayEnd      String?      // Horário de término segunda-feira
-  tuesdayStart   String?      // Horário de início terça-feira
-  tuesdayEnd     String?      // Horário de término terça-feira
-  wednesdayStart String?      // Horário de início quarta-feira
-  wednesdayEnd   String?      // Horário de término quarta-feira
-  thursdayStart  String?      // Horário de início quinta-feira
-  thursdayEnd    String?      // Horário de término quinta-feira
-  fridayStart    String?      // Horário de início sexta-feira
-  fridayEnd      String?      // Horário de término sexta-feira
-  saturdayStart  String?      // Horário de início sábado
-  saturdayEnd    String?      // Horário de término sábado
-  sundayStart    String?      // Horário de início domingo
-  sundayEnd      String?      // Horário de término domingo
+  mondayStart    String? // Horário de início segunda-feira
+  mondayEnd      String? // Horário de término segunda-feira
+  tuesdayStart   String? // Horário de início terça-feira
+  tuesdayEnd     String? // Horário de término terça-feira
+  wednesdayStart String? // Horário de início quarta-feira
+  wednesdayEnd   String? // Horário de término quarta-feira
+  thursdayStart  String? // Horário de início quinta-feira
+  thursdayEnd    String? // Horário de término quinta-feira
+  fridayStart    String? // Horário de início sexta-feira
+  fridayEnd      String? // Horário de término sexta-feira
+  saturdayStart  String? // Horário de início sábado
+  saturdayEnd    String? // Horário de término sábado
+  sundayStart    String? // Horário de início domingo
+  sundayEnd      String? // Horário de término domingo
   professional   Professional @relation(fields: [professionalId], references: [id])
   professionalId Int          @unique // Um profissional só pode ter um horário de trabalho
   create_at      DateTime     @default(now())

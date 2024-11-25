@@ -6,10 +6,6 @@ import crypto from 'crypto-js';
 import { CredenciaisDto } from './dto/credenciais.dto';
 // import { EmailService } from '../email/email.service';
 
-
-
-
-
 @Injectable()
 export class CredenciaisService {
 
@@ -18,7 +14,6 @@ export class CredenciaisService {
     constructor(
         private readonly prismaService: PrismaService,
         private readonly loggerService: LoggerCustomService,
-        //private readonly emailService: EmailService
     ) {
         this.className = "CredenciaisService"
     }
@@ -82,6 +77,79 @@ export class CredenciaisService {
                 message:`Erro ao verificar ID`
             })
             throw new HttpException(`Erro Id de usuario não existe`, HttpStatus.NOT_ACCEPTABLE);
+        }
+    }
+
+    async create(credenciaisDto: CredenciaisDto) {
+        try {
+            this.loggerService.log({
+                className: this.className,
+                functionName: 'create',
+                message: `Iniciando criação de credenciais para ${credenciaisDto.email}`,
+            });
+
+            // Verificar se já existe um usuário com este email
+            const existingUser = await this.prismaService.credenciais.findFirst({
+                where: { email: credenciaisDto.email },
+            });
+
+            if (existingUser) {
+                throw new HttpException('Email já cadastrado', HttpStatus.CONFLICT);
+            }
+
+            // Criptografar a senha
+            const hashedPassword = await bcrypt.hash(credenciaisDto.password, 10);
+
+            // Criar usuário e credenciais em uma transação
+            const result = await this.prismaService.$transaction(async (prisma) => {
+                // Criar usuário
+                const user = await prisma.user.create({
+                    data: {
+                        role: credenciaisDto.role || 'CLIENT', // Default role is CLIENT
+                        active: false, // Usuário inativo até confirmar email
+                    },
+                });
+
+                // Criar credenciais
+                const credenciais = await prisma.credenciais.create({
+                    data: {
+                        email: credenciaisDto.email,
+                        password: hashedPassword,
+                        userId: user.id,
+                    },
+                    include: {
+                        user: true,
+                    },
+                });
+
+                return credenciais;
+            });
+
+            this.loggerService.log({
+                className: this.className,
+                functionName: 'create',
+                message: `Credenciais criadas com sucesso para ${credenciaisDto.email}`,
+            });
+
+            return {
+                statusCode: HttpStatus.CREATED,
+                message: result,
+            };
+        } catch (error) {
+            this.loggerService.error({
+                className: this.className,
+                functionName: 'create',
+                message: `Erro ao criar credenciais para ${credenciaisDto.email}`,
+            });
+
+            if (error instanceof HttpException) {
+                throw error;
+            }
+
+            throw new HttpException(
+                'Erro ao criar credenciais',
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
         }
     }
 
