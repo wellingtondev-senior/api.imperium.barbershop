@@ -28,14 +28,12 @@ export class SessionHashService {
    */
   async validadeHash(hash: string, userId: string) {
     try {
+      // Primeiro, procura o hash independente da data de validação
       const hashFind = await this.prismaService.sessionHash.findFirst({
         where: {
           hash,
           userId: parseInt(userId),
           status: true,
-          validate: {
-            gt: new Date(),
-          },
           action: 'confirm-register'
         },
         include: {
@@ -46,10 +44,37 @@ export class SessionHashService {
       if (!hashFind) {
         return {
           statusCode: HttpStatus.NOT_FOUND,
-          message: 'Hash não encontrado ou estar expirada',
+          message: 'Hash não encontrado',
         };
       }
 
+      const now = new Date();
+      const isExpired = hashFind.validate < now;
+
+      // Se o hash existe mas está expirado, atualiza a data de validação
+      if (isExpired) {
+        const updatedHash = await this.prismaService.sessionHash.update({
+          where: {
+            id: hashFind.id,
+          },
+          data: {
+            validate: this.addMinutesToCurrentTime(60), // Adiciona mais 60 minutos
+          },
+        });
+
+        // Retorna mensagem informando que o hash foi renovado
+        return {
+          statusCode: HttpStatus.OK,
+          message: {
+            hash: updatedHash.hash,
+            valid: true,
+            renewed: true,
+            validate: updatedHash.validate,
+          },
+        };
+      }
+
+      // Se o hash é válido, atualiza o status do usuário e invalida o hash
       await this.prismaService.user.update({
         where: {
           id: parseInt(userId)
@@ -58,6 +83,7 @@ export class SessionHashService {
           active: true
         }
       });
+
       await this.prismaService.sessionHash.update({
         where: {
           id: hashFind.id,
@@ -70,8 +96,10 @@ export class SessionHashService {
       return {
         statusCode: HttpStatus.OK,
         message: {
-          hash: hashFind?.hash,
+          hash: hashFind.hash,
           valid: true,
+          renewed: false,
+          validate: hashFind.validate,
         },
       };
       
