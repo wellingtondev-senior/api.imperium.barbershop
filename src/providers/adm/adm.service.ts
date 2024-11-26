@@ -62,7 +62,8 @@ export class AdmService {
           template: 'confirm-register',
           context: {
             name: createADM.name,
-            email: createADM.email
+            email: createADM.email,
+            hash: (await this.sessionHashService.generateHash(createADM.userId)).hash
           }
         });
 

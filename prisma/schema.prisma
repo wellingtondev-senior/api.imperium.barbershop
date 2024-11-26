@@ -90,7 +90,6 @@ model Adm {
 model SessionHash {
   id        Int      @id @default(autoincrement())
   hash      String   @unique
-  codigo    Int
   status    Boolean  @default(true)
   action    String
   validate  DateTime

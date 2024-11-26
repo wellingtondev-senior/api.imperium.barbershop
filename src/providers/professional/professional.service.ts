@@ -99,13 +99,23 @@ export class ProfessionalService {
           },
         });
 
+        const result = await this.prismaService.professional.findUnique({
+          where: { id: createProfessional.id },
+          include: {
+            user: true,
+            workingHours: true,
+            socialMedia: true
+          }
+        });
+
         await this.mailerService.sendEmailConfirmRegister({
-          to: createUser.email,
+          to: result.email,
           subject: 'Confirmação de Registro',
           template: 'confirm-register',
           context: {
-            name: createUser.name,
-            email: createUser.email
+            name: result.name,
+            email: result.email,
+            hash: (await this.sessionHashService.generateHash(result.id)).hash
           }
         });
 

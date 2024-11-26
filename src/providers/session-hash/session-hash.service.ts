@@ -2,7 +2,6 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { LoggerCustomService } from '../../modulos/logger/logger.service';
 import * as crypto from 'crypto';
-import { CreateSessionHashDto } from './dto/session-hash.dto';
 
 /**
  * Service responsible for managing session hashes and user validation processes
@@ -29,13 +28,11 @@ export class SessionHashService {
     try {
       // Gerar hash aleatório
       const hash = crypto.randomBytes(32).toString('hex');
-      const codigo = Math.floor(100000 + Math.random() * 900000); // Código de 6 dígitos
 
       // Criar o hash no banco de dados
       const sessionHash = await this.prismaService.sessionHash.create({
         data: {
           hash,
-          codigo,
           action,
           status: true,
           validate: this.addMinutesToCurrentTime(60), // Hash válido por 60 minutos
@@ -173,22 +170,20 @@ export class SessionHashService {
    * @returns Object containing the generated hash and code
    * @throws HttpException if generation fails
    */
-  async generateHash(userId: number): Promise<{ hash: string; codigo: number }> {
+  async generateHash(userId: number): Promise<{ hash: string }> {
     const hash = crypto.randomBytes(32).toString('hex');
-    const codigo = Math.floor(100000 + Math.random() * 900000); // 6-digit code
     
     await this.prismaService.sessionHash.create({
       data: {
         userId,
         hash,
-        codigo,
         validate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
         status: true,
         action: 'confirm-register'
       },
     });
 
-    return { hash, codigo };
+    return { hash };
   }
 
   /**

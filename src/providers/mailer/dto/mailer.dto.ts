@@ -18,6 +18,21 @@ export class MailerTesteEmailDto {
   @IsString()
   @IsNotEmpty()
   message: string;
+
+  @ApiProperty({
+    example: {
+      name: 'Test User',
+      email: 'test@example.com',
+      hash: 'test-hash'
+    }
+  })
+  @IsObject()
+  @IsNotEmpty()
+  context: {
+    name: string;
+    email: string;
+    hash: string;
+  };
 }
 
 export class MailerConfirmationRegisterEmailDto {
@@ -40,8 +55,8 @@ export class MailerConfirmationRegisterEmailDto {
   context: {
     name: string;
     email: string;
-    hash?: string;
-    codigo?: number;
+    hash: string;
+
   };
 }
 

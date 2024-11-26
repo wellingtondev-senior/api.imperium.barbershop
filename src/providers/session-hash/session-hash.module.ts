@@ -3,7 +3,7 @@ import { SessionHashService } from './session-hash.service';
 import { SessionHashController } from './session-hash.controller';
 import { LoggerCustomModule } from 'src/modulos/logger/logger.module';
 import { JwtModule } from '@nestjs/jwt';
-import { PrismaModule } from 'src/modulos/prisma/prisma.module';
+import { PrismaModule } from '../../modulos/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -13,6 +13,6 @@ import { PrismaModule } from 'src/modulos/prisma/prisma.module';
   ],
   controllers: [SessionHashController],
   providers: [SessionHashService],
-  exports: [SessionHashService],
+  exports: [SessionHashService]
 })
 export class SessionHashModule {}

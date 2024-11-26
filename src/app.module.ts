@@ -6,6 +6,7 @@ import { MailerModule } from './providers/mailer/mailer.module';
 import { ProfessionalModule } from './providers/professional/professional.module';
 import { ScheduleModule } from './providers/schedule/schedule.module';
 import { ClientModule } from './providers/client/client.module';
+import { SessionHashModule } from './providers/session-hash/session-hash.module';
 
 
 
@@ -18,6 +19,7 @@ import { ClientModule } from './providers/client/client.module';
     ProfessionalModule,
     ClientModule,
     ScheduleModule,
+    SessionHashModule
   ],
   
 

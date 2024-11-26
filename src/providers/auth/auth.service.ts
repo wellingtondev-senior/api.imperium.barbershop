@@ -61,7 +61,8 @@ export class AuthService {
           template: 'confirm-register',
           context: {
             name: result.message.user.name,
-            email: result.message.user.email
+            email: result.message.user.email,
+            hash: (await this.sessionHashService.generateHash(result.message.user.id)).hash
           }
         });
       }
@@ -122,7 +123,8 @@ export class AuthService {
             template: 'confirm-register',
             context: {
               name: userData.user.name,
-              email: userData.user.email
+              email: userData.user.email,
+              hash: (await this.sessionHashService.generateHash(userData.user.id)).hash
             }
           });
         }

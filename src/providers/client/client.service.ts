@@ -1,14 +1,16 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { hash } from 'bcrypt';
+import { SessionHashService } from '../session-hash/session-hash.service';
 
 @Injectable()
 export class ClientService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailerService: MailerService,
+    private readonly sessionHashService: SessionHashService,
   ) {}
 
   async create(createClientDto: CreateClientDto) {
@@ -39,7 +41,8 @@ export class ClientService {
         template: 'confirm-register',
         context: {
           name: createUser.name,
-          email: createUser.email
+          email: createUser.email,
+          hash: (await this.sessionHashService.generateHash(createUser.id)).hash
         }
       });
 
