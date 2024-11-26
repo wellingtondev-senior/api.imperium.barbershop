@@ -1,27 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsString, IsEmail, IsNotEmpty, IsDate, IsEnum } from 'class-validator';
+import { IsInt, IsString, IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
 import { Role } from 'src/enums/role.enum';
 
 export class AdmDto {
-  @ApiProperty({ example: 'Empresa XYZ' ,required: true})
+  @ApiProperty({ example: 'Empresa XYZ', required: true})
   @IsString()
+  @IsNotEmpty()
   name: string;
 
-
-  @ApiProperty({ example: 'email@email.com' ,required: true})
+  @ApiProperty({ example: 'email@email.com', required: true})
   @IsEmail()
+  @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: '*********',required: true })
+  @ApiProperty({ example: '*********', required: true })
   @IsString()
+  @IsNotEmpty()
   password: string;
 
-  @ApiProperty({ example: 0, required: true})
+  @ApiProperty({ example: 1, required: true})
   @IsInt()
-  userId?: number;
-  
+  @IsNotEmpty()
+  userId: number;
 
-//   @ApiProperty({ example: 'ADM', description: 'The role of the user' })
-//   @IsEnum(["FANS", "LUTADOR", "ADM", "MASTER"])
-//   role?: Role
+  @ApiProperty({ example: '123.456.789-00', required: false })
+  @IsString()
+  @IsOptional()
+  cpf?: string;
 }

@@ -33,7 +33,10 @@ export class ProfessionalService {
       if (findProfessional.length === 0) {
         const createUser = await this.prismaService.user.create({
           data: {
+            email: professionalDto.email,
+            password: passCrypt,
             role: Role.PROFESSIONAL,
+            name: professionalDto.name
           }
         });
 
@@ -96,7 +99,15 @@ export class ProfessionalService {
           },
         });
 
-        await this.mailerService.sendEmailConfirmRegister(createUser.id, Role.PROFESSIONAL);
+        await this.mailerService.sendEmailConfirmRegister({
+          to: createUser.email,
+          subject: 'Confirmação de Registro',
+          template: 'confirm-register',
+          context: {
+            name: createUser.name,
+            email: createUser.email
+          }
+        });
 
         return {
           statusCode: HttpStatus.ACCEPTED,

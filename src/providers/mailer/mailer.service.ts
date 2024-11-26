@@ -3,7 +3,8 @@ import {
   MailerConfirmationRegisterEmailDto, 
   MailerTesteEmailDto,
   PaymentSuccessEmailDto,
-  PaymentFailedEmailDto
+  PaymentFailedEmailDto,
+  PaymentContextDto
 } from './dto/mailer.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { LoggerCustomService } from '../../modulos/logger/logger.service';
@@ -13,7 +14,7 @@ import { Role } from '../../enums/role.enum';
 
 @Injectable()
 export class MailerService {
-  private className: string
+  private className: string;
   constructor(
     private readonly prismaService: PrismaService,
     private readonly loggerService: LoggerCustomService,
@@ -25,7 +26,7 @@ export class MailerService {
 
   async sendEmailTeste(mailerTesteEmailDto: MailerTesteEmailDto) {
     try {
-      this.sendMailProducerService.sendEmailTeste(mailerTesteEmailDto);
+      await this.sendMailProducerService.sendEmailTeste(mailerTesteEmailDto);
       return {
         statusCode: HttpStatus.OK,
         message: 'Email enviado com sucesso!',
@@ -44,139 +45,28 @@ export class MailerService {
     }
   }
 
-  async sendEmailConfirmRegister(userId: number, role: Role) {
+  async sendEmailConfirmRegister(emailData: MailerConfirmationRegisterEmailDto) {
     try {
-      // Buscar sessionHash e credenciais em paralelo para otimizar a performance
-      const [sessionHash, user] = await Promise.all([
-        this.prismaService.sessionHash.findMany({
-          where: {
-            userId,
-            action: 'confirm-register',
-            status: true,
-            validate: { gte: new Date() },
-          },
-        }),
-        this.prismaService.user.findUnique({
-          where: { id: userId },
-          include: {
-            credenciais: true,
-            professional: true,
-            adm: true,
-          },
-        }),
-      ]);
-
-      if (!user) {
-        throw new HttpException('Usuário não encontrado', HttpStatus.NOT_FOUND);
-      }
-
-      // Verificar se já existe um hash válido
-      if (sessionHash.length > 0) {
-        this.loggerService.log({
-          className: this.className,
-          functionName: 'sendEmailConfirmRegister',
-          message: `Hash válido encontrado para usuário ${userId}`,
-        });
-        return;
-      }
-
-      // Gerar novo hash
-      const hash = await this.sessionHashService.generateHash(userId, 'confirm-register');
-
-      const name = role === Role.PROFESSIONAL 
-        ? user.professional?.name 
-        : role === Role.ADM 
-          ? user.adm?.name 
-          : user.credenciais?.name;
-
-      // Enviar email com o hash
-      await this.sendMailProducerService.sendEmail({
-        to: user.email,
-        subject: 'Confirmação de Cadastro - Imperium Barbershop',
-        template: 'confirm-register',
-        context: {
-          name: name,
-          hash: hash,
-        },
-      });
-
-      this.loggerService.log({
-        className: this.className,
-        functionName: 'sendEmailConfirmRegister',
-        message: `Email de confirmação enviado com sucesso para ${user.email}`,
-      });
+      await this.sendMailProducerService.sendEmailConfirmationRegister(emailData);
 
       return {
-        statusCode: HttpStatus.OK,
-        message: 'Email de confirmação enviado com sucesso!',
+        statusCode: 200,
+        message: 'Email de confirmação enviado com sucesso'
       };
     } catch (error) {
-      this.loggerService.error({
-        className: this.className,
-        functionName: 'sendEmailConfirmRegister',
-        error: error,
-        message: `Erro ao enviar email de confirmação para usuário ${userId}`,
-      });
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      throw new HttpException(
-        'Erro ao enviar email de confirmação de cadastro',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new Error(error.message);
     }
   }
 
-  async sendEmailConfirmPayment(paymentEmailDto: PaymentSuccessEmailDto) {
+  async sendEmailConfirmPayment(options: PaymentSuccessEmailDto) {
     try {
-      this.loggerService.log({
-        className: this.className,
-        functionName: 'sendEmailConfirmPayment',
-        message: `Iniciando envio de email de confirmação de pagamento para ${paymentEmailDto.to}`,
-      });
-
-      await this.sendMailProducerService.sendEmail({
-        to: paymentEmailDto.to,
-        subject: paymentEmailDto.subject,
-        template: paymentEmailDto.template,
-        context: {
-          serviceName: paymentEmailDto.context.serviceName,
-          professionalName: paymentEmailDto.context.professionalName,
-          clientName: paymentEmailDto.context.clientName,
-          date: new Date(paymentEmailDto.context.date).toLocaleDateString('pt-BR'),
-          amount: paymentEmailDto.context.amount.toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-          }),
-          appointmentId: paymentEmailDto.context.appointmentId,
-          paymentId: paymentEmailDto.context.paymentId,
-        },
-      });
-
-      this.loggerService.log({
-        className: this.className,
-        functionName: 'sendEmailConfirmPayment',
-        message: `Email de confirmação de pagamento enviado com sucesso para ${paymentEmailDto.to}`,
-      });
-
+      await this.sendMailProducerService.sendEmailPaymentSuccess(options);
       return {
-        statusCode: HttpStatus.OK,
-        message: 'Email de confirmação de pagamento enviado com sucesso!',
+        statusCode: 200,
+        message: 'Email de confirmação de pagamento enviado com sucesso'
       };
     } catch (error) {
-      this.loggerService.error({
-        className: this.className,
-        functionName: 'sendEmailConfirmPayment',
-        error: error,
-        message: `Erro ao enviar email de confirmação de pagamento para ${paymentEmailDto.to}`,
-      });
-
-      throw new HttpException(
-        'Erro ao enviar email de confirmação de pagamento',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new Error(error.message);
     }
   }
 
@@ -188,23 +78,20 @@ export class MailerService {
         message: `Iniciando envio de email de falha no pagamento para ${paymentEmailDto.to}`,
       });
 
-      await this.sendMailProducerService.sendEmail({
+      await this.sendMailProducerService.sendEmailPaymentFailure({
         to: paymentEmailDto.to,
         subject: paymentEmailDto.subject,
         template: paymentEmailDto.template,
         context: {
+          amount: paymentEmailDto.context.amount,
+          date: paymentEmailDto.context.date,
           serviceName: paymentEmailDto.context.serviceName,
           professionalName: paymentEmailDto.context.professionalName,
           clientName: paymentEmailDto.context.clientName,
-          date: new Date(paymentEmailDto.context.date).toLocaleDateString('pt-BR'),
-          amount: paymentEmailDto.context.amount.toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-          }),
-          appointmentId: paymentEmailDto.context.appointmentId,
+          scheduleId: paymentEmailDto.context.scheduleId,
           paymentId: paymentEmailDto.context.paymentId,
-          errorMessage: paymentEmailDto.context.errorMessage,
-        },
+          errorMessage: paymentEmailDto.context.errorMessage
+        }
       });
 
       this.loggerService.log({
@@ -221,8 +108,10 @@ export class MailerService {
       this.loggerService.error({
         className: this.className,
         functionName: 'sendEmailPaymentFailed',
-        error: error,
         message: `Erro ao enviar email de falha no pagamento para ${paymentEmailDto.to}`,
+        context: {
+          error: error instanceof Error ? error.message : 'Erro desconhecido',
+        },
       });
 
       throw new HttpException(

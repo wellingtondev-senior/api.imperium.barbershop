@@ -1,10 +1,6 @@
-import { Injectable, Scope, ConsoleLogger, LoggerService } from '@nestjs/common';
+import { Injectable, Scope, ConsoleLogger } from '@nestjs/common';
+import { LogParamsType } from 'src/types/log.params';
 
-type LogParamsType = {
-    className: string,
-    functionName: string,
-    message: string
-}
 
 
 

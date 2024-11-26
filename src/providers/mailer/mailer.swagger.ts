@@ -10,3 +10,21 @@ export const MailerTesteSuccessResponse: ApiResponseOptions = {
     }
   },
 };
+
+export const MailerConfirmationRegisterEmailResponse = {
+  status: 200,
+  description: 'E-mail de confirmação enviado com sucesso',
+  schema: {
+    type: 'object',
+    properties: {
+      statusCode: {
+        type: 'number',
+        example: 200,
+      },
+      message: {
+        type: 'string',
+        example: 'E-mail de confirmação enviado com sucesso',
+      },
+    },
+  },
+};

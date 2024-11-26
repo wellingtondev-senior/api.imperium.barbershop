@@ -10,7 +10,7 @@ import { AuthenticationStrategy } from '../../strategy/authentication.strategy';
 import { LoggerCustomModule } from 'src/modulos/logger/logger.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from 'src/guards/auth.guard';
-import { CredenciaisModule } from '../credenciais/credencias.module';
+import { CredenciaisModule } from '../../modulos/credenciais/credenciais.module';
 import { PrismaModule } from 'src/modulos/prisma/prisma.module';
 import { BullModule } from '@nestjs/bull';
 import { SendMailProducerService } from 'src/modulos/jobs/sendmail.producer.service';

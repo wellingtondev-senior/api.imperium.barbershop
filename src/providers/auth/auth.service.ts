@@ -4,8 +4,8 @@ import { Response } from 'express'
 import { AuthDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import { LoggerCustomService } from 'src/modulos/logger/logger.service';
-import { CredenciaisService } from '../credenciais/credencias.service';
-import { CredenciaisDto } from '../credenciais/dto/credenciais.dto';
+import { CredenciaisService } from '../../modulos/credenciais/credenciais.service';
+import { CredenciaisDto } from '../../modulos/credenciais/dto/credenciais.dto';
 import { PrismaService } from 'src/modulos/prisma/prisma.service';
 import { SendMailProducerService } from 'src/modulos/jobs/sendmail.producer.service';
 import { MailerConfirmationRegisterEmailDto } from '../mailer/dto/mailer.dto';
@@ -55,10 +55,15 @@ export class AuthService {
       
       // Enviar email de confirmação apenas para ADM e PROFESSIONAL
       if (result.message.user.role === Role.ADM || result.message.user.role === Role.PROFESSIONAL) {
-        await this.mailerService.sendEmailConfirmRegister(
-          result.message.user.id,
-          Role[result.message.user.role]
-        );
+        await this.mailerService.sendEmailConfirmRegister({
+          to: result.message.user.email,
+          subject: 'Confirmação de Registro',
+          template: 'confirm-register',
+          context: {
+            name: result.message.user.name,
+            email: result.message.user.email
+          }
+        });
       }
 
       return result;
@@ -111,7 +116,15 @@ export class AuthService {
             },
           });
 
-          await this.mailerService.sendEmailConfirmRegister(userData.user.id, userRole);
+          await this.mailerService.sendEmailConfirmRegister({
+            to: userData.user.email,
+            subject: 'Confirmação de Registro',
+            template: 'confirm-register',
+            context: {
+              name: userData.user.name,
+              email: userData.user.email
+            }
+          });
         }
       }
 

@@ -21,8 +21,8 @@ export class AdmService {
   }
  async create(admDto: AdmDto) {
   try {
-    const passCrypt = await bcrypt.hash(admDto.password, 10)
-    console.log(passCrypt)
+    const hashedPassword = await bcrypt.hash(admDto.password, 10)
+    console.log(hashedPassword)
     const findAdministrador = await this.prismaService.adm.findMany({
         where: {
             email: admDto.email
@@ -30,29 +30,41 @@ export class AdmService {
 
     });
     if (findAdministrador.length === 0) {
-        const createUser = await this.prismaService.user.create({
-            data: {
-                role: Role.ADM,
-            }
+        const user = await this.prismaService.user.create({
+          data: {
+            email: admDto.email,
+            password: hashedPassword,
+            name: admDto.name,
+            role: Role.ADM
+          }
+        });
+
+        const credenciais = await this.prismaService.credenciais.create({
+          data: {
+            userId: user.id,
+            email: admDto.email,
+            password: hashedPassword
+          }
         });
 
         const createADM = await this.prismaService.adm.create({
             data: {
                 name: admDto.name,
                 email: admDto.email,
-                userId: createUser.id,
-
+                userId: user.id,
+                ...(admDto.cpf && { cpf: admDto.cpf }),
             }
         });
 
-        await this.prismaService.credenciais.create({
-            data: {
-                email: admDto.email,
-                password: passCrypt,
-                userId: createUser.id,
-            },
+        await this.mailerService.sendEmailConfirmRegister({
+          to: createADM.email,
+          subject: 'Confirmação de Registro',
+          template: 'confirm-register',
+          context: {
+            name: createADM.name,
+            email: createADM.email
+          }
         });
-        await this.mailerService.sendEmailConfirmRegister(createUser.id, Role.ADM);
 
         return {
             statusCode: HttpStatus.ACCEPTED,
@@ -60,8 +72,8 @@ export class AdmService {
                 email: admDto.email,
                 create_at: createADM.create_at,
                 update_at: createADM.update_at,
-                role: createUser.role,
-                active: createUser.active,
+                role: user.role,
+                active: user.active,
                 user: [createADM]
             }
         }
@@ -150,11 +162,11 @@ export class AdmService {
       });
 
       if (admDto.password) {
-        const passCrypt = await bcrypt.hash(admDto.password, 10);
+        const hashedPassword = await bcrypt.hash(admDto.password, 10);
         await this.prismaService.credenciais.update({
           where: { email: admin.email },
           data: {
-            password: passCrypt
+            password: hashedPassword
           }
         });
       }

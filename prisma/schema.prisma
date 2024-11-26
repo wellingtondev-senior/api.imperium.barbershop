@@ -7,6 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           Int            @id @default(autoincrement())
+  email        String         @unique
+  password     String
+  name         String
+  role         String
+  active       Boolean        @default(true)
+  create_at    DateTime       @default(now())
+  update_at    DateTime       @updatedAt
+  client       Client[]
+  professional Professional[]
+  credenciais  Credenciais[]
+  adm          Adm[]
+  sessionHash  SessionHash[]
+
+  @@index([email])
+  @@index([role])
+}
+
 model Credenciais {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -17,20 +36,8 @@ model Credenciais {
   user      User     @relation(fields: [userId], references: [id])
 }
 
-model User {
-  id           Int            @id @default(autoincrement())
-  role         String
-  active       Boolean        @default(false)
-  credenciais  Credenciais[]
-  adm          Adm[]
-  sessionHash  SessionHash[]
-  professional Professional[]
-  Service      Service[]
-}
-
 model Professional {
   id              Int           @id @default(autoincrement())
-  userId          Int
   name            String
   email           String        @unique
   phone           String
@@ -47,25 +54,32 @@ model Professional {
   socialMedia     SocialMedia?
   create_at       DateTime      @default(now())
   update_at       DateTime      @updatedAt
+  userId          Int
   user            User          @relation(fields: [userId], references: [id])
-  Appointment     Appointment[]
+  services        Service[]
+  schedules       Schedule[]
+
+  @@index([isAvailable])
+  @@index([userId])
 }
 
 model Client {
-  id       Int     @id @default(autoincrement())
-  name     String
-  email    String  @unique
-  telefone String?
-
-  create_at   DateTime      @default(now())
-  update_at   DateTime      @updatedAt
-  Appointment Appointment[]
+  id        Int        @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
+  create_at DateTime   @default(now())
+  update_at DateTime   @updatedAt
+  userId    Int
+  user      User       @relation(fields: [userId], references: [id])
+  schedules Schedule[]
 }
 
 model Adm {
   id        Int      @id @default(autoincrement())
   name      String
   email     String   @unique
+  cpf       String?  @unique
   avatar    String?
   create_at DateTime @default(now())
   update_at DateTime @updatedAt
@@ -87,88 +101,89 @@ model SessionHash {
 }
 
 model Service {
-  id             Int           @id @default(autoincrement())
-  name           String        @unique
+  id             Int        @id @default(autoincrement())
+  name           String
   description    String?
-  price          Float
   duration       Int
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  profissionalId Int
-  profissional   User          @relation(fields: [profissionalId], references: [id])
-  appointment    Appointment[]
-  payment        Payment[]
+  price          Float
+  create_at      DateTime   @default(now())
+  update_at      DateTime   @updatedAt
+  active         Boolean    @default(true)
+  professionalId Int
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  schedules      Schedule[]
+  payments       Payment[]
+
+  @@index([active])
+  @@index([professionalId])
 }
 
-model Appointment {
-  id             Int      @id @default(autoincrement())
-  date           DateTime // Data e horário do agendamento
-  status         String   @default("pending") // pending, confirmed, completed, canceled
-  notes          String? // Notas ou observações sobre o agendamento
+model Schedule {
+  id             Int          @id @default(autoincrement())
+  date           DateTime     // Data e horário do agendamento
+  status         String       @default("pending") // pending, confirmed, completed, canceled
+  notes          String?      // Notas ou observações sobre o agendamento
   professionalId Int
-  clientId       Int // Alterado de fanId para clientId para melhor clareza
+  clientId       Int
   serviceId      Int
-  paymentId      Int?     @unique // Relação única com o pagamento
+  paymentId      Int?         @unique // Relação única com o pagamento
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  client         Client      @relation(fields: [clientId], references: [id])
+  service        Service     @relation(fields: [serviceId], references: [id])
+  payment        Payment?    @relation(fields: [paymentId], references: [id])
+  create_at      DateTime    @default(now())
+  update_at      DateTime    @updatedAt
 
-  // Relacionamentos
-  professional Professional @relation(fields: [professionalId], references: [id])
-  client       Client       @relation(fields: [clientId], references: [id])
-  service      Service      @relation(fields: [serviceId], references: [id])
-  payment      Payment?     @relation(fields: [paymentId], references: [id])
-
-  // Campos de auditoria
-  create_at DateTime @default(now())
-  update_at DateTime @updatedAt
-
-  @@index([date]) // Índice para otimizar busca por data
-  @@index([status]) // Índice para otimizar busca por status
+  @@index([date])
+  @@index([status])
 }
 
 model Payment {
-  id          Int          @id @default(autoincrement())
-  amount      Float // Valor do pagamento
-  status      String      @default("pending") // pending, confirmed, cancelled
-  value       Float
-  method      String // Ex: credit_card, pix, cash
-  stripePaymentId String? // ID do pagamento no Stripe
-  appointment Appointment?
-  serviceId   Int?
-  Service     Service?     @relation(fields: [serviceId], references: [id])
-  create_at   DateTime     @default(now())
-  update_at   DateTime     @updatedAt
+  id              Int       @id @default(autoincrement())
+  create_at       DateTime  @default(now())
+  update_at       DateTime  @updatedAt
+  amount          Float
+  status          String    @default("pending")
+  serviceId       Int
+  service         Service   @relation(fields: [serviceId], references: [id])
+  value           Float
+  method          String
+  stripePaymentId String?
+  error           String? 
+  schedule        Schedule?
 
-  @@index([status]) // Índice para otimizar busca por status
+  @@index([status])
 }
 
 model WorkingHours {
   id             Int          @id @default(autoincrement())
-  mondayStart    String? // Horário de início segunda-feira
-  mondayEnd      String? // Horário de término segunda-feira
-  tuesdayStart   String? // Horário de início terça-feira
-  tuesdayEnd     String? // Horário de término terça-feira
-  wednesdayStart String? // Horário de início quarta-feira
-  wednesdayEnd   String? // Horário de término quarta-feira
-  thursdayStart  String? // Horário de início quinta-feira
-  thursdayEnd    String? // Horário de término quinta-feira
-  fridayStart    String? // Horário de início sexta-feira
-  fridayEnd      String? // Horário de término sexta-feira
-  saturdayStart  String? // Horário de início sábado
-  saturdayEnd    String? // Horário de término sábado
-  sundayStart    String? // Horário de início domingo
-  sundayEnd      String? // Horário de término domingo
+  mondayStart    String?
+  mondayEnd      String?
+  tuesdayStart   String?
+  tuesdayEnd     String?
+  wednesdayStart String?
+  wednesdayEnd   String?
+  thursdayStart  String?
+  thursdayEnd    String?
+  fridayStart    String?
+  fridayEnd      String?
+  saturdayStart  String?
+  saturdayEnd    String?
+  sundayStart    String?
+  sundayEnd      String?
   professional   Professional @relation(fields: [professionalId], references: [id])
-  professionalId Int          @unique // Um profissional só pode ter um horário de trabalho
-  create_at      DateTime     @default(now())
-  update_at      DateTime     @updatedAt
+  professionalId Int         @unique
+  create_at      DateTime    @default(now())
+  update_at      DateTime    @updatedAt
 }
 
 model SocialMedia {
   id             Int          @id @default(autoincrement())
-  instagram      String? // Link para o perfil no Instagram
-  facebook       String? // Link para o perfil no Facebook
-  linkedin       String? // Link para o perfil no LinkedIn
+  instagram      String?
+  facebook       String?
+  linkedin       String?
   professional   Professional @relation(fields: [professionalId], references: [id])
-  professionalId Int          @unique // Um profissional só pode ter uma rede social
-  create_at      DateTime     @default(now())
-  update_at      DateTime     @updatedAt
+  professionalId Int         @unique
+  create_at      DateTime    @default(now())
+  update_at      DateTime    @updatedAt
 }

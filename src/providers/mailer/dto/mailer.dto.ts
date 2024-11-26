@@ -1,60 +1,9 @@
-export class MailerDto { }
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsString, IsBoolean, IsNotEmpty, IsDate, IsOptional, IsEmail, IsNumber } from 'class-validator';
-import { AdmDto } from 'src/providers/adm/dto/adm.dto';
+import { IsInt, IsString, IsBoolean, IsNotEmpty, IsDate, IsOptional, IsEmail, IsNumber, IsObject } from 'class-validator';
+
+export class MailerDto { }
 
 export class MailerTesteEmailDto {
-
-  @ApiProperty({ example: 'example@example.com' })
-  @IsEmail()
-  @IsNotEmpty()
-  to: string; // Endereço de e-mail do destinatário
-
-  @ApiProperty({ example: 'Teste de E-mail' })
-  @IsString()
-  @IsNotEmpty()
-  subject: string; // Assunto do e-mail
-
-  @ApiProperty({ example: 'Este é um teste de envio de e-mail.' })
-  @IsString()
-  @IsNotEmpty()
-  message: string; // Corpo da mensagem do e-mail
-}
-
-export class MailerConfirmationRegisterEmailDto {
-  
-  @ApiProperty({ example: 'example@example.com' })
-  @IsEmail()
-  @IsNotEmpty()
-  destino: string;// Endereço de e-mail do destinatário
-
-
-  @ApiProperty({ example: 'Teste de E-mail' })
-  @IsString()
-  @IsNotEmpty()
-  assunto: string; // Assunto do e-mail
-
-
-  @ApiProperty({ example: '000000' })
-  @IsInt()
-  @IsNotEmpty()
-  codigo: number;
-
-
-  @ApiProperty({ example: '3g5Hk6l389cFw34S' })
-  @IsString()
-  @IsNotEmpty()
-  hash: string;
-
-
-  @ApiProperty({ example: 'Este é um teste de envio de e-mail.' })
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-  // Corpo da mensagem do e-mail
-}
-
-export class MailerPaymentConfirmationDto {
   @ApiProperty({ example: 'example@example.com' })
   @IsEmail()
   @IsNotEmpty()
@@ -65,28 +14,34 @@ export class MailerPaymentConfirmationDto {
   @IsNotEmpty()
   subject: string;
 
-  @ApiProperty({ example: 'payment-confirmation' })
+  @ApiProperty({ example: 'Este é um teste de envio de e-mail.' })
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+}
+
+export class MailerConfirmationRegisterEmailDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  to: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  subject: string;
+
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
   template: string;
 
-  @ApiProperty({ example: { serviceName: 'Serviço de teste', professionalName: 'Profissional de teste', date: new Date(), amount: 100.00 } })
+  @ApiProperty()
   context: {
-    @IsString()
-    @IsNotEmpty()
-    serviceName: string;
-
-    @IsString()
-    @IsNotEmpty()
-    professionalName: string;
-
-    @IsDate()
-    @IsNotEmpty()
-    date: Date;
-
-    @IsInt()
-    @IsNotEmpty()
-    amount: number;
+    name: string;
+    email: string;
+    hash?: string;
+    codigo?: number;
   };
 }
 
@@ -101,10 +56,52 @@ export class PaymentEmailBaseDto {
   @IsNotEmpty()
   subject: string;
 
-  @ApiProperty({ example: 'payment-success' })
+  @ApiProperty({ example: 'payment-confirmation' })
   @IsString()
   @IsNotEmpty()
   template: string;
+}
+
+export class PaymentContextDto {
+  @ApiProperty({ example: 100.00 })
+  @IsNumber()
+  @IsNotEmpty()
+  amount: number;
+
+  @ApiProperty({ example: new Date() })
+  @IsDate()
+  @IsNotEmpty()
+  date: Date;
+
+  @ApiProperty({ example: 'Corte de Cabelo' })
+  @IsString()
+  @IsNotEmpty()
+  serviceName: string;
+
+  @ApiProperty({ example: 'João Silva' })
+  @IsString()
+  @IsNotEmpty()
+  professionalName: string;
+
+  @ApiProperty({ example: 'Maria Santos' })
+  @IsString()
+  @IsNotEmpty()
+  clientName: string;
+
+  @ApiProperty({ example: 123 })
+  @IsNumber()
+  @IsNotEmpty()
+  scheduleId: number;
+
+  @ApiProperty({ example: 456 })
+  @IsNumber()
+  @IsOptional()
+  paymentId?: number;
+
+  @ApiProperty({ example: 'Cartão recusado' })
+  @IsString()
+  @IsOptional()
+  errorMessage?: string;
 }
 
 export class PaymentSuccessEmailDto extends PaymentEmailBaseDto {
@@ -114,40 +111,12 @@ export class PaymentSuccessEmailDto extends PaymentEmailBaseDto {
       professionalName: 'João Silva',
       clientName: 'Maria Santos',
       date: new Date(),
-      amount: 50.00,
-      appointmentId: 123,
+      amount: 100.00,
+      scheduleId: 123,
       paymentId: 456,
     }
   })
-  context: {
-    @IsString()
-    @IsNotEmpty()
-    serviceName: string;
-
-    @IsString()
-    @IsNotEmpty()
-    professionalName: string;
-
-    @IsString()
-    @IsNotEmpty()
-    clientName: string;
-
-    @IsDate()
-    @IsNotEmpty()
-    date: Date;
-
-    @IsNumber()
-    @IsNotEmpty()
-    amount: number;
-
-    @IsNumber()
-    @IsNotEmpty()
-    appointmentId: number;
-
-    @IsNumber()
-    @IsOptional()
-    paymentId?: number;
-  };
+  context: PaymentContextDto;
 }
 
 export class PaymentFailedEmailDto extends PaymentEmailBaseDto {
@@ -157,43 +126,11 @@ export class PaymentFailedEmailDto extends PaymentEmailBaseDto {
       professionalName: 'João Silva',
       clientName: 'Maria Santos',
       date: new Date(),
-      amount: 50.00,
+      amount: 100.00,
       appointmentId: 123,
       paymentId: 456,
       errorMessage: 'Cartão recusado',
     }
   })
-  context: {
-    @IsString()
-    @IsNotEmpty()
-    serviceName: string;
-
-    @IsString()
-    @IsNotEmpty()
-    professionalName: string;
-
-    @IsString()
-    @IsNotEmpty()
-    clientName: string;
-
-    @IsDate()
-    @IsNotEmpty()
-    date: Date;
-
-    @IsNumber()
-    @IsNotEmpty()
-    amount: number;
-
-    @IsNumber()
-    @IsNotEmpty()
-    appointmentId: number;
-
-    @IsNumber()
-    @IsOptional()
-    paymentId?: number;
-
-    @IsString()
-    @IsNotEmpty()
-    errorMessage: string;
-  };
+  context: PaymentContextDto;
 }

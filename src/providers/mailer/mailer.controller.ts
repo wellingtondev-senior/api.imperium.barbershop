@@ -5,13 +5,13 @@ import { Roles } from 'src/decorator/roles.decorator';
 import { Role } from 'src/enums/role.enum';
 import { RoleGuard } from 'src/guards/role.guard';
 import { MailerConfirmationRegisterEmailDto, MailerTesteEmailDto } from './dto/mailer.dto';
-import { MailerTesteSuccessResponse } from './mailer.swagger';
-
+import { MailerTesteSuccessResponse, MailerConfirmationRegisterEmailResponse } from './mailer.swagger';
+import { SessionHashService } from './session-hash.service';
 
 @ApiTags('Mailer responsavel por enviar e-mail')
 @Controller('mailer')
 export class MailerController {
-  constructor(private readonly mailerService: MailerService) {}
+  constructor(private readonly mailerService: MailerService, private readonly sessionHashService: SessionHashService) {}
 
   @Version('1')
   @Post("teste")
@@ -25,17 +25,19 @@ export class MailerController {
     return this.mailerService.sendEmailTeste(createInstallDto);
   }
   @Version('1')
-  @Get("confirm-register/:userId")
-  @ApiOperation({ summary: 'Enviar e-mail de confirmação de registro' })
-  @ApiBody({description: 'Objeto JSON contendo dados', type: MailerConfirmationRegisterEmailDto })
-  @Roles(Role.MASTER, Role.ADM)
-  @UseGuards(RoleGuard)
-  @HttpCode(200)
-  @ApiResponse(MailerTesteSuccessResponse) 
-  sendEmailConfirmRegister(
-    @Param('userId') userId: number,
-    @Body('role') role: Role
+  @Post("confirm-register")
+  @ApiOperation({ summary: 'Send confirmation register email' })
+  async sendEmailConfirmRegister(
+    @Body() body: MailerConfirmationRegisterEmailDto,
   ) {
-    return this.mailerService.sendEmailConfirmRegister(userId, role);
+    const { hash, codigo } = await this.sessionHashService.generateHash(body.context.email);
+    return this.mailerService.sendEmailConfirmRegister({
+      ...body,
+      context: {
+        ...body.context,
+        hash,
+        codigo
+      }
+    });
   }
 }

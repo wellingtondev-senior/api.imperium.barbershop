@@ -105,8 +105,11 @@ export class CredenciaisService {
                 // Criar usuário
                 const user = await prisma.user.create({
                     data: {
+                        email: credenciaisDto.email,
+                        password: hashedPassword,
                         role: credenciaisDto.role || 'CLIENT', // Default role is CLIENT
                         active: false, // Usuário inativo até confirmar email
+                        name: credenciaisDto.email.split('@')[0] // Default name from email
                     },
                 });
 

@@ -20,6 +20,54 @@ export class SessionHashService {
   }
 
   /**
+   * Creates a new session hash for a user
+   * @param userId - The user ID to create the hash for
+   * @param action - The action associated with the hash
+   * @returns The created session hash object
+   */
+  async createHash(userId: number, action: string) {
+    try {
+      // Gerar hash aleatório
+      const hash = crypto.randomBytes(32).toString('hex');
+      const codigo = Math.floor(100000 + Math.random() * 900000); // Código de 6 dígitos
+
+      // Criar o hash no banco de dados
+      const sessionHash = await this.prismaService.sessionHash.create({
+        data: {
+          hash,
+          codigo,
+          action,
+          status: true,
+          validate: this.addMinutesToCurrentTime(60), // Hash válido por 60 minutos
+          userId,
+        },
+      });
+
+      this.loggerService.log({
+        className: this.className,
+        functionName: 'createHash',
+        message: `Hash criado com sucesso para usuário ${userId}`,
+      });
+
+      return sessionHash;
+    } catch (error) {
+      this.loggerService.error({
+        className: this.className,
+        functionName: 'createHash',
+        message: `Erro ao criar hash para usuário ${userId}`,
+        context: {
+          error: error instanceof Error ? error.message : 'Erro desconhecido',
+        },
+      });
+
+      throw new HttpException(
+        'Erro ao criar hash de confirmação',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
    * Validates a hash for a specific user
    * @param hash - The hash string to validate
    * @param userId - The user ID associated with the hash
@@ -102,148 +150,55 @@ export class SessionHashService {
           validate: hashFind.validate,
         },
       };
-      
     } catch (error) {
       this.loggerService.error({
         className: this.className,
         functionName: 'validadeHash',
-        message: error.message,
+        message: `Erro ao validar hash para usuário ${userId}`,
+        context: {
+          error: error instanceof Error ? error.message : 'Erro desconhecido',
+        },
       });
-      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
+
+      throw new HttpException(
+        'Erro ao validar hash',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-  }  /**
-   * Creates a new hash for user registration confirmation
-   * @param userId - The user ID for whom to create the hash
-   * @returns Object containing the created hash details
-   * @throws HttpException if hash creation fails
+  }
+
+  /**
+   * Generates a new hash for a user
+   * @param userId - The user ID to generate the hash for
+   * @returns Object containing the generated hash and code
+   * @throws HttpException if generation fails
    */
-  async createHashConfirmRegister(userId: number) {
-    try {
-      // Clean up expired hashes before creating new one
-      await this.cleanupExpiredHashes();
-
-      const codigo = this.gerarNumeroAleatorio();
-      const hash = this.gerarHash();
-
-      const body: CreateSessionHashDto = {
+  async generateHash(userId: number): Promise<{ hash: string; codigo: number }> {
+    const hash = crypto.randomBytes(32).toString('hex');
+    const codigo = Math.floor(100000 + Math.random() * 900000); // 6-digit code
+    
+    await this.prismaService.sessionHash.create({
+      data: {
         userId,
         hash,
         codigo,
+        validate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
         status: true,
-        action: 'confirm-register',
-        validate: this.addMinutesToCurrentTime(60),
-      };
+        action: 'confirm-register'
+      },
+    });
 
-      const createdHash = await this.prismaService.sessionHash.create({
-        data: body
-      });
-
-      return {
-        statusCode: HttpStatus.OK,
-        message: {
-          ...body,
-          id: createdHash.id
-        },
-      };
-
-    } catch (error) {
-      this.loggerService.error({
-        className: this.className,
-        functionName: 'createHashConfirmRegister',
-        message: error.message,
-      });
-      throw new HttpException('Erro ao criar o hash', HttpStatus.NOT_ACCEPTABLE);
-    }
+    return { hash, codigo };
   }
 
   /**
-   * Finds a hash entry by its hash value
-   * @param hash - The hash string to search for
-   * @returns Object containing hash details if found, false otherwise
-   * @throws HttpException if search fails
-   */
-  async findByHash(hash: string): Promise<boolean | object> {
-    try {
-      const hashFind = await this.prismaService.sessionHash.findFirst({
-        where: { 
-          hash,
-          status: true,
-          validate: {
-            gt: new Date(),
-          },
-        },
-      });
-
-      if (hashFind) {
-        return {
-          statusCode: HttpStatus.OK,
-          message: {
-            hash: hashFind.hash,
-            valid: true,
-            codigo: hashFind.codigo,
-            action: hashFind.action,
-            validate: hashFind.validate,
-          },
-        };
-      }
-      return false;
-    } catch (error) {
-      this.loggerService.error({
-        className: this.className,
-        functionName: 'findByHash',
-        message: error.message,
-      });
-      throw new HttpException('Erro ao buscar o hash', HttpStatus.NOT_ACCEPTABLE);
-    }
-  }
-
-  /**
-   * Cleans up expired hash entries from the database
-   * @private
-   */
-  private async cleanupExpiredHashes(): Promise<void> {
-    try {
-      await this.prismaService.sessionHash.deleteMany({
-        where: {
-          validate: {
-            lt: new Date(),
-          },
-        },
-      });
-    } catch (error) {
-      this.loggerService.error({
-        className: this.className,
-        functionName: 'cleanupExpiredHashes',
-        message: error.message,
-      });
-    }
-  }
-
-  /**
-   * Generates a random 6-digit number
-   * @returns Random number between 100000 and 999999
-   */
-  private gerarNumeroAleatorio(): number {
-    return Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
-  }
-
-  /**
-   * Generates a secure random hash using SHA-256
-   * @returns Hexadecimal hash string
-   */
-  private gerarHash(): string {
-    const randomValue = crypto.randomBytes(32).toString('hex');
-    return crypto.createHash('sha256').update(randomValue).digest('hex');
-  }
-
-  /**
-   * Adds specified minutes to current time
+   * Adds minutes to the current time
    * @param minutes - Number of minutes to add
    * @returns Date object with added minutes
+   * @private
    */
   private addMinutesToCurrentTime(minutes: number): Date {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() + minutes);
-    return now;
+    const date = new Date();
+    return new Date(date.getTime() + minutes * 60000);
   }
 }
