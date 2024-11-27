@@ -27,5 +27,7 @@ export class AdmDto {
   @IsOptional()
   role?: Role;
 
-  userId?: number
-}
+@ApiProperty({ example: 1, required: false })
+@IsInt()
+@IsOptional()
+userId?: number;}
