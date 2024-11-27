@@ -23,88 +23,55 @@ export class AdmService {
   try {
     const hashedPassword = await bcrypt.hash(admDto.password, 10)
 
-    // Verificar se o email já existe
-    const existingUser = await this.prismaService.user.findUnique({
-      where: { email: admDto.email }
+    // Criar usuário
+    const user = await this.prismaService.user.create({
+      data: {
+        email: admDto.email,
+        password: hashedPassword,
+        name: admDto.name,
+        role: Role.ADM
+      }
     });
 
-    if (existingUser) {
-      return {
-        statusCode: HttpStatus.CONFLICT,
-        message: "Email already registered"
-      };
-    }
-
-    const findAdministrador = await this.prismaService.adm.findMany({
-        where: {
-            email: admDto.email
-        }
-
+    // Criar credenciais
+    await this.prismaService.credenciais.create({
+      data: {
+        userId: user.id,
+        email: admDto.email,
+        password: hashedPassword
+      }
     });
-    if (findAdministrador.length === 0) {
-        const user = await this.prismaService.user.create({
-          data: {
-            email: admDto.email,
-            password: hashedPassword,
-            name: admDto.name,
-            role: Role.ADM
-          }
-        });
 
-        const credenciais = await this.prismaService.credenciais.create({
-          data: {
-            userId: user.id,
-            email: admDto.email,
-            password: hashedPassword
-          }
-        });
+    // Criar administrador
+    const createADM = await this.prismaService.adm.create({
+      data: {
+        name: admDto.name,
+        email: admDto.email,
+        userId: user.id,
+        cpf: admDto.cpf || null
+      }
+    });
 
-        const createADM = await this.prismaService.adm.create({
-            data: {
-                name: admDto.name,
-                email: admDto.email,
-                userId: user.id,
-                cpf: admDto.cpf || null
-            }
-        });
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: {
+        email: admDto.email,
+        create_at: createADM.create_at,
+        update_at: createADM.update_at,
+        role: user.role,
+        active: user.active,
+        user: [createADM]
+      }
+    };
 
-        // this.mailerService.sendEmailConfirmRegister({
-        //   to: createADM.email,
-        //   subject: 'Confirmação de Registro',
-        //   template: 'confirm-register',
-        //   context: {
-        //     name: createADM.name,
-        //     email: createADM.email,
-        //     hash: (await this.sessionHashService.generateHash(createADM.userId)).hash
-        //   }
-        // });
-
-        return {
-            statusCode: HttpStatus.ACCEPTED,
-            message: {
-                email: admDto.email,
-                create_at: createADM.create_at,
-                update_at: createADM.update_at,
-                role: user.role,
-                active: user.active,
-                user: [createADM]
-            }
-        }
-    } else {
-        return {
-            statusCode: HttpStatus.OK,
-            message: "Esse email já está cadastrado"
-        }
-    }
-
-} catch (error) {
+  } catch (error) {
     this.loggerService.error({
-        className:this.className, 
-        functionName:'active', 
-        message:`Erro ao enviar email de ativação`
-    })
-    throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
-}
+      className: this.className,
+      functionName: 'create',
+      message: `Error creating administrator: ${error.message}`
+    });
+    throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+  }
   }
 
   async findAll() {
