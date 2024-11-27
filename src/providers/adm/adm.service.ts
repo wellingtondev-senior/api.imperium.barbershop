@@ -15,63 +15,102 @@ export class AdmService {
       private readonly loggerService: LoggerCustomService,
       private readonly sessionHashService: SessionHashService,
       private readonly mailerService: MailerService
-
   ) {
       this.className = this.constructor.name;
   }
- async create(admDto: AdmDto) {
-  try {
-    const hashedPassword = await bcrypt.hash(admDto.password, 10)
 
-    // Criar usuário
-    const user = await this.prismaService.user.create({
-      data: {
-        email: admDto.email,
-        password: hashedPassword,
-        name: admDto.name,
-        role: Role.ADM
+  async create(admDto: AdmDto) {
+    try {
+      const hashedPassword = await bcrypt.hash(admDto.password, 10);
+
+      // Verificar se já existe um administrador com o mesmo email
+      const existingAdmin = await this.prismaService.adm.findUnique({
+        where: { email: admDto.email }
+      });
+
+      if (existingAdmin) {
+        return {
+          statusCode: HttpStatus.CONFLICT,
+          message: "Email already registered"
+        };
       }
-    });
 
-    // Criar credenciais
-    await this.prismaService.credenciais.create({
-      data: {
-        userId: user.id,
-        email: admDto.email,
-        password: hashedPassword
+      // Verificar se já existe um administrador com o mesmo CPF (se fornecido)
+      if (admDto.cpf) {
+        const existingCpf = await this.prismaService.adm.findUnique({
+          where: { cpf: admDto.cpf }
+        });
+
+        if (existingCpf) {
+          return {
+            statusCode: HttpStatus.CONFLICT,
+            message: "CPF already registered"
+          };
+        }
       }
-    });
 
-    // Criar administrador
-    const createADM = await this.prismaService.adm.create({
-      data: {
-        name: admDto.name,
-        email: admDto.email,
-        userId: user.id,
-        cpf: admDto.cpf || null
+      // Criar usuário
+      const user = await this.prismaService.user.create({
+        data: {
+          email: admDto.email,
+          password: hashedPassword,
+          name: admDto.name,
+          role: Role.ADM
+        }
+      });
+
+      // Criar credenciais
+      await this.prismaService.credenciais.create({
+        data: {
+          userId: user.id,
+          email: admDto.email,
+          password: hashedPassword
+        }
+      });
+
+      // Criar administrador
+      const createADM = await this.prismaService.adm.create({
+        data: {
+          name: admDto.name,
+          email: admDto.email,
+          userId: user.id,
+          cpf: admDto.cpf || null
+        }
+      });
+
+      return {
+        statusCode: HttpStatus.CREATED,
+        message: {
+          email: admDto.email,
+          create_at: createADM.create_at,
+          update_at: createADM.update_at,
+          role: user.role,
+          active: user.active,
+          user: [createADM]
+        }
+      };
+
+    } catch (error) {
+      this.loggerService.error({
+        className: this.className,
+        functionName: 'create',
+        message: `Error creating administrator: ${error.message}`
+      });
+
+      // Tratamento específico para erros de unique constraint
+      if (error.code === 'P2002') {
+        const field = error.meta?.target[0];
+        throw new HttpException(
+          `${field} already exists`,
+          HttpStatus.CONFLICT
+        );
       }
-    });
 
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: {
-        email: admDto.email,
-        create_at: createADM.create_at,
-        update_at: createADM.update_at,
-        role: user.role,
-        active: user.active,
-        user: [createADM]
-      }
-    };
-
-  } catch (error) {
-    this.loggerService.error({
-      className: this.className,
-      functionName: 'create',
-      message: `Error creating administrator: ${error.message}`
-    });
-    throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-  }
+      throw new HttpException(
+        error.message,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   async findAll() {
@@ -90,7 +129,7 @@ export class AdmService {
       this.loggerService.error({
         className: this.className,
         functionName: 'findAll',
-        message: `Erro ao buscar administradores: ${error.message}`
+        message: `Error fetching administrators: ${error.message}`
       });
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -106,7 +145,7 @@ export class AdmService {
       });
 
       if (!admin) {
-        throw new HttpException('Administrador não encontrado', HttpStatus.NOT_FOUND);
+        throw new HttpException('Administrator not found', HttpStatus.NOT_FOUND);
       }
 
       return {
@@ -117,7 +156,7 @@ export class AdmService {
       this.loggerService.error({
         className: this.className,
         functionName: 'findOne',
-        message: `Erro ao buscar administrador: ${error.message}`
+        message: `Error fetching administrator: ${error.message}`
       });
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -130,7 +169,29 @@ export class AdmService {
       });
 
       if (!admin) {
-        throw new HttpException('Administrador não encontrado', HttpStatus.NOT_FOUND);
+        throw new HttpException('Administrator not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Verificar se o novo email já está em uso (se foi alterado)
+      if (admDto.email !== admin.email) {
+        const existingEmail = await this.prismaService.adm.findUnique({
+          where: { email: admDto.email }
+        });
+
+        if (existingEmail) {
+          throw new HttpException('Email already in use', HttpStatus.CONFLICT);
+        }
+      }
+
+      // Verificar se o novo CPF já está em uso (se foi alterado)
+      if (admDto.cpf && admDto.cpf !== admin.cpf) {
+        const existingCpf = await this.prismaService.adm.findUnique({
+          where: { cpf: admDto.cpf }
+        });
+
+        if (existingCpf) {
+          throw new HttpException('CPF already in use', HttpStatus.CONFLICT);
+        }
       }
 
       const updatedAdmin = await this.prismaService.adm.update({
@@ -160,8 +221,13 @@ export class AdmService {
       this.loggerService.error({
         className: this.className,
         functionName: 'update',
-        message: `Erro ao atualizar administrador: ${error.message}`
+        message: `Error updating administrator: ${error.message}`
       });
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -176,7 +242,7 @@ export class AdmService {
       });
 
       if (!admin) {
-        throw new HttpException('Administrador não encontrado', HttpStatus.NOT_FOUND);
+        throw new HttpException('Administrator not found', HttpStatus.NOT_FOUND);
       }
 
       // Remover credenciais primeiro
@@ -190,9 +256,11 @@ export class AdmService {
       });
 
       // Remover o usuário associado
-      await this.prismaService.user.delete({
-        where: { id: admin.userId }
-      });
+      if (admin.userId) {
+        await this.prismaService.user.delete({
+          where: { id: admin.userId }
+        });
+      }
 
       return {
         statusCode: HttpStatus.OK,
@@ -202,7 +270,7 @@ export class AdmService {
       this.loggerService.error({
         className: this.className,
         functionName: 'remove',
-        message: `Erro ao remover administrador: ${error.message}`
+        message: `Error removing administrator: ${error.message}`
       });
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }

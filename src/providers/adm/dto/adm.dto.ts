@@ -18,13 +18,12 @@ export class AdmDto {
   @IsNotEmpty()
   password: string;
 
-  @ApiProperty({ example: 1, required: true})
-  @IsInt()
-  @IsNotEmpty()
-  userId: number;
-
   @ApiProperty({ example: '123.456.789-00', required: false })
   @IsString()
   @IsOptional()
   cpf?: string;
+
+  @ApiProperty({ example: Role.ADM, required: false })
+  @IsOptional()
+  role?: Role;
 }
