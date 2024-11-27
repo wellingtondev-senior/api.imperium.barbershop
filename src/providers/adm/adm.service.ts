@@ -59,7 +59,7 @@ export class AdmService {
         data: {
           name: admDto.name,
           email: admDto.email,
-          userId: user.id,
+          userId: admDto.userId,
           cpf: admDto.cpf || null
         }
       });
