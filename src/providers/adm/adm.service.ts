@@ -35,20 +35,6 @@ export class AdmService {
         };
       }
 
-      // Verificar se já existe um administrador com o mesmo CPF (se fornecido)
-      if (admDto.cpf) {
-        const existingCpf = await this.prismaService.adm.findUnique({
-          where: { cpf: admDto.cpf }
-        });
-
-        if (existingCpf) {
-          return {
-            statusCode: HttpStatus.CONFLICT,
-            message: "CPF already registered"
-          };
-        }
-      }
-
       // Criar usuário
       const user = await this.prismaService.user.create({
         data: {
@@ -180,17 +166,6 @@ export class AdmService {
 
         if (existingEmail) {
           throw new HttpException('Email already in use', HttpStatus.CONFLICT);
-        }
-      }
-
-      // Verificar se o novo CPF já está em uso (se foi alterado)
-      if (admDto.cpf && admDto.cpf !== admin.cpf) {
-        const existingCpf = await this.prismaService.adm.findUnique({
-          where: { cpf: admDto.cpf }
-        });
-
-        if (existingCpf) {
-          throw new HttpException('CPF already in use', HttpStatus.CONFLICT);
         }
       }
 

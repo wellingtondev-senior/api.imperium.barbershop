@@ -86,7 +86,6 @@ model Adm {
   userId    Int?
   user      User?    @relation(fields: [userId], references: [id])
 
-  @@unique([cpf], map: "unique_cpf_if_exists")
 }
 
 model SessionHash {
