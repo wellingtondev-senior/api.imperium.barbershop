@@ -160,6 +160,7 @@ export class AuthService {
         id: 0,
         email: user,
         role: "MASTER",
+        active: true,
         user: []
       };
 
