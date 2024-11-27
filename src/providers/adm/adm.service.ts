@@ -22,7 +22,6 @@ export class AdmService {
  async create(admDto: AdmDto) {
   try {
     const hashedPassword = await bcrypt.hash(admDto.password, 10)
-    console.log(hashedPassword)
     const findAdministrador = await this.prismaService.adm.findMany({
         where: {
             email: admDto.email
@@ -56,16 +55,16 @@ export class AdmService {
             }
         });
 
-        await this.mailerService.sendEmailConfirmRegister({
-          to: createADM.email,
-          subject: 'Confirmação de Registro',
-          template: 'confirm-register',
-          context: {
-            name: createADM.name,
-            email: createADM.email,
-            hash: (await this.sessionHashService.generateHash(createADM.userId)).hash
-          }
-        });
+        // await this.mailerService.sendEmailConfirmRegister({
+        //   to: createADM.email,
+        //   subject: 'Confirmação de Registro',
+        //   template: 'confirm-register',
+        //   context: {
+        //     name: createADM.name,
+        //     email: createADM.email,
+        //     hash: (await this.sessionHashService.generateHash(createADM.userId)).hash
+        //   }
+        // });
 
         return {
             statusCode: HttpStatus.ACCEPTED,
