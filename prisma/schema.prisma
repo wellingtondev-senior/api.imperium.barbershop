@@ -21,7 +21,6 @@ model User {
   credenciais  Credenciais[]
   adm          Adm[]
   sessionHash  SessionHash[]
-
   @@index([email])
   @@index([role])
 }
@@ -58,7 +57,6 @@ model Professional {
   user            User          @relation(fields: [userId], references: [id])
   services        Service[]
   schedules       Schedule[]
-
   @@index([isAvailable])
   @@index([userId])
 }
@@ -79,7 +77,7 @@ model Adm {
   id        Int      @id @default(autoincrement())
   name      String
   email     String   @unique
-  cpf       String?  @unique
+  cpf       String?  
   avatar    String?
   create_at DateTime @default(now())
   update_at DateTime @updatedAt
@@ -112,7 +110,6 @@ model Service {
   professional   Professional @relation(fields: [professionalId], references: [id])
   schedules      Schedule[]
   payments       Payment[]
-
   @@index([active])
   @@index([professionalId])
 }
@@ -132,7 +129,6 @@ model Schedule {
   payment        Payment?    @relation(fields: [paymentId], references: [id])
   create_at      DateTime    @default(now())
   update_at      DateTime    @updatedAt
-
   @@index([date])
   @@index([status])
 }
@@ -150,7 +146,6 @@ model Payment {
   stripePaymentId String?
   error           String? 
   schedule        Schedule?
-
   @@index([status])
 }
 

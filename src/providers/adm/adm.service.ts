@@ -22,6 +22,19 @@ export class AdmService {
  async create(admDto: AdmDto) {
   try {
     const hashedPassword = await bcrypt.hash(admDto.password, 10)
+
+    // Verificar se o email já existe
+    const existingUser = await this.prismaService.user.findUnique({
+      where: { email: admDto.email }
+    });
+
+    if (existingUser) {
+      return {
+        statusCode: HttpStatus.CONFLICT,
+        message: "Email already registered"
+      };
+    }
+
     const findAdministrador = await this.prismaService.adm.findMany({
         where: {
             email: admDto.email
@@ -51,11 +64,11 @@ export class AdmService {
                 name: admDto.name,
                 email: admDto.email,
                 userId: user.id,
-                ...(admDto.cpf && { cpf: admDto.cpf }),
+                cpf: admDto.cpf || null
             }
         });
 
-        // await this.mailerService.sendEmailConfirmRegister({
+        // this.mailerService.sendEmailConfirmRegister({
         //   to: createADM.email,
         //   subject: 'Confirmação de Registro',
         //   template: 'confirm-register',
@@ -158,6 +171,7 @@ export class AdmService {
         data: {
           name: admDto.name,
           email: admDto.email,
+          cpf: admDto.cpf || null
         }
       });
 
