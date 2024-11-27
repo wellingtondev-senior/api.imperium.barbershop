@@ -16,7 +16,6 @@ model User {
   active       Boolean        @default(false)
   create_at    DateTime       @default(now())
   update_at    DateTime       @updatedAt
-  client       Client[]
   professional Professional[]
   credenciais  Credenciais[]
   adm          Adm[]
@@ -70,8 +69,6 @@ model Client {
   phone     String?
   create_at DateTime   @default(now())
   update_at DateTime   @updatedAt
-  userId    Int
-  user      User       @relation(fields: [userId], references: [id])
   schedules Schedule[]
 }
 
