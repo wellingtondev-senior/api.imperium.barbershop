@@ -30,8 +30,6 @@ export class ProfessionalController {
   @Version('1')
   @Get()
   @ApiOperation({ summary: 'find all professionals' })
-  @Roles(Role.ADM)
-  @UseGuards(RoleGuard)
   @HttpCode(200)
   @ApiResponse(AdminSuccessResponse)
   findAll() {
