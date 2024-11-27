@@ -13,7 +13,7 @@ model User {
   password     String
   name         String
   role         String
-  active       Boolean        @default(true)
+  active       Boolean        @default(false)
   create_at    DateTime       @default(now())
   update_at    DateTime       @updatedAt
   client       Client[]
