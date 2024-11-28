@@ -47,7 +47,7 @@ export class MailerService {
 
   async sendEmailConfirmRegister(emailData: MailerConfirmationRegisterEmailDto) {
     try {
-      await this.sendMailProducerService.sendEmailConfirmationRegister(emailData);
+    this.sendMailProducerService.sendEmailConfirmationRegister(emailData);
 
       return {
         statusCode: 200,

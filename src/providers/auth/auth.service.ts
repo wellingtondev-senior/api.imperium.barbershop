@@ -80,10 +80,12 @@ export class AuthService {
 
   async authentication(email: string, password: string) {
     try {
+      // Verifica se é usuário master (sempre active true)
       if (email === process.env.EMAIL_MASTER && password === process.env.PASSWORD_MASTER) {
         return await this.authMaster(email, password);
       }
 
+      // Busca credenciais do usuário
       const resultCredenciais = await this.credenciaisService.findEmail(email);
       
       if (!resultCredenciais.message.length) {
@@ -91,45 +93,76 @@ export class AuthService {
       }
 
       const userData = resultCredenciais.message[0];
-      const userRole = Role[userData.user.role];
+      const userRole = userData.user.role;
 
-      // Verificar status do usuário e enviar email apenas para ADM e PROFESSIONAL
-      if (!userData.user.active && (userRole === Role.ADM || userRole === Role.PROFESSIONAL)) {
-        // Verificar se existe hash válido
-        const validHash = await this.prismaService.sessionHash.findFirst({
+      // Se for ADM ou PROFESSIONAL, verifica se está ativo
+      if ((userRole === Role.ADM || userRole === Role.PROFESSIONAL) && !userData.user.active) {
+        // Busca hash existente para o usuário
+        const existingHash = await this.prismaService.sessionHash.findFirst({
           where: {
             userId: userData.user.id,
             action: 'confirm-register',
-            status: true,
-            validate: { gte: new Date() },
           },
         });
 
-        if (!validHash) {
-          // Se não houver hash válido, atualizar hash existente e enviar novo email
-          await this.prismaService.sessionHash.updateMany({
-            where: {
-              userId: userData.user.id,
-              action: 'confirm-register',
-            },
-            data: {
-              status: false,
-            },
-          });
+        // Verifica se a hash está expirada ou não existe
+        const needsNewHash = !existingHash || 
+                           !existingHash.status || 
+                           existingHash.validate < new Date();
 
+        if (needsNewHash) {
+          // Se existir uma hash antiga, atualiza ela
+          if (existingHash) {
+            await this.prismaService.sessionHash.update({
+              where: {
+                id: existingHash.id
+              },
+              data: {
+                status: false
+              }
+            });
+          }
+
+          // Gera nova hash
+          const newHash = await this.sessionHashService.generateHash(userData.user.id);
+
+          // Envia email de confirmação
           await this.mailerService.sendEmailConfirmRegister({
             to: userData.user.email,
             subject: 'Confirmação de Registro',
-            template: 'confirm-register',
+            template: 'confirmation-register',
             context: {
               name: userData.user.name,
               email: userData.user.email,
-              hash: (await this.sessionHashService.generateHash(userData.user.id)).hash
+              hash: newHash.hash
             }
           });
+
+          throw new HttpException({
+            statusCode: HttpStatus.UNAUTHORIZED,
+            message: `Conta não ativada. Um novo email de confirmação foi enviado para ${userData.user.email}. Por favor, verifique sua caixa de entrada para ativar sua conta ${userRole === Role.ADM ? 'de administrador' : 'profissional'}.`
+          }, HttpStatus.UNAUTHORIZED);
+        } else {
+          const newHash = await this.sessionHashService.generateHash(userData.user.id);
+          await this.mailerService.sendEmailConfirmRegister({
+            to: userData.user.email,
+            subject: 'Confirmação de Registro',
+            template: 'confirmation-register',
+            context: {
+              name: userData.user.name,
+              email: userData.user.email,
+              hash: newHash.hash
+            }
+          });
+          // Hash ainda é válida
+          throw new HttpException({
+            statusCode: HttpStatus.UNAUTHORIZED,
+            message: `Conta não ativada. Por favor, verifique seu email para instruções de confirmação da sua conta ${userRole === Role.ADM ? 'de administrador' : 'profissional'}.`
+          }, HttpStatus.UNAUTHORIZED);
         }
       }
 
+      // Se chegou aqui, usuário está ativo ou não precisa de verificação
       let userDetails;
       switch (userRole) {
         case Role.PROFESSIONAL:
@@ -150,7 +183,7 @@ export class AuthService {
         functionName: 'authentication',
         message: error.message,
       });
-      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
+      throw error;
     }
   }
 
