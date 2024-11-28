@@ -36,27 +36,34 @@ export class MailerTesteEmailDto {
 }
 
 export class MailerConfirmationRegisterEmailDto {
-  @ApiProperty()
-  @IsString()
+  @ApiProperty({ example: 'example@example.com' })
+  @IsEmail()
   @IsNotEmpty()
   to: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'Confirmação de Registro' })
   @IsString()
   @IsNotEmpty()
   subject: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'confirmation-register' })
   @IsString()
   @IsNotEmpty()
   template: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: {
+      name: 'Test User',
+      email: 'test@example.com',
+      hash: 'test-hash'
+    }
+  })
+  @IsObject()
+  @IsNotEmpty()
   context: {
     name: string;
     email: string;
     hash: string;
-
   };
 }
 

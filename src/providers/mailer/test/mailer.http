@@ -1,0 +1,34 @@
+### Variáveis
+@baseUrl = http://127.0.0.1:58055/v1/mailer
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MCwiZW1haWwiOiJiYXJiZXJzaG9wQGJhcmJlcnNob3AuY29tIiwicm9sZSI6Ik1BU1RFUiIsImFjdGl2ZSI6dHJ1ZSwidXNlciI6W10sImlhdCI6MTczMjc5ODM1NywiZXhwIjoxNzMyODU0NzU3fQ.dpG0hPmrvpD8w3UQtoB55BF7sRCBX2zB8QTN3_2clgI
+### Enviar Email de Teste
+POST {{baseUrl}}/teste
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "to": "wrm.net@gmail.com",
+    "subject": "Test Email",
+    "message": "This is a test email",
+    "context": {
+        "name": "Test User",
+        "email": "wrm.net@gmail.com",
+        "hash": "test-hash"
+    }
+}
+
+### Enviar Email de Confirmação de Registro
+POST {{baseUrl}}/confirm-register
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "to": "wrm.net@gmail.com",
+    "subject": "Confirmação de Registro",
+    "template": "confirmation-register",
+    "context": {
+        "name": "New User",
+        "email": "wrm.net@gmail.com",
+        "hash": "test-hash"
+    }
+}

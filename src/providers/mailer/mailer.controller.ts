@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, HttpCode } from '@nestjs/common';
 import { MailerService } from './mailer.service';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Roles } from 'src/decorator/roles.decorator';
-import { Role } from 'src/enums/role.enum';
-import { RoleGuard } from 'src/guards/role.guard';
+import { Roles } from '../../decorator/roles.decorator';
+import { Role } from '../../enums/role.enum';
+import { RoleGuard } from '../../guards/role.guard';
 import { MailerConfirmationRegisterEmailDto, MailerTesteEmailDto } from './dto/mailer.dto';
 import { MailerTesteSuccessResponse, MailerConfirmationRegisterEmailResponse } from './mailer.swagger';
 
