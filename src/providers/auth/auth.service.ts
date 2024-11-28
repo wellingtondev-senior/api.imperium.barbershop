@@ -25,7 +25,7 @@ export class AuthService {
     private readonly sendMailProducerService: SendMailProducerService,
     private readonly sessionHashService: SessionHashService,
     private readonly mailerService: MailerService
-  ) {}
+  ) { }
 
   private generateAuthResponse(email: string, userData: any, userDetails: any) {
     return {
@@ -52,7 +52,7 @@ export class AuthService {
   async register(credenciaisDto: CredenciaisDto) {
     try {
       const result = await this.credenciaisService.create(credenciaisDto);
-      
+
       // Enviar email de confirmação apenas para ADM e PROFESSIONAL
       if (result.message.user.role === Role.ADM || result.message.user.role === Role.PROFESSIONAL) {
         await this.mailerService.sendEmailConfirmRegister({
@@ -87,7 +87,7 @@ export class AuthService {
 
       // Busca credenciais do usuário
       const resultCredenciais = await this.credenciaisService.findEmail(email);
-      
+
       if (!resultCredenciais.message.length) {
         throw new HttpException("Credenciais incorretas", HttpStatus.NOT_ACCEPTABLE);
       }
@@ -106,9 +106,9 @@ export class AuthService {
         });
 
         // Verifica se a hash está expirada ou não existe
-        const needsNewHash = !existingHash || 
-                           !existingHash.status || 
-                           existingHash.validate < new Date();
+        const needsNewHash = !existingHash ||
+          !existingHash.status ||
+          existingHash.validate < new Date();
 
         if (needsNewHash) {
           // Se existir uma hash antiga, atualiza ela
@@ -138,10 +138,19 @@ export class AuthService {
             }
           });
 
-          throw new HttpException({
-            statusCode: HttpStatus.UNAUTHORIZED,
-            message: `Conta não ativada. Um novo email de confirmação foi enviado para ${userData.user.email}. Por favor, verifique sua caixa de entrada para ativar sua conta ${userRole === Role.ADM ? 'de administrador' : 'profissional'}.`
-          }, HttpStatus.UNAUTHORIZED);
+          let userDetails;
+          switch (userRole) {
+            case Role.PROFESSIONAL:
+              userDetails = await this.prismaService.professional.findMany({ where: { email } });
+              break;
+            case Role.ADM:
+              userDetails = await this.prismaService.adm.findMany({ where: { email } });
+              break;
+            default:
+              throw new HttpException("Tipo de usuário inválido", HttpStatus.BAD_REQUEST);
+          }
+
+          return this.generateAuthResponse(email, userData, userDetails);
         } else {
           const newHash = await this.sessionHashService.generateHash(userData.user.id);
           await this.mailerService.sendEmailConfirmRegister({
@@ -154,28 +163,24 @@ export class AuthService {
               hash: newHash.hash
             }
           });
-          // Hash ainda é válida
-          throw new HttpException({
-            statusCode: HttpStatus.UNAUTHORIZED,
-            message: `Conta não ativada. Por favor, verifique seu email para instruções de confirmação da sua conta ${userRole === Role.ADM ? 'de administrador' : 'profissional'}.`
-          }, HttpStatus.UNAUTHORIZED);
+          let userDetails;
+          switch (userRole) {
+            case Role.PROFESSIONAL:
+              userDetails = await this.prismaService.professional.findMany({ where: { email } });
+              break;
+            case Role.ADM:
+              userDetails = await this.prismaService.adm.findMany({ where: { email } });
+              break;
+            default:
+              throw new HttpException("Tipo de usuário inválido", HttpStatus.BAD_REQUEST);
+          }
+
+          return this.generateAuthResponse(email, userData, userDetails);
         }
       }
 
       // Se chegou aqui, usuário está ativo ou não precisa de verificação
-      let userDetails;
-      switch (userRole) {
-        case Role.PROFESSIONAL:
-          userDetails = await this.prismaService.professional.findMany({ where: { email } });
-          break;
-        case Role.ADM:
-          userDetails = await this.prismaService.adm.findMany({ where: { email } });
-          break;
-        default:
-          throw new HttpException("Tipo de usuário inválido", HttpStatus.BAD_REQUEST);
-      }
 
-      return this.generateAuthResponse(email, userData, userDetails);
 
     } catch (error) {
       this.loggerService.error({
