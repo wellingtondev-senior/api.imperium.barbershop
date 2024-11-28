@@ -7,8 +7,7 @@ import { ProfessionalModule } from './providers/professional/professional.module
 import { ScheduleModule } from './providers/schedule/schedule.module';
 import { ClientModule } from './providers/client/client.module';
 import { SessionHashModule } from './providers/session-hash/session-hash.module';
-
-
+import { UploadModule } from './providers/upload/upload.module';
 
 @Module({
   imports: [
@@ -19,9 +18,8 @@ import { SessionHashModule } from './providers/session-hash/session-hash.module'
     ProfessionalModule,
     ClientModule,
     ScheduleModule,
-    SessionHashModule
+    SessionHashModule,
+    UploadModule
   ],
-  
-
 })
 export class AppModule { }

@@ -21,19 +21,21 @@ export class AdmService {
 
   async create(admDto: AdmDto) {
     try {
-      const hashedPassword = await bcrypt.hash(admDto.password, 10);
-
-      // Verificar se já existe um administrador com o mesmo email
-      const existingAdmin = await this.prismaService.adm.findUnique({
+      // Verificar se já existe um usuário com o mesmo email
+      const existingUser = await this.prismaService.user.findUnique({
         where: { email: admDto.email }
       });
 
-      if (existingAdmin) {
-        return {
-          statusCode: HttpStatus.CONFLICT,
-          message: "Email already registered"
-        };
+      if (existingUser) {
+        throw new HttpException(
+          'Email already registered',
+          HttpStatus.CONFLICT
+        );
       }
+
+      const hashedPassword = await bcrypt.hash(admDto.password, 10);
+
+      // Gerar hash para confirmação de email
 
       // Criar usuário
       const user = await this.prismaService.user.create({
@@ -44,6 +46,7 @@ export class AdmService {
           role: Role.ADM
         }
       });
+      const confirmationHash = await this.sessionHashService.generateHash(user.id);
 
       // Criar credenciais
       await this.prismaService.credenciais.create({
@@ -61,6 +64,18 @@ export class AdmService {
           email: admDto.email,
           userId: user.id,
           cpf: admDto.cpf || null
+        }
+      });
+
+      // Enviar email de confirmação
+      await this.mailerService.sendEmailConfirmRegister({
+        to: admDto.email,
+        subject: 'Bem-vindo ao Sistema',
+        template: 'welcome',
+        context: {
+          name: admDto.name,
+          email: admDto.email,
+          hash: confirmationHash.hash
         }
       });
 
@@ -83,6 +98,10 @@ export class AdmService {
         message: `Error creating administrator: ${error.message}`
       });
 
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       // Tratamento específico para erros de unique constraint
       if (error.code === 'P2002') {
         const field = error.meta?.target[0];
@@ -92,8 +111,16 @@ export class AdmService {
         );
       }
 
+      // Tratamento específico para erros de email
+      if (error.message.includes('Email')) {
+        throw new HttpException(
+          error.message,
+          HttpStatus.BAD_REQUEST
+        );
+      }
+
       throw new HttpException(
-        error.message,
+        'Internal server error while creating administrator',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
