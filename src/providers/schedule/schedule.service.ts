@@ -60,14 +60,7 @@ export class ScheduleService {
             name: createScheduleDto.clientInfo.name,
             email: createScheduleDto.clientInfo.email,
             phone: createScheduleDto.clientInfo.phone,
-            user: {
-              create: {
-                email: createScheduleDto.clientInfo.email,
-                password: '', // This should be handled properly in a real application
-                name: createScheduleDto.clientInfo.name,
-                role: 'CLIENT'
-              }
-            }
+            
           }
         });
       }

@@ -31,7 +31,6 @@ export class ClientService {
           name: createClientDto.name,
           email: createClientDto.email,
           phone: createClientDto.phone,
-          userId: createUser.id,
         },
       });
 
