@@ -28,23 +28,24 @@ export class AuthService {
   ) { }
 
   private generateAuthResponse(email: string, userData: any, userDetails: any) {
+    const user = userDetails || {};
     return {
       statusCode: HttpStatus.ACCEPTED,
       message: {
-        email,
-        create_at: userData.create_at,
-        update_at: userData.update_at,
+        email: email,
+        create_at: userData.user.create_at,
+        update_at: userData.user.update_at,
         role: userData.user.role,
         active: userData.user.active,
         access_token: this.jwtService.sign({
-          email,
-          create_at: userData.create_at,
-          update_at: userData.update_at,
+          email: email,
+          create_at: userData.user.create_at,
+          update_at: userData.user.update_at,
           role: userData.user.role,
           active: userData.user.active,
-          user: userDetails
+          user: user
         }),
-        user: userDetails
+        user: user
       }
     };
   }
@@ -137,50 +138,18 @@ export class AuthService {
               hash: newHash.hash
             }
           });
-
-          let userDetails;
-          switch (userRole) {
-            case Role.PROFESSIONAL:
-              userDetails = await this.prismaService.professional.findMany({ where: { email } });
-              break;
-            case Role.ADM:
-              userDetails = await this.prismaService.adm.findMany({ where: { email } });
-              break;
-            default:
-              throw new HttpException("Tipo de usuário inválido", HttpStatus.BAD_REQUEST);
-          }
-
-          return this.generateAuthResponse(email, userData, userDetails);
-        } else {
-          const newHash = await this.sessionHashService.generateHash(userData.user.id);
-          await this.mailerService.sendEmailConfirmRegister({
-            to: userData.user.email,
-            subject: 'Confirmação de Registro',
-            template: 'confirmation-register',
-            context: {
-              name: userData.user.name,
-              email: userData.user.email,
-              hash: newHash.hash
-            }
-          });
-          let userDetails;
-          switch (userRole) {
-            case Role.PROFESSIONAL:
-              userDetails = await this.prismaService.professional.findMany({ where: { email } });
-              break;
-            case Role.ADM:
-              userDetails = await this.prismaService.adm.findMany({ where: { email } });
-              break;
-            default:
-              throw new HttpException("Tipo de usuário inválido", HttpStatus.BAD_REQUEST);
-          }
-
-          return this.generateAuthResponse(email, userData, userDetails);
         }
       }
 
-      // Se chegou aqui, usuário está ativo ou não precisa de verificação
+      // Busca os dados específicos do usuário
+      let userDetails = null;
+      if (userRole === Role.ADM) {
+        userDetails = userData.user.adm;
+      } else if (userRole === Role.PROFESSIONAL) {
+        userDetails = userData.user.professional;
+      }
 
+      return this.generateAuthResponse(email, userData, userDetails);
 
     } catch (error) {
       this.loggerService.error({

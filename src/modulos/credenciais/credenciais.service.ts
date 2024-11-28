@@ -35,8 +35,12 @@ export class CredenciaisService {
                     email: email 
                 }, 
                include: {
-                user:true
-                
+                user: {
+                    include: {
+                        adm: true,
+                        professional: true
+                    }
+                }
                }
             });
 
@@ -125,7 +129,43 @@ export class CredenciaisService {
                     },
                 });
 
-                return credenciais;
+                // Criar registro específico baseado no role
+                if (credenciaisDto.role === 'ADM') {
+                    await prisma.adm.create({
+                        data: {
+                            name: user.name,
+                            email: credenciaisDto.email,
+                            userId: user.id,
+                            create_at: new Date(),
+                            update_at: new Date()
+                        }
+                    });
+                } else if (credenciaisDto.role === 'PROFESSIONAL') {
+                    await prisma.professional.create({
+                        data: {
+                            name: user.name,
+                            email: credenciaisDto.email,
+                            phone: '',  // Campo obrigatório
+                            password: hashedPassword,
+                            userId: user.id,
+                            create_at: new Date(),
+                            update_at: new Date()
+                        }
+                    });
+                }
+
+                // Buscar os dados completos incluindo o registro específico
+                return await prisma.credenciais.findUnique({
+                    where: { id: credenciais.id },
+                    include: {
+                        user: {
+                            include: {
+                                adm: true,
+                                professional: true
+                            }
+                        }
+                    }
+                });
             });
 
             this.loggerService.log({
