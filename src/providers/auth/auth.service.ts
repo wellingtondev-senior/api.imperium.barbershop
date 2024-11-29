@@ -121,11 +121,15 @@ export class AuthService {
           }
         });
 
-        throw new HttpException(
-          'Por favor, confirme seu email antes de fazer login',
-          HttpStatus.UNAUTHORIZED
-        );
+        let userDetails = null;
+      if (userRole === Role.ADM) {
+        userDetails = userData.user.adm;
+      } else if (userRole === Role.PROFESSIONAL) {
+        userDetails = userData.user.professional;
       }
+
+      return this.generateAuthResponse(email, userData, userDetails);
+    }
 
       // Busca os dados específicos do usuário
       let userDetails = null;
