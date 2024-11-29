@@ -26,22 +26,53 @@ export class SessionHashService {
    */
   async createHash(userId: number, action: string) {
     try {
-      // Primeiro, procura e desativa qualquer hash existente para o usuário
-      await this.prismaService.sessionHash.updateMany({
+      // Procura por uma hash existente para o usuário
+      const existingHash = await this.prismaService.sessionHash.findFirst({
         where: {
           userId,
           action,
-          status: true,
-        },
-        data: {
-          status: false,
+        
         },
       });
 
-      // Gerar nova hash
-      const hash = crypto.randomBytes(32).toString('hex');
+      // Se encontrou uma hash existente
+      if (existingHash) {
+        const now = new Date();
+        const isValid = existingHash.validate > now;
 
-      // Criar nova hash no banco de dados
+        // Se a hash ainda é válida, retorna ela mesma
+        if (isValid) {
+          this.loggerService.log({
+            className: this.className,
+            functionName: 'createHash',
+            message: `Hash existente ainda válida para usuário ${userId}`,
+          });
+          return existingHash;
+        }
+
+        // Se a hash expirou, gera uma nova e atualiza o registro existente
+        const newHash = crypto.randomBytes(32).toString('hex');
+        const updatedHash = await this.prismaService.sessionHash.update({
+          where: {
+            id: existingHash.id,
+          },
+          data: {
+            hash: newHash,
+            validate: this.addMinutesToCurrentTime(60),
+          },
+        });
+
+        this.loggerService.log({
+          className: this.className,
+          functionName: 'createHash',
+          message: `Hash atualizada para usuário ${userId}`,
+        });
+
+        return updatedHash;
+      }
+
+      // Se não existe hash, cria uma nova
+      const hash = crypto.randomBytes(32).toString('hex');
       const sessionHash = await this.prismaService.sessionHash.create({
         data: {
           hash,
