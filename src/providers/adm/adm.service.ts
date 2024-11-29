@@ -35,8 +35,6 @@ export class AdmService {
 
       const hashedPassword = await bcrypt.hash(admDto.password, 10);
 
-      // Gerar hash para confirmação de email
-
       // Criar usuário
       const user = await this.prismaService.user.create({
         data: {
@@ -46,7 +44,21 @@ export class AdmService {
           role: Role.ADM
         }
       });
-      const confirmationHash = await this.sessionHashService.generateHash(user.id);
+      
+      // Gerar hash para confirmação de email
+      const hash = await this.sessionHashService.generateHashAuthentication(admDto.email);
+
+      // Enviar email de confirmação
+      await this.mailerService.sendEmailConfirmRegister({
+        to: admDto.email,
+        subject: 'Confirmação de Registro',
+        template: 'confirmation-register',
+        context: {
+          name: admDto.name,
+          email: admDto.email,
+          hash
+        }
+      });
 
       // Criar credenciais
       await this.prismaService.credenciais.create({
@@ -64,18 +76,6 @@ export class AdmService {
           email: admDto.email,
           userId: user.id,
           cpf: admDto.cpf || null
-        }
-      });
-
-      // Enviar email de confirmação
-      await this.mailerService.sendEmailConfirmRegister({
-        to: admDto.email,
-        subject: 'Bem-vindo ao Sistema',
-        template: 'welcome',
-        context: {
-          name: admDto.name,
-          email: admDto.email,
-          hash: confirmationHash.hash
         }
       });
 

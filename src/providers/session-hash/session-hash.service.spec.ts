@@ -13,6 +13,7 @@ describe('SessionHashService', () => {
       create: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     },
     user: {
       update: jest.fn(),
@@ -47,105 +48,87 @@ describe('SessionHashService', () => {
     jest.clearAllMocks();
   });
 
-  describe('createHash', () => {
-    const mockUserId = 1;
-    const mockAction = 'confirm-register';
+  describe('generateHashAuthentication', () => {
+    const mockEmail = 'test@example.com';
 
-    it('should create a hash successfully', async () => {
+    it('should generate a hash successfully', async () => {
       const mockSessionHash = {
         id: 1,
         hash: 'mock-hash',
-        codigo: 123456,
-        action: mockAction,
-        status: true,
-        validate: new Date(),
-        userId: mockUserId,
+        email: mockEmail,
+        validate: new Date(Date.now() + 3600000), // 1 hour in future
+        create_at: new Date(),
+        update_at: new Date(),
       };
 
       mockPrismaService.sessionHash.create.mockResolvedValue(mockSessionHash);
 
-      const result = await service.createHash(mockUserId, mockAction);
+      const result = await service.generateHashAuthentication(mockEmail);
 
-      expect(result).toEqual(mockSessionHash);
+      expect(result).toBe(mockSessionHash.hash);
       expect(mockPrismaService.sessionHash.create).toHaveBeenCalled();
-      expect(mockLoggerService.log).toHaveBeenCalled();
     });
 
-    it('should handle errors during hash creation', async () => {
+    it('should handle errors during hash generation', async () => {
       mockPrismaService.sessionHash.create.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.createHash(mockUserId, mockAction)).rejects.toThrow(HttpException);
+      await expect(service.generateHashAuthentication(mockEmail)).rejects.toThrow(HttpException);
       expect(mockLoggerService.error).toHaveBeenCalled();
     });
   });
 
-  describe('validadeHash', () => {
+  describe('validateHash', () => {
     const mockHash = 'test-hash';
-    const mockUserId = '1';
+    const mockEmail = 'test@example.com';
 
     it('should validate hash successfully', async () => {
       const mockSessionHash = {
         id: 1,
         hash: mockHash,
-        codigo: 123456,
-        action: 'confirm-register',
-        status: true,
+        email: mockEmail,
         validate: new Date(Date.now() + 3600000), // 1 hour in future
-        userId: 1,
-        user: {
-          id: 1,
-          email: 'test@example.com',
-        },
+        create_at: new Date(),
+        update_at: new Date(),
       };
 
       mockPrismaService.sessionHash.findFirst.mockResolvedValue(mockSessionHash);
-      mockPrismaService.user.update.mockResolvedValue({ id: 1, active: true });
-      mockPrismaService.sessionHash.update.mockResolvedValue({ ...mockSessionHash, status: false });
+      mockPrismaService.sessionHash.delete.mockResolvedValue(mockSessionHash);
 
-      const result = await service.validadeHash(mockHash, mockUserId);
+      const result = await service.validateHash(mockHash, mockEmail);
 
-      expect(result.statusCode).toBe(HttpStatus.OK);
-      expect(typeof result.message === 'object' && result.message.valid).toBe(true);
-      expect(mockPrismaService.user.update).toHaveBeenCalled();
-      expect(mockPrismaService.sessionHash.update).toHaveBeenCalled();
+      expect(result).toBe(true);
+      expect(mockPrismaService.sessionHash.delete).toHaveBeenCalled();
     });
 
-    it('should handle expired hash', async () => {
+    it('should return false when hash is expired', async () => {
       const mockSessionHash = {
         id: 1,
         hash: mockHash,
-        codigo: 123456,
-        action: 'confirm-register',
-        status: true,
+        email: mockEmail,
         validate: new Date(Date.now() - 3600000), // 1 hour in past
-        userId: 1,
-        user: {
-          id: 1,
-          email: 'test@example.com',
-        },
+        create_at: new Date(),
+        update_at: new Date(),
       };
 
       mockPrismaService.sessionHash.findFirst.mockResolvedValue(mockSessionHash);
 
-      const result = await service.validadeHash(mockHash, mockUserId);
+      const result = await service.validateHash(mockHash, mockEmail);
 
-      expect(result.statusCode).toBe(HttpStatus.OK);
-      expect(typeof result.message === 'object' && result.message.renewed).toBe(true);
+      expect(result).toBe(false);
     });
 
-    it('should return not found when hash does not exist', async () => {
+    it('should return false when hash does not exist', async () => {
       mockPrismaService.sessionHash.findFirst.mockResolvedValue(null);
 
-      const result = await service.validadeHash(mockHash, mockUserId);
+      const result = await service.validateHash(mockHash, mockEmail);
 
-      expect(result.statusCode).toBe(HttpStatus.NOT_FOUND);
-      expect(result.message).toBe('Hash não encontrado');
+      expect(result).toBe(false);
     });
 
     it('should handle validation errors', async () => {
       mockPrismaService.sessionHash.findFirst.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.validadeHash(mockHash, mockUserId)).rejects.toThrow(HttpException);
+      await expect(service.validateHash(mockHash, mockEmail)).rejects.toThrow(HttpException);
       expect(mockLoggerService.error).toHaveBeenCalled();
     });
   });

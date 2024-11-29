@@ -10,21 +10,8 @@ export class CreateSessionHashDto {
   @IsNotEmpty()
   hash: string;
 
-  @ApiProperty({
-    description: 'Code associated with the session',
-    example: 123456,
-  })
-  @IsInt()
-  @IsNotEmpty()
-  codigo: number;
 
-  @ApiProperty({
-    description: 'Status of the session',
-    example: true,
-  })
-  @IsBoolean()
-  @IsNotEmpty()
-  status: boolean;
+ 
 
   @ApiProperty({
     description: 'Action associated with the session',
@@ -32,7 +19,7 @@ export class CreateSessionHashDto {
   })
   @IsString()
   @IsNotEmpty()
-  action: string;
+  email: string;
 
   @ApiProperty({
     description: 'Expiration date of the session',
@@ -42,14 +29,7 @@ export class CreateSessionHashDto {
   @IsNotEmpty()
   validate: Date;
 
-  @ApiProperty({
-    description: 'User ID associated with the session',
-    example: 1,
-    required: false,
-  })
-  @IsOptional()
-  @IsInt()
-  userId: number;
+  
 }
 
 export class ValidateHashDto {

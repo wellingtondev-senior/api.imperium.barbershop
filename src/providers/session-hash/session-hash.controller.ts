@@ -1,27 +1,31 @@
-import { Controller, Get, Param, Version, UseGuards, HttpCode } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, HttpCode } from '@nestjs/common';
 import { SessionHashService } from './session-hash.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Roles } from 'src/decorator/roles.decorator';
-import { Role } from 'src/enums/role.enum';
-import { RoleGuard } from 'src/guards/role.guard';
-import { validateSessionHashSuccessResponse } from './session-hash.swagger';
 
-@ApiTags('Session Hash')
+@ApiTags('session-hash')
 @Controller('session-hash')
 export class SessionHashController {
   constructor(private readonly sessionHashService: SessionHashService) {}
 
-  @Version('1')
-  @Get(":hash/:userId")
-  @ApiOperation({ summary: 'Listar todos os registros sobre a hash de sessão. A hash é gerada pela ação do usuario como registro, refazer login, etc' })
-  @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(RoleGuard)
+  @Get('validate/:email/:hash')
+  @ApiOperation({ 
+    summary: 'Validar hash de confirmação',
+    description: 'Valida uma hash de confirmação de email. Se a hash for válida, o email será confirmado.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Hash validada com sucesso',
+    type: Boolean 
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Hash inválida ou expirada' 
+  })
   @HttpCode(200)
-  @ApiResponse(validateSessionHashSuccessResponse) 
-  validadeHash(
-    @Param("hash") hash: string,
-    @Param("userId") userId: string
-  ) {
-    return this.sessionHashService.validadeHash(hash, userId);
+  async validateHash(
+    @Param('email') email: string,
+    @Param('hash') hash: string,
+  ): Promise<boolean> {
+    return this.sessionHashService.validateHash(email, hash);
   }
 }

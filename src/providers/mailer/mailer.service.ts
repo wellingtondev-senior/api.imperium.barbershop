@@ -47,14 +47,26 @@ export class MailerService {
 
   async sendEmailConfirmRegister(emailData: MailerConfirmationRegisterEmailDto) {
     try {
-    this.sendMailProducerService.sendEmailConfirmationRegister(emailData);
+      await this.sendMailProducerService.sendEmailConfirmationRegister(emailData);
 
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Email de confirmação enviado com sucesso'
       };
     } catch (error) {
-      throw new Error(error.message);
+      this.loggerService.error({
+        className: this.className,
+        functionName: 'sendEmailConfirmRegister',
+        message: `Erro ao enviar email de confirmação para ${emailData.to}`,
+        context: {
+          error: error instanceof Error ? error.message : 'Erro desconhecido',
+        }
+      });
+
+      throw new HttpException(
+        'Erro ao enviar email de confirmação',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 

@@ -19,200 +19,139 @@ export class SessionHashService {
   }
 
   /**
-   * Creates a new session hash for a user
-   * @param userId - The user ID to create the hash for
-   * @param action - The action associated with the hash
-   * @returns The created session hash object
+   * Cria uma nova hash
+   * @returns Hash gerada
    */
-  async createHash(userId: number, action: string) {
-    try {
-      // Procura por uma hash existente para o usuário
-      const existingHash = await this.prismaService.sessionHash.findFirst({
-        where: {
-          userId,
-          action,
-        
-        },
-      });
-
-      // Se encontrou uma hash existente
-      if (existingHash) {
-        const now = new Date();
-        const isValid = existingHash.validate > now;
-
-        // Se a hash ainda é válida, retorna ela mesma
-        if (isValid) {
-          this.loggerService.log({
-            className: this.className,
-            functionName: 'createHash',
-            message: `Hash existente ainda válida para usuário ${userId}`,
-          });
-          return existingHash;
-        }
-
-        // Se a hash expirou, gera uma nova e atualiza o registro existente
-        const newHash = crypto.randomBytes(32).toString('hex');
-        const updatedHash = await this.prismaService.sessionHash.update({
-          where: {
-            id: existingHash.id,
-          },
-          data: {
-            hash: newHash,
-            validate: this.addMinutesToCurrentTime(60),
-          },
-        });
-
-        this.loggerService.log({
-          className: this.className,
-          functionName: 'createHash',
-          message: `Hash atualizada para usuário ${userId}`,
-        });
-
-        return updatedHash;
-      }
-
-      // Se não existe hash, cria uma nova
-      const hash = crypto.randomBytes(32).toString('hex');
-      const sessionHash = await this.prismaService.sessionHash.create({
-        data: {
-          hash,
-          action,
-          validate: this.addMinutesToCurrentTime(60),
-          userId,
-        },
-      });
-
-      this.loggerService.log({
-        className: this.className,
-        functionName: 'createHash',
-        message: `Nova hash criada com sucesso para usuário ${userId}`,
-      });
-
-      return sessionHash;
-    } catch (error) {
-      this.loggerService.error({
-        className: this.className,
-        functionName: 'createHash',
-        message: `Erro ao criar hash para usuário ${userId}`,
-        context: {
-          error: error instanceof Error ? error.message : 'Erro desconhecido',
-        },
-      });
-
-      throw new HttpException(
-        'Erro ao criar hash de confirmação',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  private async createHash(): Promise<string> {
+    return crypto.randomBytes(32).toString('hex');
   }
 
   /**
-   * Validates a hash for a specific user
-   * @param hash - The hash string to validate
-   * @param userId - The user ID associated with the hash
-   * @returns Object containing validation status and user information
-   * @throws HttpException if validation fails
+   * Valida uma hash existente
+   * @param hash - Hash para validar
+   * @param email - Email do usuário
+   * @returns true se a hash for válida, false caso contrário
    */
-  async validadeHash(hash: string, userId: string) {
+  async validateHash(hash: string, email: string): Promise<boolean> {
     try {
-      // Busca a hash ativa mais recente para o usuário
       const hashFind = await this.prismaService.sessionHash.findFirst({
         where: {
           hash,
-          userId: parseInt(userId),
-          action: 'confirm-register'
-        },
-        include: {
-          user: true,
+          email
         }
       });
 
       if (!hashFind) {
-        return {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'Hash não encontrada',
-        };
+        return false;
       }
 
       const now = new Date();
       const isExpired = hashFind.validate < now;
-      const newHash = await this.createHash(parseInt(userId), 'confirm-register');
 
-      // Se o hash está expirado, cria uma nova hash
       if (isExpired) {
-        // Desativa a hash atual
+        // Se expirou, atualiza com nova hash
+        const newHash = await this.createHash();
         await this.prismaService.sessionHash.update({
-          where: {
-            id: hashFind.id,
-          },
+          where: { id: hashFind.id },
           data: {
-            hash: newHash.hash,
-          },
+            hash: newHash,
+            validate: this.addMinutesToCurrentTime(60)
+          }
         });
-
-        // Cria uma nova hash
-
-        return {
-          statusCode: HttpStatus.RESET_CONTENT,
-          message:"Sua hash expirou, uma nova foi criada",
-        };
+        return false;
       }
 
-      // Se o hash é válido, atualiza o status do usuário e invalida o hash
+      // Se a hash for válida, atualiza o usuário para ativo
       await this.prismaService.user.update({
-        where: {
-          id: parseInt(userId)
-        },
-        data: {
-          active: true
-        }
+        where: { email },
+        data: { active: true }
       });
 
-      
-      return {
-        statusCode: HttpStatus.OK,
-        message: {
-          hash: hashFind.hash,
-          valid: true,
-          renewed: false,
-          validate: hashFind.validate,
-        },
-      };
+      // Remove a hash após validação bem-sucedida
+      await this.prismaService.sessionHash.delete({
+        where: { id: hashFind.id }
+      });
+
+      return true;
     } catch (error) {
       this.loggerService.error({
         className: this.className,
-        functionName: 'validadeHash',
-        message: `Erro ao validar hash para usuário ${userId}`,
+        functionName: 'validateHash',
+        message: `Erro ao validar hash para email ${email}`,
         context: {
           error: error instanceof Error ? error.message : 'Erro desconhecido',
-        },
+        }
       });
-
       throw new HttpException(
         'Erro ao validar hash',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   /**
-   * Generates a new hash for a user
-   * @param userId - The user ID to generate the hash for
-   * @returns Object containing the generated hash and code
-   * @throws HttpException if generation fails
+   * Gera uma nova hash para confirmação de email
+   * @param email - Email do usuário
+   * @returns Hash gerada
    */
-  async generateHash(userId: number): Promise<{ hash: string }> {
-    // Desativa qualquer hash existente antes de criar uma nova
-    const hash = await this.createHash(userId, 'confirm-register');
+  async generateHashAuthentication(email: string): Promise<string> {
+    try {
+      // Verifica se já existe uma hash para este email
+      const existingHash = await this.prismaService.sessionHash.findFirst({
+        where: { email }
+      });
 
-    return  hash ;
+      if (existingHash) {
+        const now = new Date();
+        const isValid = existingHash.validate > now;
+
+        if (isValid) {
+          return existingHash.hash;
+        }
+
+        // Se expirou, atualiza com nova hash
+        const newHash = await this.createHash();
+        const updated = await this.prismaService.sessionHash.update({
+          where: { id: existingHash.id },
+          data: {
+            hash: newHash,
+            validate: this.addMinutesToCurrentTime(60)
+          }
+        });
+        return updated.hash;
+      }
+
+      // Se não existe, cria uma nova
+      const newHash = await this.createHash();
+      const created = await this.prismaService.sessionHash.create({
+        data: {
+          hash: newHash,
+          email,
+          validate: this.addMinutesToCurrentTime(60)
+        }
+      });
+
+      return created.hash;
+    } catch (error) {
+      this.loggerService.error({
+        className: this.className,
+        functionName: 'generateHashAuthentication',
+        message: `Erro ao gerar hash para email ${email}`,
+        context: {
+          error: error instanceof Error ? error.message : 'Erro desconhecido',
+        }
+      });
+      throw new HttpException(
+        'Erro ao gerar hash de confirmação',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   /**
-   * Adds minutes to the current time
-   * @param minutes - Number of minutes to add
-   * @returns Date object with added minutes
-   * @private
+   * Adiciona minutos ao tempo atual
+   * @param minutes - Número de minutos para adicionar
+   * @returns Data com os minutos adicionados
    */
   private addMinutesToCurrentTime(minutes: number): Date {
     const date = new Date();

@@ -144,7 +144,9 @@ describe('MailerService', () => {
 
       await expect(
         service.sendEmailConfirmRegister(mockMailerConfirmationRegisterEmailDto),
-      ).rejects.toThrow('Failed to send email');
+      ).rejects.toThrow(
+        new HttpException('Erro ao enviar email de confirmação', HttpStatus.INTERNAL_SERVER_ERROR),
+      );
 
       expect(mockLoggerService.error).toHaveBeenCalled();
     });

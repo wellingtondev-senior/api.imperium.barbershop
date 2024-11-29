@@ -108,14 +108,18 @@ export class ProfessionalService {
           }
         });
 
+        // Gerar hash para confirmação de email
+        const hash = await this.sessionHashService.generateHashAuthentication(result.email);
+
+        // Enviar email de confirmação
         await this.mailerService.sendEmailConfirmRegister({
           to: result.email,
           subject: 'Confirmação de Registro',
-          template: 'confirm-register',
+          template: 'confirmation-register',
           context: {
             name: result.name,
             email: result.email,
-            hash: (await this.sessionHashService.generateHash(result.id)).hash
+            hash
           }
         });
 

@@ -55,25 +55,34 @@ describe('ProfessionalService', () => {
 
   const mockPrismaService = {
     professional: {
-      create: jest.fn(),
-      findMany: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
+      create: jest.fn().mockResolvedValue({ ...mockProfessionalDto }),
       findUnique: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     },
     user: {
-      create: jest.fn(),
+      create: jest.fn().mockResolvedValue({
+        id: 1,
+        email: mockProfessionalDto.email,
+        password: 'hashedPassword',
+        role: Role.PROFESSIONAL,
+        name: mockProfessionalDto.name,
+      }),
+      delete: jest.fn(),
     },
     credenciais: {
       create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     },
     workingHours: {
-      deleteMany: jest.fn(),
+      deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
       create: jest.fn(),
       update: jest.fn(),
     },
     socialMedia: {
-      deleteMany: jest.fn(),
+      deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
       create: jest.fn(),
       update: jest.fn(),
     },
@@ -85,7 +94,7 @@ describe('ProfessionalService', () => {
   };
 
   const mockSessionHashService = {
-    generateHash: jest.fn(),
+    generateHashAuthentication: jest.fn(),
   };
 
   const mockMailerService = {
@@ -132,31 +141,46 @@ describe('ProfessionalService', () => {
 
   describe('create', () => {
     it('should create a new professional successfully', async () => {
-      const mockUser = { id: 1, role: Role.PROFESSIONAL, active: false };
+      const mockUser = { 
+        id: 1, 
+        email: mockProfessionalDto.email,
+        name: mockProfessionalDto.name,
+        role: Role.PROFESSIONAL, 
+        active: false 
+      };
+      
       const mockProfessional = {
         id: '1',
         ...mockProfessionalDto,
         create_at: new Date(),
         update_at: new Date(),
+        user: mockUser,
+        workingHours: mockProfessionalDto.workingHours,
+        socialMedia: mockProfessionalDto.socialMedia
       };
 
       mockPrismaService.professional.findMany.mockResolvedValue([]);
       mockPrismaService.user.create.mockResolvedValue(mockUser);
       mockPrismaService.professional.create.mockResolvedValue(mockProfessional);
+      mockPrismaService.professional.findUnique.mockResolvedValue(mockProfessional);
       mockPrismaService.credenciais.create.mockResolvedValue({});
-      mockMailerService.sendEmailConfirmRegister.mockResolvedValue({});
+      mockSessionHashService.generateHashAuthentication.mockResolvedValue('mock-hash');
+      mockMailerService.sendEmailConfirmRegister.mockResolvedValue(undefined);
 
       const result = await service.create(mockProfessionalDto);
 
-      expect(result.statusCode).toBe(HttpStatus.ACCEPTED);
-      expect(result.message).toEqual({
-        email: mockProfessionalDto.email,
-        create_at: mockProfessional.create_at,
-        update_at: mockProfessional.update_at,
-        role: mockUser.role,
-        active: mockUser.active,
-        user: [mockProfessional]
+      expect(result).toEqual({
+        statusCode: HttpStatus.ACCEPTED,
+        message: {
+          email: mockUser.email,
+          create_at: mockProfessional.create_at,
+          update_at: mockProfessional.update_at,
+          role: mockUser.role,
+          active: mockUser.active,
+          user: [mockProfessional]
+        }
       });
+
       expect(mockPrismaService.professional.create).toHaveBeenCalled();
       expect(mockMailerService.sendEmailConfirmRegister).toHaveBeenCalled();
     });

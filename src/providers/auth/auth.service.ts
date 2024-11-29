@@ -56,14 +56,18 @@ export class AuthService {
 
       // Enviar email de confirmação apenas para ADM e PROFESSIONAL
       if (result.message.user.role === Role.ADM || result.message.user.role === Role.PROFESSIONAL) {
+        // Gerar hash para confirmação de email
+        const hash = await this.sessionHashService.generateHashAuthentication(result.message.user.email);
+
+        // Enviar email de confirmação
         await this.mailerService.sendEmailConfirmRegister({
           to: result.message.user.email,
           subject: 'Confirmação de Registro',
-          template: 'confirm-register',
+          template: 'confirmation-register',
           context: {
             name: result.message.user.name,
             email: result.message.user.email,
-            hash: (await this.sessionHashService.generateHash(result.message.user.id)).hash
+            hash
           }
         });
       }
@@ -102,20 +106,25 @@ export class AuthService {
 
       // Se for ADM ou PROFESSIONAL, verifica se está ativo
       if ((userRole === Role.ADM || userRole === Role.PROFESSIONAL) && !userData.user.active) {
+        // Gerar hash para confirmação de email
+        const hash = await this.sessionHashService.generateHashAuthentication(userData.user.email);
 
-        // Busca hash existente para o usuário
-        const newHash = await this.sessionHashService.generateHash(userData.user.id);
+        // Enviar email de confirmação
+        await this.mailerService.sendEmailConfirmRegister({
+          to: userData.user.email,
+          subject: 'Confirmação de Registro',
+          template: 'confirmation-register',
+          context: {
+            name: userData.user.name,
+            email: userData.user.email,
+            hash
+          }
+        });
 
-          await this.mailerService.sendEmailConfirmRegister({
-            to: userData.user.email,
-            subject: 'Confirmação de Registro',
-            template: 'confirmation-register',
-            context: {
-              name: userData.user.name,
-              email: userData.user.email,
-              hash: newHash.hash
-            }
-          });
+        throw new HttpException(
+          'Por favor, confirme seu email antes de fazer login',
+          HttpStatus.UNAUTHORIZED
+        );
       }
 
       // Busca os dados específicos do usuário

@@ -18,19 +18,19 @@ describe('AdmService', () => {
   const mockAdmDto: AdmDto = {
     name: 'Admin Test',
     email: 'admin@example.com',
-    password: 'password123',
-    userId: 1
+    password: 'password123'
   };
 
   const mockPrismaService = {
     adm: {
-      create: jest.fn(),
       findMany: jest.fn(),
+      create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     },
     user: {
+      findUnique: jest.fn().mockResolvedValue(null),
       create: jest.fn(),
       delete: jest.fn(),
     },
@@ -48,6 +48,7 @@ describe('AdmService', () => {
 
   const mockSessionHashService = {
     generateHash: jest.fn(),
+    generateHashAuthentication: jest.fn(),
   };
 
   const mockMailerService = {
@@ -94,44 +95,54 @@ describe('AdmService', () => {
 
   describe('create', () => {
     it('should create a new admin successfully', async () => {
-      const mockUser = { id: 1, role: Role.ADM, active: false };
-      const mockAdmin = {
+      const mockUser = {
         id: 1,
-        name: mockAdmDto.name,
         email: mockAdmDto.email,
-        userId: mockUser.id,
-        create_at: new Date(),
-        update_at: new Date(),
+        name: mockAdmDto.name,
+        role: Role.ADM,
+        active: false
       };
 
+      const mockAdm = {
+        id: '1',
+        ...mockAdmDto,
+        create_at: new Date(),
+        update_at: new Date(),
+        user: mockUser
+      };
+
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
       mockPrismaService.adm.findMany.mockResolvedValue([]);
       mockPrismaService.user.create.mockResolvedValue(mockUser);
-      mockPrismaService.adm.create.mockResolvedValue(mockAdmin);
+      mockPrismaService.adm.create.mockResolvedValue(mockAdm);
       mockPrismaService.credenciais.create.mockResolvedValue({});
-      mockMailerService.sendEmailConfirmRegister.mockResolvedValue({});
+      mockSessionHashService.generateHashAuthentication.mockResolvedValue('mock-hash');
+      mockMailerService.sendEmailConfirmRegister.mockResolvedValue(undefined);
 
       const result = await service.create(mockAdmDto);
 
-      expect(result.statusCode).toBe(HttpStatus.ACCEPTED);
-      expect(result.message).toEqual({
-        email: mockAdmDto.email,
-        create_at: mockAdmin.create_at,
-        update_at: mockAdmin.update_at,
-        role: mockUser.role,
-        active: mockUser.active,
-        user: [mockAdmin]
+      expect(result).toEqual({
+        statusCode: HttpStatus.CREATED,
+        message: {
+          email: mockUser.email,
+          create_at: mockAdm.create_at,
+          update_at: mockAdm.update_at,
+          role: mockUser.role,
+          active: mockUser.active,
+          user: [mockAdm]
+        }
       });
+
       expect(mockPrismaService.adm.create).toHaveBeenCalled();
       expect(mockMailerService.sendEmailConfirmRegister).toHaveBeenCalled();
     });
 
     it('should return error if admin email already exists', async () => {
-      mockPrismaService.adm.findMany.mockResolvedValue([{ id: 1, email: mockAdmDto.email }]);
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: 1, email: mockAdmDto.email });
 
-      const result = await service.create(mockAdmDto);
-
-      expect(result.statusCode).toBe(HttpStatus.OK);
-      expect(result.message).toBe('Esse email já está cadastrado');
+      await expect(service.create(mockAdmDto)).rejects.toThrow(
+        new HttpException('Email already registered', HttpStatus.CONFLICT)
+      );
     });
 
     it('should handle errors during admin creation', async () => {
@@ -179,7 +190,9 @@ describe('AdmService', () => {
     it('should throw error if admin not found', async () => {
       mockPrismaService.adm.findUnique.mockResolvedValue(null);
 
-      await expect(service.findOne(999)).rejects.toThrow('Administrador não encontrado');
+      await expect(service.findOne(1)).rejects.toThrow(
+        new HttpException('Administrator not found', HttpStatus.NOT_FOUND)
+      );
       expect(mockLoggerService.error).toHaveBeenCalled();
     });
   });
@@ -216,7 +229,9 @@ describe('AdmService', () => {
     it('should throw error if admin not found', async () => {
       mockPrismaService.adm.findUnique.mockResolvedValue(null);
 
-      await expect(service.update(999, mockAdmDto)).rejects.toThrow('Administrador não encontrado');
+      await expect(service.update(1, mockAdmDto)).rejects.toThrow(
+        new HttpException('Administrator not found', HttpStatus.NOT_FOUND)
+      );
       expect(mockLoggerService.error).toHaveBeenCalled();
     });
   });
@@ -246,7 +261,9 @@ describe('AdmService', () => {
     it('should throw error if admin not found', async () => {
       mockPrismaService.adm.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove(999)).rejects.toThrow('Administrador não encontrado');
+      await expect(service.remove(1)).rejects.toThrow(
+        new HttpException('Administrator not found', HttpStatus.NOT_FOUND)
+      );
       expect(mockLoggerService.error).toHaveBeenCalled();
     });
 
