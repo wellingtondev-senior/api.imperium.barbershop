@@ -81,19 +81,11 @@ export class AuthService {
 
   async authentication(email: string, password: string) {
     try {
-      this.loggerService.log({
-        className: this.className,
-        functionName: 'authentication',
-        message: `Iniciando autenticação para email: ${email}`
-      });
+      
 
       // Verifica se é usuário master (sempre active true)
       if (email === process.env.EMAIL_MASTER && password === process.env.PASSWORD_MASTER) {
-        this.loggerService.log({
-          className: this.className,
-          functionName: 'authentication',
-          message: 'Autenticando usuário MASTER'
-        });
+        
         return await this.authMaster(email, password);
       }
 
@@ -101,30 +93,15 @@ export class AuthService {
       const resultCredenciais = await this.credenciaisService.findEmail(email);
 
       if (!resultCredenciais.message.length) {
-        this.loggerService.warn({
-          className: this.className,
-          functionName: 'authentication',
-          message: `Credenciais não encontradas para email: ${email}`
-        });
+       
         throw new HttpException("Credenciais incorretas", HttpStatus.NOT_ACCEPTABLE);
       }
 
       const userData = resultCredenciais.message[0];
       const userRole = userData.user.role;
 
-      this.loggerService.log({
-        className: this.className,
-        functionName: 'authentication',
-        message: `Usuário encontrado - Role: ${userRole}, Active: ${userData.user.active}`
-      });
-
       // Se for ADM ou PROFESSIONAL, verifica se está ativo
       if ((userRole === Role.ADM || userRole === Role.PROFESSIONAL) && !userData.user.active) {
-        this.loggerService.log({
-          className: this.className,
-          functionName: 'authentication',
-          message: `Verificando status de ativação para ${userRole}`
-        });
 
         // Busca hash existente para o usuário
         const existingHash = await this.prismaService.sessionHash.findFirst({
@@ -134,11 +111,6 @@ export class AuthService {
           },
         });
 
-        this.loggerService.log({
-          className: this.className,
-          functionName: 'authentication',
-          message: `Hash existente encontrada: ${!!existingHash}, Status: ${existingHash?.status}, Válida até: ${existingHash?.validate}`
-        });
 
         // Verifica se a hash está expirada ou não existe
         const needsNewHash = !existingHash ||
@@ -146,11 +118,6 @@ export class AuthService {
           existingHash.validate < new Date();
 
         if (needsNewHash) {
-          this.loggerService.log({
-            className: this.className,
-            functionName: 'authentication',
-            message: 'Gerando nova hash e enviando email de confirmação'
-          });
 
           // Se existir uma hash antiga, atualiza ela
           if (existingHash) {
@@ -170,7 +137,7 @@ export class AuthService {
         const newHash = await this.sessionHashService.generateHash(userData.user.id);
 
           // Envia email de confirmação
-          this.mailerService.sendEmailConfirmRegister({
+          await this.mailerService.sendEmailConfirmRegister({
             to: userData.user.email,
             subject: 'Confirmação de Registro',
             template: 'confirmation-register',
@@ -189,12 +156,6 @@ export class AuthService {
       } else if (userRole === Role.PROFESSIONAL) {
         userDetails = userData.user.professional;
       }
-
-      this.loggerService.log({
-        className: this.className,
-        functionName: 'authentication',
-        message: `Dados específicos do usuário: ${JSON.stringify(userDetails)}`
-      });
 
       return this.generateAuthResponse(email, userData, userDetails);
 

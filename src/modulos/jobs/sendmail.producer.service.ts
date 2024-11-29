@@ -21,7 +21,7 @@ export class SendMailProducerService {
     }
 
    async sendEmailConfirmationRegister(mailerConfirmationRegisterEmailDto: MailerConfirmationRegisterEmailDto){
-      console.log(mailerConfirmationRegisterEmailDto)
+      console.log(['producer'], mailerConfirmationRegisterEmailDto)
     await this.sendMailQueue.add('email-confirmation-register', mailerConfirmationRegisterEmailDto, {removeOnComplete:true});
       return {
         statusCode: HttpStatus.ACCEPTED,
