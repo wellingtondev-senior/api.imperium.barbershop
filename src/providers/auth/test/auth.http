@@ -1,5 +1,5 @@
 ### Variáveis
-@baseUrl = http://127.0.0.1:58055/v1/auth
+@baseUrl = https://imperium-barbershop-api.dva83a.easypanel.host/v1/auth
 @authToken = seu_token_jwt_aqui
 
 @email = wrm.net@gmail.com

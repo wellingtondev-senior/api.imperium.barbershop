@@ -26,16 +26,28 @@ export class SessionHashService {
    */
   async createHash(userId: number, action: string) {
     try {
-      // Gerar hash aleatório
+      // Primeiro, procura e desativa qualquer hash existente para o usuário
+      await this.prismaService.sessionHash.updateMany({
+        where: {
+          userId,
+          action,
+          status: true,
+        },
+        data: {
+          status: false,
+        },
+      });
+
+      // Gerar nova hash
       const hash = crypto.randomBytes(32).toString('hex');
 
-      // Criar o hash no banco de dados
+      // Criar nova hash no banco de dados
       const sessionHash = await this.prismaService.sessionHash.create({
         data: {
           hash,
           action,
           status: true,
-          validate: this.addMinutesToCurrentTime(60), // Hash válido por 60 minutos
+          validate: this.addMinutesToCurrentTime(60),
           userId,
         },
       });
@@ -43,7 +55,7 @@ export class SessionHashService {
       this.loggerService.log({
         className: this.className,
         functionName: 'createHash',
-        message: `Hash criado com sucesso para usuário ${userId}`,
+        message: `Nova hash criada com sucesso para usuário ${userId}`,
       });
 
       return sessionHash;
@@ -73,7 +85,7 @@ export class SessionHashService {
    */
   async validadeHash(hash: string, userId: string) {
     try {
-      // Primeiro, procura o hash independente da data de validação
+      // Busca a hash ativa mais recente para o usuário
       const hashFind = await this.prismaService.sessionHash.findFirst({
         where: {
           hash,
@@ -89,32 +101,35 @@ export class SessionHashService {
       if (!hashFind) {
         return {
           statusCode: HttpStatus.NOT_FOUND,
-          message: 'Hash não encontrado',
+          message: 'Hash não encontrada',
         };
       }
 
       const now = new Date();
       const isExpired = hashFind.validate < now;
 
-      // Se o hash existe mas está expirado, atualiza a data de validação
+      // Se o hash está expirado, cria uma nova hash
       if (isExpired) {
-        const updatedHash = await this.prismaService.sessionHash.update({
+        // Desativa a hash atual
+        await this.prismaService.sessionHash.update({
           where: {
             id: hashFind.id,
           },
           data: {
-            validate: this.addMinutesToCurrentTime(60), // Adiciona mais 60 minutos
+            status: false,
           },
         });
 
-        // Retorna mensagem informando que o hash foi renovado
+        // Cria uma nova hash
+        const newHash = await this.createHash(parseInt(userId), 'confirm-register');
+
         return {
           statusCode: HttpStatus.OK,
           message: {
-            hash: updatedHash.hash,
+            hash: newHash.hash,
             valid: true,
             renewed: true,
-            validate: updatedHash.validate,
+            validate: newHash.validate,
           },
         };
       }
@@ -171,13 +186,26 @@ export class SessionHashService {
    * @throws HttpException if generation fails
    */
   async generateHash(userId: number): Promise<{ hash: string }> {
+    // Desativa qualquer hash existente antes de criar uma nova
+    await this.prismaService.sessionHash.updateMany({
+      where: {
+        userId,
+        action: 'confirm-register',
+        status: true,
+      },
+      data: {
+        status: false,
+      },
+    });
+
+    // Cria uma nova hash
     const hash = crypto.randomBytes(32).toString('hex');
     
     await this.prismaService.sessionHash.create({
       data: {
         userId,
         hash,
-        validate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        validate: this.addMinutesToCurrentTime(60),
         status: true,
         action: 'confirm-register'
       },
