@@ -32,12 +32,15 @@ export class SessionHashService {
    * @param email - Email do usuário
    * @returns true se a hash for válida, false caso contrário
    */
-  async validateHash(hash: string, email: string): Promise<boolean> {
+  async validateHash(hash: string, userId: number): Promise<boolean> {
     try {
+      const user = await this.prismaService.user.findUnique({
+        where: { id:userId }
+      });
       const hashFind = await this.prismaService.sessionHash.findFirst({
         where: {
           hash,
-          email
+          email:user.email
         }
       });
 
@@ -63,7 +66,7 @@ export class SessionHashService {
 
       // Se a hash for válida, atualiza o usuário para ativo
       await this.prismaService.user.update({
-        where: { email },
+        where: { email: user.email },
         data: { active: true }
       });
 
@@ -77,7 +80,7 @@ export class SessionHashService {
       this.loggerService.error({
         className: this.className,
         functionName: 'validateHash',
-        message: `Erro ao validar hash para email ${email}`,
+        message: `Erro ao validar hash  ${hash}`,
         context: {
           error: error instanceof Error ? error.message : 'Erro desconhecido',
         }

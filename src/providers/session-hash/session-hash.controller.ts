@@ -7,7 +7,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 export class SessionHashController {
   constructor(private readonly sessionHashService: SessionHashService) {}
 
-  @Get('validate/:email/:hash')
+  @Get('validate/:hash/:userId')
   @ApiOperation({ 
     summary: 'Validar hash de confirmação',
     description: 'Valida uma hash de confirmação de email. Se a hash for válida, o email será confirmado.'
@@ -23,9 +23,9 @@ export class SessionHashController {
   })
   @HttpCode(200)
   async validateHash(
-    @Param('email') email: string,
     @Param('hash') hash: string,
+    @Param('userId') userId: number,
   ): Promise<boolean> {
-    return this.sessionHashService.validateHash(email, hash);
+    return this.sessionHashService.validateHash(hash, userId);
   }
 }
