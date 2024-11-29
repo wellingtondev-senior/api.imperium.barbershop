@@ -104,39 +104,8 @@ export class AuthService {
       if ((userRole === Role.ADM || userRole === Role.PROFESSIONAL) && !userData.user.active) {
 
         // Busca hash existente para o usuário
-        const existingHash = await this.prismaService.sessionHash.findFirst({
-          where: {
-            userId: userData.user.id,
-            action: 'confirm-register',
-          },
-        });
-
-
-        // Verifica se a hash está expirada ou não existe
-        const needsNewHash = !existingHash ||
-          !existingHash.status ||
-          existingHash.validate < new Date();
-
-        if (needsNewHash) {
-
-          // Se existir uma hash antiga, atualiza ela
-          if (existingHash) {
-            await this.prismaService.sessionHash.update({
-              where: {
-                id: existingHash.id
-              },
-              data: {
-                status: false
-              }
-            });
-          }
-
-          // Gera nova hash
-          
-        }
         const newHash = await this.sessionHashService.generateHash(userData.user.id);
 
-          // Envia email de confirmação
           await this.mailerService.sendEmailConfirmRegister({
             to: userData.user.email,
             subject: 'Confirmação de Registro',

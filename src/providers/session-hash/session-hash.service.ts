@@ -77,7 +77,6 @@ export class SessionHashService {
         data: {
           hash,
           action,
-          status: true,
           validate: this.addMinutesToCurrentTime(60),
           userId,
         },
@@ -121,7 +120,6 @@ export class SessionHashService {
         where: {
           hash,
           userId: parseInt(userId),
-          status: true,
           action: 'confirm-register'
         },
         include: {
@@ -138,6 +136,7 @@ export class SessionHashService {
 
       const now = new Date();
       const isExpired = hashFind.validate < now;
+      const newHash = await this.createHash(parseInt(userId), 'confirm-register');
 
       // Se o hash está expirado, cria uma nova hash
       if (isExpired) {
@@ -147,21 +146,15 @@ export class SessionHashService {
             id: hashFind.id,
           },
           data: {
-            status: false,
+            hash: newHash.hash,
           },
         });
 
         // Cria uma nova hash
-        const newHash = await this.createHash(parseInt(userId), 'confirm-register');
 
         return {
-          statusCode: HttpStatus.OK,
-          message: {
-            hash: newHash.hash,
-            valid: true,
-            renewed: true,
-            validate: newHash.validate,
-          },
+          statusCode: HttpStatus.RESET_CONTENT,
+          message:"Sua hash expirou, uma nova foi criada",
         };
       }
 
@@ -175,15 +168,7 @@ export class SessionHashService {
         }
       });
 
-      await this.prismaService.sessionHash.update({
-        where: {
-          id: hashFind.id,
-        },
-        data: {
-          status: false,
-        },
-      });
-
+      
       return {
         statusCode: HttpStatus.OK,
         message: {
@@ -218,31 +203,9 @@ export class SessionHashService {
    */
   async generateHash(userId: number): Promise<{ hash: string }> {
     // Desativa qualquer hash existente antes de criar uma nova
-    await this.prismaService.sessionHash.updateMany({
-      where: {
-        userId,
-        action: 'confirm-register',
-        status: true,
-      },
-      data: {
-        status: false,
-      },
-    });
+    const hash = await this.createHash(userId, 'confirm-register');
 
-    // Cria uma nova hash
-    const hash = crypto.randomBytes(32).toString('hex');
-    
-    await this.prismaService.sessionHash.create({
-      data: {
-        userId,
-        hash,
-        validate: this.addMinutesToCurrentTime(60),
-        status: true,
-        action: 'confirm-register'
-      },
-    });
-
-    return { hash };
+    return  hash ;
   }
 
   /**
