@@ -46,14 +46,19 @@ export class ProfessionalService {
             email: professionalDto.email,
             phone: professionalDto.phone,
             password: passCrypt,
-            avatarUrl: professionalDto.avatarUrl,
+            document: professionalDto.document,
+            type_doc: professionalDto.type_doc,
             cpf: professionalDto.cpf,
+            avatarUrl: professionalDto.avatarUrl,
+            imageUrl: professionalDto.imageUrl,
             experienceYears: professionalDto.experienceYears,
             specialties: professionalDto.specialties || [],
             rating: professionalDto.rating,
             location: professionalDto.location,
             bio: professionalDto.bio,
             isAvailable: professionalDto.isAvailable ?? true,
+            status: professionalDto.status || 'active',
+            availability: professionalDto.availability,
             user: {
               connect: {
                 id: createUser.id
@@ -84,6 +89,7 @@ export class ProfessionalService {
                 create: {
                   instagram: professionalDto.socialMedia.instagram,
                   facebook: professionalDto.socialMedia.facebook,
+                  twitter: professionalDto.socialMedia.twitter,
                   linkedin: professionalDto.socialMedia.linkedin
                 }
               }
@@ -156,7 +162,8 @@ export class ProfessionalService {
         include: {
           user: true,
           workingHours: true,
-          socialMedia: true
+          socialMedia: true,
+          services: true
         }
       });
       return {
@@ -180,7 +187,8 @@ export class ProfessionalService {
         include: {
           user: true,
           workingHours: true,
-          socialMedia: true
+          socialMedia: true,
+          services: true
         }
       });
       if (!professional) {
@@ -208,7 +216,10 @@ export class ProfessionalService {
           name: professionalDto.name,
           email: professionalDto.email,
           phone: professionalDto.phone,
+          document: professionalDto.document,
+          type_doc: professionalDto.type_doc,
           avatarUrl: professionalDto.avatarUrl,
+          imageUrl: professionalDto.imageUrl,
           cpf: professionalDto.cpf,
           experienceYears: professionalDto.experienceYears,
           specialties: professionalDto.specialties,
@@ -216,6 +227,8 @@ export class ProfessionalService {
           location: professionalDto.location,
           bio: professionalDto.bio,
           isAvailable: professionalDto.isAvailable,
+          status: professionalDto.status,
+          availability: professionalDto.availability,
           ...(professionalDto.workingHours && {
             workingHours: {
               upsert: {
@@ -260,11 +273,13 @@ export class ProfessionalService {
                 create: {
                   instagram: professionalDto.socialMedia.instagram,
                   facebook: professionalDto.socialMedia.facebook,
+                  twitter: professionalDto.socialMedia.twitter,
                   linkedin: professionalDto.socialMedia.linkedin
                 },
                 update: {
                   instagram: professionalDto.socialMedia.instagram,
                   facebook: professionalDto.socialMedia.facebook,
+                  twitter: professionalDto.socialMedia.twitter,
                   linkedin: professionalDto.socialMedia.linkedin
                 }
               }
@@ -273,7 +288,8 @@ export class ProfessionalService {
         },
         include: {
           workingHours: true,
-          socialMedia: true
+          socialMedia: true,
+          services: true
         }
       });
 
@@ -308,6 +324,33 @@ export class ProfessionalService {
         where: { professionalId: id }
       });
 
+      // Verificar e tratar agendamentos existentes
+      const hasSchedules = await this.prismaService.schedule.findFirst({
+        where: { professionalId: id }
+      });
+
+      if (hasSchedules) {
+        // Em vez de excluir, marcar como inativo
+        const professional = await this.prismaService.professional.update({
+          where: { id },
+          data: {
+            status: 'inactive',
+            isAvailable: false
+          }
+        });
+
+        this.loggerService.log({
+          className: this.className,
+          functionName: 'remove',
+          message: `Professional with ID ${id} marked as inactive due to existing schedules`
+        });
+
+        return {
+          statusCode: HttpStatus.OK,
+          message: "Professional marked as inactive due to existing schedules"
+        };
+      }
+
       const professional = await this.prismaService.professional.delete({
         where: { id }
       });
@@ -339,7 +382,8 @@ export class ProfessionalService {
         include: {
           user: true,
           workingHours: true,
-          socialMedia: true
+          socialMedia: true,
+          services: true
         }
       });
       return {

@@ -40,14 +40,19 @@ model Professional {
   email           String        @unique
   phone           String
   password        String
-  avatarUrl       String?
+  document        String        // Documento de identificação (CPF, CNPJ, etc)
+  type_doc        String        // Tipo do documento
   cpf             String?       @unique
+  avatarUrl       String?
+  imageUrl        String?       // URL adicional para imagem do profissional
   experienceYears Int?
   specialties     String[]
   rating          Float?        @default(0)
   location        String?
   bio             String?
   isAvailable     Boolean       @default(true)
+  status          String        @default("active") // active ou inactive
+  availability    String?       // Disponibilidade específica
   workingHours    WorkingHours?
   socialMedia     SocialMedia?
   create_at       DateTime      @default(now())
@@ -58,6 +63,7 @@ model Professional {
   schedules       Schedule[]
 
   @@index([isAvailable])
+  @@index([status])
   @@index([userId])
 }
 
@@ -80,28 +86,27 @@ model Adm {
   create_at DateTime @default(now())
   update_at DateTime @updatedAt
   userId    Int
-  user      User    @relation(fields: [userId], references: [id])
-
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model SessionHash {
   id        Int      @id @default(autoincrement())
   hash      String   @unique
-  email    String
+  email     String
   validate  DateTime
   create_at DateTime @default(now())
   update_at DateTime @updatedAt
 }
 
 model Service {
-  id             Int        @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   name           String
   description    String?
   duration       Int
   price          Float
-  create_at      DateTime   @default(now())
-  update_at      DateTime   @updatedAt
-  active         Boolean    @default(true)
+  create_at      DateTime     @default(now())
+  update_at      DateTime     @updatedAt
+  active         Boolean      @default(true)
   professionalId Int
   professional   Professional @relation(fields: [professionalId], references: [id])
   schedules      Schedule[]
@@ -133,8 +138,6 @@ model Schedule {
 
 model Payment {
   id              Int       @id @default(autoincrement())
-  create_at       DateTime  @default(now())
-  update_at       DateTime  @updatedAt
   amount          Float
   status          String    @default("pending")
   serviceId       Int
@@ -142,8 +145,10 @@ model Payment {
   value           Float
   method          String
   stripePaymentId String?
-  error           String? 
+  error           String?
   schedule        Schedule?
+  create_at       DateTime  @default(now())
+  update_at       DateTime  @updatedAt
 
   @@index([status])
 }
@@ -174,6 +179,7 @@ model SocialMedia {
   id             Int          @id @default(autoincrement())
   instagram      String?
   facebook       String?
+  twitter        String?      // Adicionado campo twitter
   linkedin       String?
   professional   Professional @relation(fields: [professionalId], references: [id])
   professionalId Int         @unique

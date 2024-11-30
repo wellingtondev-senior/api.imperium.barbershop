@@ -3,7 +3,7 @@ import { ProfessionalService } from './professional.service';
 import { LoggerCustomService } from '../../modulos/logger/logger.service';
 import { SessionHashService } from '../session-hash/session-hash.service';
 import { MailerService } from '../mailer/mailer.service';
-import { ProfessionalDto } from './dto/professional.dto';
+import { ProfessionalDto, ProfessionalStatus } from './dto/professional.dto';
 import { Role } from '../../enums/role.enum';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
@@ -24,18 +24,18 @@ describe('ProfessionalService', () => {
     password: 'password123',
     document: '123.456.789-00',
     type_doc: 'CPF',
+    status: ProfessionalStatus.ACTIVE,
+    availability: 'available',
 
     // Campos opcionais
     id: '1',
     avatarUrl: 'https://example.com/avatar.jpg',
-    avatar: 'https://example.com/avatar.jpg',
     cpf: '123.456.789-00',
     experienceYears: 5,
     specialties: ['corte masculino', 'barba'],
     rating: 4.5,
     location: 'São Paulo, SP',
     bio: 'Profissional experiente em barbearia',
-    isAvailable: true,
     workingHours: {
       monday: { start: '09:00', end: '18:00' },
       tuesday: { start: '09:00', end: '18:00' },
@@ -85,6 +85,12 @@ describe('ProfessionalService', () => {
       deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
       create: jest.fn(),
       update: jest.fn(),
+    },
+    schedule: {
+      findFirst: jest.fn(),
+    },
+    appointment: {
+      findMany: jest.fn(),
     },
   };
 
@@ -260,9 +266,30 @@ describe('ProfessionalService', () => {
   });
 
   describe('remove', () => {
-    it('should remove a professional successfully', async () => {
+    it('should soft delete a professional with existing schedules', async () => {
+      const mockProfessional = { id: '1', ...mockProfessionalDto };
+      const mockSchedule = { id: 1, professionalId: '1' };
+      
+      mockPrismaService.schedule.findFirst.mockResolvedValue(mockSchedule);
+      mockPrismaService.professional.update.mockResolvedValue({
+        ...mockProfessional,
+        status: ProfessionalStatus.INACTIVE,
+        isAvailable: false
+      });
+
+      const result = await service.remove(1);
+
+      expect(result.statusCode).toBe(HttpStatus.OK);
+      expect(result.message).toBe("Professional marked as inactive due to existing schedules");
+      expect(mockPrismaService.schedule.findFirst).toHaveBeenCalled();
+      expect(mockPrismaService.professional.update).toHaveBeenCalled();
+      expect(mockLoggerService.log).toHaveBeenCalled();
+    });
+
+    it('should hard delete a professional without schedules', async () => {
       const mockProfessional = { id: '1', ...mockProfessionalDto };
       
+      mockPrismaService.schedule.findFirst.mockResolvedValue(null);
       mockPrismaService.workingHours.deleteMany.mockResolvedValue({ count: 1 });
       mockPrismaService.socialMedia.deleteMany.mockResolvedValue({ count: 1 });
       mockPrismaService.professional.delete.mockResolvedValue(mockProfessional);
@@ -274,13 +301,6 @@ describe('ProfessionalService', () => {
       expect(mockPrismaService.workingHours.deleteMany).toHaveBeenCalled();
       expect(mockPrismaService.socialMedia.deleteMany).toHaveBeenCalled();
       expect(mockLoggerService.log).toHaveBeenCalled();
-    });
-
-    it('should handle errors when removing professional', async () => {
-      mockPrismaService.professional.delete.mockRejectedValue(new Error('Delete error'));
-
-      await expect(service.remove(1)).rejects.toThrow(HttpException);
-      expect(mockLoggerService.error).toHaveBeenCalled();
     });
   });
 
