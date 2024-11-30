@@ -18,19 +18,41 @@ export class CredenciaisService {
         this.className = "CredenciaisService"
     }
 
-    async criarHashUnica(data: any): Promise<string> {
-        const hash = crypto.MD5(data); // Cria a hash SHA256 dos dados
-        return hash.toString(crypto.enc.Hex); // Retorna a hash como uma string hexadecimal
+    async validateCredenciais(email: string, password: string) {
+       
+    try {
+        if(this.isMasterUser(email, password)){
+            return true
+        }
+         const resultCredenciais = await this.prismaService.credenciais.findFirst({
+        where: { email },
+        include: { user: true }
+      });
+
+      if (!resultCredenciais) {
+       return false
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, resultCredenciais.password);
+      if (!isPasswordValid) {
+        return false
+      }
+
+      return true;
+    } catch (error) {
+      this.loggerService.error({
+        className: this.className,
+        functionName: 'validate',
+        message: error.message,
+      });
+      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
     }
-    async gerarCodigo(): Promise<number> {
-        const codigo = Math.floor(100000 + Math.random() * 900000); // Gera um número aleatório entre 100000 e 999999
-        return codigo;
     }
 
 
-    async findEmail(email: string) {
+    async findCredenciaisEmail(email: string) {
         try {
-            const resultCredenciais = await this.prismaService.credenciais.findMany({
+            const resultCredenciais = await this.prismaService.credenciais.findFirst({
                 where:{
                     email: email 
                 }, 
@@ -84,117 +106,6 @@ export class CredenciaisService {
         }
     }
 
-    async create(credenciaisDto: CredenciaisDto) {
-        try {
-            this.loggerService.log({
-                className: this.className,
-                functionName: 'create',
-                message: `Iniciando criação de credenciais para ${credenciaisDto.email}`,
-            });
-
-            // Verificar se já existe um usuário com este email
-            const existingUser = await this.prismaService.credenciais.findFirst({
-                where: { email: credenciaisDto.email },
-            });
-
-            if (existingUser) {
-                throw new HttpException('Email já cadastrado', HttpStatus.CONFLICT);
-            }
-
-            // Criptografar a senha
-            const hashedPassword = await bcrypt.hash(credenciaisDto.password, 10);
-
-            // Criar usuário e credenciais em uma transação
-            const result = await this.prismaService.$transaction(async (prisma) => {
-                // Criar usuário
-                const user = await prisma.user.create({
-                    data: {
-                        email: credenciaisDto.email,
-                        password: hashedPassword,
-                        role: credenciaisDto.role || 'CLIENT', // Default role is CLIENT
-                        active: false, // Usuário inativo até confirmar email
-                        name: credenciaisDto.email.split('@')[0] // Default name from email
-                    },
-                });
-
-                // Criar credenciais
-                const credenciais = await prisma.credenciais.create({
-                    data: {
-                        email: credenciaisDto.email,
-                        password: hashedPassword,
-                        userId: user.id,
-                    },
-                    include: {
-                        user: true,
-                    },
-                });
-
-                // Criar registro específico baseado no role
-                if (credenciaisDto.role === 'ADM') {
-                    await prisma.adm.create({
-                        data: {
-                            name: user.name,
-                            email: credenciaisDto.email,
-                            userId: user.id,
-                            create_at: new Date(),
-                            update_at: new Date()
-                        }
-                    });
-                } else if (credenciaisDto.role === 'PROFESSIONAL') {
-                    await prisma.professional.create({
-                        data: {
-                            name: user.name,
-                            email: credenciaisDto.email,
-                            phone: '',  // Campo obrigatório
-                            password: hashedPassword,
-                            userId: user.id,
-                            create_at: new Date(),
-                            update_at: new Date()
-                        }
-                    });
-                }
-
-                // Buscar os dados completos incluindo o registro específico
-                return await prisma.credenciais.findUnique({
-                    where: { id: credenciais.id },
-                    include: {
-                        user: {
-                            include: {
-                                adm: true,
-                                professional: true
-                            }
-                        }
-                    }
-                });
-            });
-
-            this.loggerService.log({
-                className: this.className,
-                functionName: 'create',
-                message: `Credenciais criadas com sucesso para ${credenciaisDto.email}`,
-            });
-
-            return {
-                statusCode: HttpStatus.CREATED,
-                message: result,
-            };
-        } catch (error) {
-            this.loggerService.error({
-                className: this.className,
-                functionName: 'create',
-                message: `Erro ao criar credenciais para ${credenciaisDto.email}`,
-            });
-
-            if (error instanceof HttpException) {
-                throw error;
-            }
-
-            throw new HttpException(
-                'Erro ao criar credenciais',
-                HttpStatus.INTERNAL_SERVER_ERROR,
-            );
-        }
-    }
 
     async delete(id: string) {
         try {
@@ -222,4 +133,7 @@ export class CredenciaisService {
 
         }
     }
+    private isMasterUser(email: string, password: string): boolean {
+        return email === process.env.EMAIL_MASTER && password === process.env.PASSWORD_MASTER;
+      }
 }

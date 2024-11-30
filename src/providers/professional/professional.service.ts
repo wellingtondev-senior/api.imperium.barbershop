@@ -30,122 +30,123 @@ export class ProfessionalService {
         }
       });
 
-      if (findProfessional.length === 0) {
-        const createUser = await this.prismaService.user.create({
-          data: {
-            email: professionalDto.email,
-            password: passCrypt,
-            role: Role.PROFESSIONAL,
-            name: professionalDto.name
-          }
-        });
-
-        const createProfessional = await this.prismaService.professional.create({
-          data: {
-            name: professionalDto.name,
-            email: professionalDto.email,
-            phone: professionalDto.phone,
-            password: passCrypt,
-            document: professionalDto.document,
-            type_doc: professionalDto.type_doc,
-            cpf: professionalDto.cpf,
-            avatarUrl: professionalDto.avatarUrl,
-            imageUrl: professionalDto.imageUrl,
-            experienceYears: professionalDto.experienceYears,
-            specialties: professionalDto.specialties || [],
-            rating: professionalDto.rating,
-            location: professionalDto.location,
-            bio: professionalDto.bio,
-            isAvailable: professionalDto.isAvailable ?? true,
-            status: professionalDto.status || 'active',
-            availability: professionalDto.availability,
-            user: {
-              connect: {
-                id: createUser.id
-              }
-            },
-            ...(professionalDto.workingHours && {
-              workingHours: {
-                create: {
-                  mondayStart: professionalDto.workingHours.monday?.start,
-                  mondayEnd: professionalDto.workingHours.monday?.end,
-                  tuesdayStart: professionalDto.workingHours.tuesday?.start,
-                  tuesdayEnd: professionalDto.workingHours.tuesday?.end,
-                  wednesdayStart: professionalDto.workingHours.wednesday?.start,
-                  wednesdayEnd: professionalDto.workingHours.wednesday?.end,
-                  thursdayStart: professionalDto.workingHours.thursday?.start,
-                  thursdayEnd: professionalDto.workingHours.thursday?.end,
-                  fridayStart: professionalDto.workingHours.friday?.start,
-                  fridayEnd: professionalDto.workingHours.friday?.end,
-                  saturdayStart: professionalDto.workingHours.saturday?.start,
-                  saturdayEnd: professionalDto.workingHours.saturday?.end,
-                  sundayStart: professionalDto.workingHours.sunday?.start,
-                  sundayEnd: professionalDto.workingHours.sunday?.end
-                }
-              }
-            }),
-            ...(professionalDto.socialMedia && {
-              socialMedia: {
-                create: {
-                  instagram: professionalDto.socialMedia.instagram,
-                  facebook: professionalDto.socialMedia.facebook,
-                  twitter: professionalDto.socialMedia.twitter,
-                  linkedin: professionalDto.socialMedia.linkedin
-                }
-              }
-            })
-          }
-        });
-
-        await this.prismaService.credenciais.create({
-          data: {
-            email: professionalDto.email,
-            password: passCrypt,
-            userId: createUser.id,
-          },
-        });
-
-        const result = await this.prismaService.professional.findUnique({
-          where: { id: createProfessional.id },
-          include: {
-            user: true,
-            workingHours: true,
-            socialMedia: true
-          }
-        });
-
-        // Gerar hash para confirmação de email
-        const hash = await this.sessionHashService.generateHashAuthentication(result.email);
-
-        // Enviar email de confirmação
-        await this.mailerService.sendEmailConfirmRegister({
-          to: result.email,
-          subject: 'Confirmação de Registro',
-          template: 'confirmation-register',
-          context: {
-            name: result.name,
-            email: result.email,
-            hash
-          }
-        });
-
-        return {
-          statusCode: HttpStatus.ACCEPTED,
-          message: {
-            email: professionalDto.email,
-            create_at: createProfessional.create_at,
-            update_at: createProfessional.update_at,
-            role: createUser.role,
-            active: createUser.active,
-            user: [createProfessional]
-          }
-        };
-      } else {
-        return {
-          statusCode: HttpStatus.OK,
-          message: "Esse email já está cadastrado"
-        };
+      if (findProfessional.length > 0) {
+        throw new HttpException({
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Profissional já cadastrado',
+          error: `O profissional com o email ${professionalDto.email} já está cadastrado no sistema. Por favor, utilize outro email ou faça login.`
+        }, HttpStatus.CONFLICT);
       }
+
+      const createUser = await this.prismaService.user.create({
+        data: {
+          email: professionalDto.email,
+          password: passCrypt,
+          role: Role.PROFESSIONAL,
+          name: professionalDto.name
+        }
+      });
+
+      const createProfessional = await this.prismaService.professional.create({
+        data: {
+          name: professionalDto.name,
+          email: professionalDto.email,
+          phone: professionalDto.phone,
+          password: passCrypt,
+          document: professionalDto.document,
+          type_doc: professionalDto.type_doc,
+          cpf: professionalDto.cpf,
+          avatarUrl: professionalDto.avatarUrl,
+          imageUrl: professionalDto.imageUrl,
+          experienceYears: professionalDto.experienceYears,
+          specialties: professionalDto.specialties || [],
+          rating: professionalDto.rating,
+          location: professionalDto.location,
+          bio: professionalDto.bio,
+          isAvailable: professionalDto.isAvailable ?? true,
+          status: professionalDto.status || 'active',
+          availability: professionalDto.availability,
+          user: {
+            connect: {
+              id: createUser.id
+            }
+          },
+          ...(professionalDto.workingHours && {
+            workingHours: {
+              create: {
+                mondayStart: professionalDto.workingHours.monday?.start,
+                mondayEnd: professionalDto.workingHours.monday?.end,
+                tuesdayStart: professionalDto.workingHours.tuesday?.start,
+                tuesdayEnd: professionalDto.workingHours.tuesday?.end,
+                wednesdayStart: professionalDto.workingHours.wednesday?.start,
+                wednesdayEnd: professionalDto.workingHours.wednesday?.end,
+                thursdayStart: professionalDto.workingHours.thursday?.start,
+                thursdayEnd: professionalDto.workingHours.thursday?.end,
+                fridayStart: professionalDto.workingHours.friday?.start,
+                fridayEnd: professionalDto.workingHours.friday?.end,
+                saturdayStart: professionalDto.workingHours.saturday?.start,
+                saturdayEnd: professionalDto.workingHours.saturday?.end,
+                sundayStart: professionalDto.workingHours.sunday?.start,
+                sundayEnd: professionalDto.workingHours.sunday?.end
+              }
+            }
+          }),
+          ...(professionalDto.socialMedia && {
+            socialMedia: {
+              create: {
+                instagram: professionalDto.socialMedia.instagram,
+                facebook: professionalDto.socialMedia.facebook,
+                twitter: professionalDto.socialMedia.twitter,
+                linkedin: professionalDto.socialMedia.linkedin
+              }
+            }
+          })
+        }
+      });
+
+      await this.prismaService.credenciais.create({
+        data: {
+          email: professionalDto.email,
+          password: passCrypt,
+          userId: createUser.id,
+        },
+      });
+
+      const result = await this.prismaService.professional.findUnique({
+        where: { id: createProfessional.id },
+        include: {
+          user: true,
+          workingHours: true,
+          socialMedia: true
+        }
+      });
+
+      // Gerar hash para confirmação de email
+      const hash = await this.sessionHashService.generateHashAuthentication(result.email);
+
+      // Enviar email de confirmação
+      await this.mailerService.sendEmailConfirmRegister({
+        to: result.email,
+        subject: 'Confirmação de Registro',
+        template: 'confirmation-register',
+        context: {
+          name: result.name,
+          email: result.email,
+          hash
+        }
+      });
+
+      return {
+        statusCode: HttpStatus.ACCEPTED,
+        message: {
+          email: professionalDto.email,
+          create_at: createProfessional.create_at,
+          update_at: createProfessional.update_at,
+          role: createUser.role,
+          active: createUser.active,
+          user: [createProfessional]
+        }
+      };
     } catch (error) {
       this.loggerService.error({
         className: this.className,

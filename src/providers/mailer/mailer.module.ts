@@ -4,7 +4,7 @@ import { MailerController } from './mailer.controller';
 import { PrismaModule } from 'src/modulos/prisma/prisma.module';
 import { LoggerCustomModule } from 'src/modulos/logger/logger.module';
 import { JwtModule } from '@nestjs/jwt';
-import { SendMailProducerService } from 'src/modulos/jobs/sendmail.producer.service';
+import { SendMailProducerService } from 'src/modulos/jobs/sendmail/sendmail.producer.service';
 import { BullModule } from '@nestjs/bull';
 import { SessionHashModule } from '../session-hash/session-hash.module';
 

@@ -48,17 +48,17 @@ export class AdmService {
       // Gerar hash para confirmação de email
       const hash = await this.sessionHashService.generateHashAuthentication(admDto.email);
 
-      // // Enviar email de confirmação
-      // await this.mailerService.sendEmailConfirmRegister({
-      //   to: admDto.email,
-      //   subject: 'Confirmação de Registro',
-      //   template: 'confirmation-register',
-      //   context: {
-      //     name: admDto.name,
-      //     email: admDto.email,
-      //     hash
-      //   }
-      // });
+      // Enviar email de confirmação
+      await this.mailerService.sendEmailConfirmRegister({
+        to: admDto.email,
+        subject: 'Confirmação de Registro',
+        template: 'confirmation-register',
+        context: {
+          name: admDto.name,
+          email: admDto.email,
+          hash
+        }
+      });
 
       // Criar credenciais
       await this.prismaService.credenciais.create({

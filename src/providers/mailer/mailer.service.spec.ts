@@ -3,7 +3,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { MailerService } from './mailer.service';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { LoggerCustomService } from '../../modulos/logger/logger.service';
-import { SendMailProducerService } from '../../modulos/jobs/sendmail.producer.service';
+import { SendMailProducerService } from '../../modulos/jobs/sendmail/sendmail.producer.service';
 import { SessionHashService } from '../session-hash/session-hash.service';
 import { 
   MailerTesteEmailDto,

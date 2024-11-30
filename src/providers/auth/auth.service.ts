@@ -7,7 +7,7 @@ import { LoggerCustomService } from 'src/modulos/logger/logger.service';
 import { CredenciaisService } from '../../modulos/credenciais/credenciais.service';
 import { CredenciaisDto } from '../../modulos/credenciais/dto/credenciais.dto';
 import { PrismaService } from 'src/modulos/prisma/prisma.service';
-import { SendMailProducerService } from 'src/modulos/jobs/sendmail.producer.service';
+import { SendMailProducerService } from 'src/modulos/jobs/sendmail/sendmail.producer.service';
 import { MailerConfirmationRegisterEmailDto } from '../mailer/dto/mailer.dto';
 import { SessionHashService } from '../session-hash/session-hash.service';
 import { MailerService } from '../mailer/mailer.service';
@@ -27,22 +27,22 @@ export class AuthService {
     private readonly mailerService: MailerService
   ) { }
 
-  private generateAuthResponse(email: string, userData: any, userDetails: any) {
+  private generateAuthResponse(email: string, credenciais: any, userDetails: any) {
     const user = userDetails || {};
     return {
       statusCode: HttpStatus.ACCEPTED,
       message: {
         email: email,
-        create_at: userData.user.create_at,
-        update_at: userData.user.update_at,
-        role: userData.user.role,
-        active: userData.user.active,
+        create_at: credenciais.user.create_at,
+        update_at: credenciais.user.update_at,
+        role: credenciais.user.role,
+        active: credenciais.user.active,
         access_token: this.jwtService.sign({
           email: email,
-          create_at: userData.user.create_at,
-          update_at: userData.user.update_at,
-          role: userData.user.role,
-          active: userData.user.active,
+          create_at: credenciais.user.create_at,
+          update_at: credenciais.user.update_at,
+          role: credenciais.user.role,
+          active: credenciais.user.active,
           user: user
         }),
         user: user
@@ -50,96 +50,36 @@ export class AuthService {
     };
   }
 
-  async register(credenciaisDto: CredenciaisDto) {
-    try {
-      const result = await this.credenciaisService.create(credenciaisDto);
-
-      // Enviar email de confirmação apenas para ADM e PROFESSIONAL
-      if (result.message.user.role === Role.ADM || result.message.user.role === Role.PROFESSIONAL) {
-        // Gerar hash para confirmação de email
-        const hash = await this.sessionHashService.generateHashAuthentication(result.message.user.email);
-
-        // Enviar email de confirmação
-        await this.mailerService.sendEmailConfirmRegister({
-          to: result.message.user.email,
-          subject: 'Confirmação de Registro',
-          template: 'confirmation-register',
-          context: {
-            name: result.message.user.name,
-            email: result.message.user.email,
-            hash
-          }
-        });
-      }
-
-      return result;
-    } catch (error) {
-      this.loggerService.error({
-        className: this.className,
-        functionName: 'register',
-        message: error.message,
-      });
-      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
-    }
-  }
-
   async authentication(email: string, password: string) {
     try {
-      
-
-      // Verifica se é usuário master (sempre active true)
-      if (email === process.env.EMAIL_MASTER && password === process.env.PASSWORD_MASTER) {
-        
-        return await this.authMaster(email, password);
+      // 1. Master user check
+      if (this.isMasterUser(email, password)) {
+        return await this.authMaster(email);
       }
 
-      // Busca credenciais do usuário
-      const resultCredenciais = await this.credenciaisService.findEmail(email);
-
-      if (!resultCredenciais.message.length) {
-       
-        throw new HttpException("Credenciais incorretas", HttpStatus.NOT_ACCEPTABLE);
+      // 2. Validate credentials
+      const isValidCredentials = await this.credenciaisService.validateCredenciais(email, password);
+      if (!isValidCredentials) {
+        throw new HttpException("Credenciais incorretas", HttpStatus.UNAUTHORIZED);
       }
 
-      const userData = resultCredenciais.message[0];
-      const userRole = userData.user.role;
-
-      // Se for ADM ou PROFESSIONAL, verifica se está ativo
-      if ((userRole === Role.ADM || userRole === Role.PROFESSIONAL) && !userData.user.active) {
-        // Gerar hash para confirmação de email
-        const hash = await this.sessionHashService.generateHashAuthentication(userData.user.email);
-
-        // Enviar email de confirmação
-        await this.mailerService.sendEmailConfirmRegister({
-          to: userData.user.email,
-          subject: 'Confirmação de Registro',
-          template: 'confirmation-register',
-          context: {
-            name: userData.user.name,
-            email: userData.user.email,
-            hash
-          }
-        });
-
-        let userDetails = null;
-      if (userRole === Role.ADM) {
-        userDetails = userData.user.adm;
-      } else if (userRole === Role.PROFESSIONAL) {
-        userDetails = userData.user.professional;
+      // 3. Get user data
+      const { message: credenciais } = await this.credenciaisService.findCredenciaisEmail(email);
+      if (!credenciais) {
+        throw new HttpException("Usuário não encontrado", HttpStatus.NOT_FOUND);
       }
 
-      return this.generateAuthResponse(email, userData, userDetails);
-    }
+      const userRole = credenciais.user.role;
+      const userDetails = await this.getUserDetails(credenciais.user);
 
-      // Busca os dados específicos do usuário
-      let userDetails = null;
-      if (userRole === Role.ADM) {
-        userDetails = userData.user.adm;
-      } else if (userRole === Role.PROFESSIONAL) {
-        userDetails = userData.user.professional;
+      // 4. Handle inactive ADM/PROFESSIONAL users
+      if (this.requiresEmailConfirmation(userRole) && !credenciais.user.active) {
+        await this.handleInactiveUser(credenciais.user);
+        return this.generateAuthResponse(email, credenciais, userDetails);
       }
 
-      return this.generateAuthResponse(email, userData, userDetails);
+      // 5. Generate response for active users
+      return this.generateAuthResponse(email, credenciais, userDetails);
 
     } catch (error) {
       this.loggerService.error({
@@ -147,11 +87,47 @@ export class AuthService {
         functionName: 'authentication',
         message: error.message,
       });
-      throw error;
+      throw new HttpException(
+        error instanceof HttpException ? error.message : "Erro interno do servidor", 
+        error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
-  async authMaster(user: string, password: string) {
+  private isMasterUser(email: string, password: string): boolean {
+    return email === process.env.EMAIL_MASTER && password === process.env.PASSWORD_MASTER;
+  }
+
+  private requiresEmailConfirmation(role: string): boolean {
+    return role === Role.ADM || role === Role.PROFESSIONAL;
+  }
+
+  private async getUserDetails(user: any) {
+    if (user.role === Role.ADM) {
+      return user.adm;
+    }
+    if (user.role === Role.PROFESSIONAL) {
+      return user.professional;
+    }
+    return null;
+  }
+
+  private async handleInactiveUser(user: any) {
+    const hash = await this.sessionHashService.generateHashAuthentication(user.email);
+    
+    await this.mailerService.sendEmailConfirmRegister({
+      to: user.email,
+      subject: 'Confirmação de email',
+      template: 'confirmation-register',
+      context: {
+        name: user.name,
+        email: user.email,
+        hash
+      }
+    });
+  }
+
+  async authMaster(user: string) {
     try {
       const payload = {
         id: 0,
@@ -174,37 +150,6 @@ export class AuthService {
       };
     } catch (error) {
       throw new HttpException("Erro no servidor ao efetuar o login", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  async validate(email: string, password: string): Promise<boolean> {
-    try {
-      if (email === process.env.EMAIL_MASTER && password === process.env.PASSWORD_MASTER) {
-        return true;
-      }
-
-      const resultCredenciais = await this.prismaService.credenciais.findFirst({
-        where: { email },
-        include: { user: true }
-      });
-
-      if (!resultCredenciais) {
-        throw new Error("Credenciais incorretas");
-      }
-
-      const isPasswordValid = await bcrypt.compare(password, resultCredenciais.password);
-      if (!isPasswordValid) {
-        throw new Error("Credenciais incorretas");
-      }
-
-      return true;
-    } catch (error) {
-      this.loggerService.error({
-        className: this.className,
-        functionName: 'validate',
-        message: error.message,
-      });
-      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
     }
   }
 
@@ -248,7 +193,4 @@ export class AuthService {
     }
   }
 
-  async forgotPassword(password: string, userId: number, hash: string) {
-    throw new HttpException('Método não implementado', HttpStatus.NOT_IMPLEMENTED);
-  }
 }

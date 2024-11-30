@@ -29,19 +29,6 @@ export class AuthController {
         return await this.authService.authentication(email, password)
     }
 
-    @Version('1')
-    @Post("forgot/:hash")
-    @ApiOperation({ summary: 'Recuperação de senha' })
-    @ApiBody({ description: 'Objeto JSON contendo dados', type: AuthForgotDto})
-    @HttpCode(200)
-    async forgotPassword(
-        @Param('hash') hash: string,
-        @Body('userId') userId: number,
-        @Body('password') password: string,
-    ) {
-        return await this.authService.forgotPassword(password, userId, hash)
-    }
-
 
 
 

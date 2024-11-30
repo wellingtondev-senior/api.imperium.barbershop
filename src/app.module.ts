@@ -7,6 +7,8 @@ import { ProfessionalModule } from './providers/professional/professional.module
 import { ScheduleModule } from './providers/schedule/schedule.module';
 import { ClientModule } from './providers/client/client.module';
 import { SessionHashModule } from './providers/session-hash/session-hash.module';
+import { BullModule } from '@nestjs/bull';
+import { SendMailModule } from './modulos/jobs/sendmail/sendmail.module';
 
 @Module({
   imports: [
@@ -18,6 +20,16 @@ import { SessionHashModule } from './providers/session-hash/session-hash.module'
     ClientModule,
     ScheduleModule,
     SessionHashModule,
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: Number(process.env.REDIS_PORT) || 6379,
+        password: process.env.REDIS_PASSWORD || undefined,
+        tls: process.env.REDIS_USE_TLS === 'true' ? {} : undefined, // Se o Redis usar TLS
+      },
+    }),
+    SendMailModule,
   ],
+  providers: [],
 })
 export class AppModule { }

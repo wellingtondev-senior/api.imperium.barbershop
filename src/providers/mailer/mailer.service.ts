@@ -8,7 +8,7 @@ import {
 } from './dto/mailer.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { LoggerCustomService } from '../../modulos/logger/logger.service';
-import { SendMailProducerService } from '../../modulos/jobs/sendmail.producer.service';
+import { SendMailProducerService } from '../../modulos/jobs/sendmail/sendmail.producer.service';
 import { SessionHashService } from '../session-hash/session-hash.service';
 import { Role } from '../../enums/role.enum';
 

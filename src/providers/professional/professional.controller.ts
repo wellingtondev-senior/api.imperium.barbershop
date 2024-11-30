@@ -6,6 +6,7 @@ import { Roles } from 'src/decorator/roles.decorator';
 import { Role } from 'src/enums/role.enum';
 import { RoleGuard } from 'src/guards/role.guard';
 import { AdminSuccessResponse } from '../adm/admin.swagger';
+import { ProfessionalSuccessResponse } from './professional.swagger';
 
 
 
@@ -22,7 +23,7 @@ export class ProfessionalController {
   @Roles(Role.ADM)
   @UseGuards(RoleGuard)
   @HttpCode(201)
-  @ApiResponse(AdminSuccessResponse) 
+  @ApiResponse(ProfessionalSuccessResponse) 
   create(@Body() admDto : ProfessionalDto ) {
     return this.professionalService.create(admDto);
   }

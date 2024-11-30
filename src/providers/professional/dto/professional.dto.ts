@@ -208,7 +208,8 @@ export class ProfessionalDto {
   @IsUrl()
   imageUrl?: string;
 
-  @ApiProperty({ required: false, description: 'Redes sociais' })
+  // Redes Sociais
+  @ApiProperty({ required: false, description: 'Redes sociais do profissional' })
   @IsOptional()
   @ValidateNested()
   @Type(() => SocialMediaDto)
@@ -216,8 +217,9 @@ export class ProfessionalDto {
 
   // Status
   @ApiProperty({ description: 'Status do profissional', enum: ProfessionalStatus })
+  @IsOptional()
   @IsEnum(ProfessionalStatus)
-  status: ProfessionalStatus;
+  status?: ProfessionalStatus;
 
   @ApiProperty({ required: false, description: 'Disponibilidade do profissional' })
   @IsOptional()

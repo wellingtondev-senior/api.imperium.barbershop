@@ -1,0 +1,80 @@
+### Criar novo profissional
+POST http://127.0.0.1:58055/v1/professional/create
+Content-Type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IndybS5uZXRAZ21haWwuY29tIiwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43MzhaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNzoyOS41NDJaIiwicm9sZSI6IkFETSIsImFjdGl2ZSI6dHJ1ZSwidXNlciI6W3siaWQiOjE4LCJuYW1lIjoiV2VsbGluZ3RvbkRldiIsImVtYWlsIjoid3JtLm5ldEBnbWFpbC5jb20iLCJjcGYiOiIwMDAuMDAwLjAwMC0wMCIsImF2YXRhciI6bnVsbCwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXNlcklkIjoyNn1dLCJpYXQiOjE3MzI5ODY0OTIsImV4cCI6MTczMzA0Mjg5Mn0.19EiLYCSA1lBEa3zZFkBLh0Dw3puBzXSzs7tGS8Ji-Q
+
+{
+  "userId": 26,
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phone": "+1234567890",
+  "document": "123.456.789-01",
+  "type_doc": "CPF",
+  "password": "securePassword123",
+  "specialties": ["haircut", "beard trim", "shampooing"],
+  "status": "active",
+  
+  "cpf": "12345678901",
+  "role": "PROFESSIONAL",
+  "active": true,
+  "experienceYears": 5,
+  "rating": 4.8,
+  "bio": "Experienced barber with a passion for styling.",
+  "isAvailable": true,
+  "workingHours": {
+    "monday": { "start": "09:00", "end": "17:00" },
+    "tuesday": { "start": "09:00", "end": "17:00" },
+    "wednesday": { "start": "09:00", "end": "17:00" },
+    "thursday": { "start": "09:00", "end": "17:00" },
+    "friday": { "start": "09:00", "end": "17:00" },
+    "saturday": { "start": "10:00", "end": "14:00" },
+    "sunday": { "start": "10:00", "end": "13:00" }
+  },
+  "location": "123 Barber Street, Cityville",
+  "avatarUrl": "https://example.com/avatar/john-doe.jpg",
+  "imageUrl": "https://example.com/profile/john-doe.jpg",
+  "socialMedia": {
+    "instagram": "https://instagram.com/johns_barbershop",
+    "facebook": "https://facebook.com/johnsbarbershop",
+    "twitter": "https://twitter.com/john_barber",
+    "linkedin": "https://linkedin.com/in/johndoe"
+  }
+}
+
+### Resposta esperada (201 Created)
+# {
+#   "statusCode": 201,
+#   "data": {
+#     "id": 1,
+#     "name": "John Doe",
+#     "email": "john.doe@example.com",
+#     ...
+#   }
+# }
+
+### Listar todos os profissionais
+GET https://imperium-barbershop-api.dva83a.easypanel.host/v1/professional
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IndybS5uZXRAZ21haWwuY29tIiwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43MzhaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNzoyOS41NDJaIiwicm9sZSI6IkFETSIsImFjdGl2ZSI6dHJ1ZSwidXNlciI6W3siaWQiOjE4LCJuYW1lIjoiV2VsbGluZ3RvbkRldiIsImVtYWlsIjoid3JtLm5ldEBnbWFpbC5jb20iLCJjcGYiOiIwMDAuMDAwLjAwMC0wMCIsImF2YXRhciI6bnVsbCwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXNlcklkIjoyNn1dLCJpYXQiOjE3MzI5ODY0OTIsImV4cCI6MTczMzA0Mjg5Mn0.19EiLYCSA1lBEa3zZFkBLh0Dw3puBzXSzs7tGS8Ji-Q
+
+### Buscar profissional por ID
+GET https://imperium-barbershop-api.dva83a.easypanel.host/v1/professional/1
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IndybS5uZXRAZ21haWwuY29tIiwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43MzhaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNzoyOS41NDJaIiwicm9sZSI6IkFETSIsImFjdGl2ZSI6dHJ1ZSwidXNlciI6W3siaWQiOjE4LCJuYW1lIjoiV2VsbGluZ3RvbkRldiIsImVtYWlsIjoid3JtLm5ldEBnbWFpbC5jb20iLCJjcGYiOiIwMDAuMDAwLjAwMC0wMCIsImF2YXRhciI6bnVsbCwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXNlcklkIjoyNn1dLCJpYXQiOjE3MzI5ODY0OTIsImV4cCI6MTczMzA0Mjg5Mn0.19EiLYCSA1lBEa3zZFkBLh0Dw3puBzXSzs7tGS8Ji-Q
+
+### Buscar profissional por email
+GET https://imperium-barbershop-api.dva83a.easypanel.host/v1/professional/email/john.doe@example.com
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IndybS5uZXRAZ21haWwuY29tIiwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43MzhaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNzoyOS41NDJaIiwicm9sZSI6IkFETSIsImFjdGl2ZSI6dHJ1ZSwidXNlciI6W3siaWQiOjE4LCJuYW1lIjoiV2VsbGluZ3RvbkRldiIsImVtYWlsIjoid3JtLm5ldEBnbWFpbC5jb20iLCJjcGYiOiIwMDAuMDAwLjAwMC0wMCIsImF2YXRhciI6bnVsbCwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXNlcklkIjoyNn1dLCJpYXQiOjE3MzI5ODY0OTIsImV4cCI6MTczMzA0Mjg5Mn0.19EiLYCSA1lBEa3zZFkBLh0Dw3puBzXSzs7tGS8Ji-Q
+
+### Atualizar profissional
+PATCH https://imperium-barbershop-api.dva83a.easypanel.host/v1/professional/1
+Content-Type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IndybS5uZXRAZ21haWwuY29tIiwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43MzhaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNzoyOS41NDJaIiwicm9sZSI6IkFETSIsImFjdGl2ZSI6dHJ1ZSwidXNlciI6W3siaWQiOjE4LCJuYW1lIjoiV2VsbGluZ3RvbkRldiIsImVtYWlsIjoid3JtLm5ldEBnbWFpbC5jb20iLCJjcGYiOiIwMDAuMDAwLjAwMC0wMCIsImF2YXRhciI6bnVsbCwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXNlcklkIjoyNn1dLCJpYXQiOjE3MzI5ODY0OTIsImV4cCI6MTczMzA0Mjg5Mn0.19EiLYCSA1lBEa3zZFkBLh0Dw3puBzXSzs7tGS8Ji-Q
+
+{
+  "bio": "Updated bio with more experience and skills",
+  "experienceYears": 6,
+  "isAvailable": true
+}
+
+### Remover profissional
+DELETE https://imperium-barbershop-api.dva83a.easypanel.host/v1/professional/1
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IndybS5uZXRAZ21haWwuY29tIiwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43MzhaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNzoyOS41NDJaIiwicm9sZSI6IkFETSIsImFjdGl2ZSI6dHJ1ZSwidXNlciI6W3siaWQiOjE4LCJuYW1lIjoiV2VsbGluZ3RvbkRldiIsImVtYWlsIjoid3JtLm5ldEBnbWFpbC5jb20iLCJjcGYiOiIwMDAuMDAwLjAwMC0wMCIsImF2YXRhciI6bnVsbCwiY3JlYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXBkYXRlX2F0IjoiMjAyNC0xMS0yOVQyMjowNjoyOC43NjJaIiwidXNlcklkIjoyNn1dLCJpYXQiOjE3MzI5ODY0OTIsImV4cCI6MTczMzA0Mjg5Mn0.19EiLYCSA1lBEa3zZFkBLh0Dw3puBzXSzs7tGS8Ji-Q
