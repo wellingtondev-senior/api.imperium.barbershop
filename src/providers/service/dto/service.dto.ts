@@ -19,6 +19,11 @@ export class ServiceDto {
   @IsNumber()
   price: number;
 
+  @ApiProperty({ description: 'URL da imagem do serviço', required: false })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
   @ApiProperty({ description: 'Status do serviço', default: true })
   @IsBoolean()
   @IsOptional()

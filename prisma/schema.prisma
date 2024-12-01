@@ -103,6 +103,7 @@ model Service {
   description    String?
   duration       Int
   price          Float
+  imageUrl       String?
   create_at      DateTime     @default(now())
   update_at      DateTime     @updatedAt
   active         Boolean      @default(true)
