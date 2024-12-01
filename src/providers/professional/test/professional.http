@@ -15,7 +15,6 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IndybS5uZXRAZ21h
   "status": "active",
   
   "cpf": "12345678901",
-  "role": "PROFESSIONAL",
   "active": true,
   "experienceYears": 5,
   "rating": 4.8,

@@ -135,10 +135,7 @@ export class ProfessionalDto {
   @IsString()
   type_doc: string;
 
-  @ApiProperty({ required: false, description: 'CPF do profissional' })
-  @IsOptional()
-  @IsString()
-  cpf?: string;
+
 
   // Autenticação
   @ApiProperty({ description: 'Senha de acesso' })
@@ -146,10 +143,7 @@ export class ProfessionalDto {
   @IsString()
   password: string;
 
-  @ApiProperty({ required: false, description: 'Papel do usuário no sistema' })
-  @IsOptional()
-  @IsString()
-  role?: string;
+
 
   @ApiProperty({ required: false, description: 'Status de ativação da conta' })
   @IsOptional()

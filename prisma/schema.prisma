@@ -42,7 +42,6 @@ model Professional {
   password        String
   document        String        // Documento de identificação (CPF, CNPJ, etc)
   type_doc        String        // Tipo do documento
-  cpf             String?       @unique
   avatarUrl       String?
   imageUrl        String?       // URL adicional para imagem do profissional
   experienceYears Int?
