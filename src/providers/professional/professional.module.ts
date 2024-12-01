@@ -6,6 +6,7 @@ import { PrismaModule } from 'src/modulos/prisma/prisma.module';
 import { SessionHashModule } from '../session-hash/session-hash.module';
 import { JwtModule } from '@nestjs/jwt';
 import { MailerModule } from '../mailer/mailer.module';
+import { CredenciaisModule } from 'src/modulos/credenciais/credenciais.module';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { MailerModule } from '../mailer/mailer.module';
     LoggerCustomModule,
     SessionHashModule ,
     JwtModule,
-    MailerModule
+    MailerModule,
+    CredenciaisModule
   ],
   controllers: [ProfessionalController],
   providers: [ProfessionalService],

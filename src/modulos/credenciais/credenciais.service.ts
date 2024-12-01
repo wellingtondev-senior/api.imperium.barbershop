@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/modulos/prisma/prisma.service';
 import { LoggerCustomService } from 'src/modulos/logger/logger.service';
 import * as bcrypt from 'bcrypt';
@@ -107,30 +107,32 @@ export class CredenciaisService {
     }
 
 
-    async delete(id: string) {
+    async delete(userId: number) {
         try {
-
-
-
-            await this.prismaService.credenciais.delete({
+            // Primeiro, encontrar as credenciais pelo userId
+            const credenciais = await this.prismaService.credenciais.findFirst({
                 where: {
-                    id: parseInt(id),
-
-                },
+                    userId: userId
+                }
             });
-            return {
-                statusCode: HttpStatus.ACCEPTED,
-                message: "credenciais deletado com sucesso"
+
+            if (!credenciais) {
+                throw new NotFoundException('Credenciais não encontradas');
             }
 
-        } catch (error) {
-           this.loggerService.error({
-                className:this.className, 
-                functionName:'delete', 
-                message:`Erro ao excluir credenciais`,
-            })
-            throw new HttpException(`Erro ao excluir credenciais`, HttpStatus.NOT_ACCEPTABLE);
+            // Depois, deletar usando o ID
+            await this.prismaService.credenciais.delete({
+                where: {
+                    id: credenciais.id
+                }
+            });
 
+            return {
+                statusCode: HttpStatus.OK,
+                message: 'Credenciais removidas com sucesso'
+            };
+        } catch (error) {
+            throw new Error(`Erro ao deletar credenciais: ${error.message}`);
         }
     }
     private isMasterUser(email: string, password: string): boolean {
