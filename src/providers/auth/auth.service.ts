@@ -1,14 +1,10 @@
-import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Response } from 'express'
-import { AuthDto } from './dto/auth.dto';
-import * as bcrypt from 'bcrypt';
 import { LoggerCustomService } from 'src/modulos/logger/logger.service';
 import { CredenciaisService } from '../../modulos/credenciais/credenciais.service';
 import { CredenciaisDto } from '../../modulos/credenciais/dto/credenciais.dto';
 import { PrismaService } from 'src/modulos/prisma/prisma.service';
 import { SendMailProducerService } from 'src/modulos/jobs/sendmail/sendmail.producer.service';
-import { MailerConfirmationRegisterEmailDto } from '../mailer/dto/mailer.dto';
 import { SessionHashService } from '../session-hash/session-hash.service';
 import { MailerService } from '../mailer/mailer.service';
 import { Role } from 'src/enums/role.enum';
@@ -27,14 +23,14 @@ export class AuthService {
     private readonly mailerService: MailerService
   ) { }
 
-  private generateAuthResponse(email: string, credenciais: any, userDetails: any) {
-    const user = userDetails || {};
+  private generateAuthResponse(email: string, credenciais: CredenciaisDto) {
+    const user = credenciais || {};
     return {
       statusCode: HttpStatus.ACCEPTED,
       message: {
         email: email,
-        create_at: credenciais.user.create_at,
-        update_at: credenciais.user.update_at,
+        create_at: credenciais.create_at,
+        update_at: credenciais.update_at,
         role: credenciais.user.role,
         active: credenciais.user.active,
         access_token: this.jwtService.sign({
@@ -43,9 +39,10 @@ export class AuthService {
           update_at: credenciais.user.update_at,
           role: credenciais.user.role,
           active: credenciais.user.active,
-          user: user
+          user: credenciais.user,
+          userId: credenciais.user.id
         }),
-        user: user
+        user: credenciais.user
       }
     };
   }
@@ -75,11 +72,11 @@ export class AuthService {
       // 4. Handle inactive ADM/PROFESSIONAL users
       if (this.requiresEmailConfirmation(userRole) && !credenciais.user.active) {
         await this.handleInactiveUser(credenciais.user);
-        return this.generateAuthResponse(email, credenciais, userDetails);
+        return this.generateAuthResponse(email, credenciais);
       }
 
       // 5. Generate response for active users
-      return this.generateAuthResponse(email, credenciais, userDetails);
+      return this.generateAuthResponse(email, credenciais);
 
     } catch (error) {
       this.loggerService.error({

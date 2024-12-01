@@ -30,7 +30,6 @@ describe('ProfessionalService', () => {
     // Campos opcionais
     id: '1',
     avatarUrl: 'https://example.com/avatar.jpg',
-    cpf: '123.456.789-00',
     experienceYears: 5,
     specialties: ['corte masculino', 'barba'],
     rating: 4.5,
@@ -194,10 +193,13 @@ describe('ProfessionalService', () => {
     it('should return error if professional email already exists', async () => {
       mockPrismaService.professional.findMany.mockResolvedValue([{ id: '1', email: mockProfessionalDto.email }]);
 
-      const result = await service.create(mockProfessionalDto);
-
-      expect(result.statusCode).toBe(HttpStatus.OK);
-      expect(result.message).toBe('Esse email já está cadastrado');
+      await expect(service.create(mockProfessionalDto)).rejects.toThrow(
+        new HttpException({
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Profissional já cadastrado',
+          error: `O profissional com o email ${mockProfessionalDto.email} já está cadastrado no sistema. Por favor, utilize outro email ou faça login.`
+        }, HttpStatus.CONFLICT)
+      );
     });
   });
 
