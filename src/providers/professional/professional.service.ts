@@ -312,26 +312,26 @@ export class ProfessionalService {
     }
   }
 
-  async remove(id: number) {
+  async remove(profissionalId:number, userId:number) {
     try {
       // Primeiro, excluir registros relacionados
       await this.prismaService.workingHours.deleteMany({
-        where: { professionalId: id }
+        where: { professionalId: profissionalId }
       });
       
       await this.prismaService.socialMedia.deleteMany({
-        where: { professionalId: id }
+        where: { professionalId: profissionalId }
       });
 
       // Verificar e tratar agendamentos existentes
       const hasSchedules = await this.prismaService.schedule.findFirst({
-        where: { professionalId: id }
+        where: { professionalId: profissionalId }
       });
-
+     
       if (hasSchedules) {
         // Em vez de excluir, marcar como inativo
         const professional = await this.prismaService.professional.update({
-          where: { id },
+          where: { id: profissionalId },
           data: {
             status: 'inactive',
             isAvailable: false
@@ -341,7 +341,7 @@ export class ProfessionalService {
         this.loggerService.log({
           className: this.className,
           functionName: 'remove',
-          message: `Professional with ID ${id} marked as inactive due to existing schedules`
+          message: `Professional with ID ${profissionalId} marked as inactive due to existing schedules`
         });
 
         return {
@@ -349,9 +349,12 @@ export class ProfessionalService {
           message: "Professional marked as inactive due to existing schedules"
         };
       }
+      const hasUser = await this.prismaService.user.findFirst({
+        where: { id:userId }
+      });
 
       const professional = await this.prismaService.professional.delete({
-        where: { id }
+        where: { id: profissionalId },
       });
 
       this.loggerService.log({

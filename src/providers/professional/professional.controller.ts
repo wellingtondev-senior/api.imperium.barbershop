@@ -5,8 +5,7 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/decorator/roles.decorator';
 import { Role } from 'src/enums/role.enum';
 import { RoleGuard } from 'src/guards/role.guard';
-import { AdminSuccessResponse } from '../adm/admin.swagger';
-import { ProfessionalSuccessResponse } from './professional.swagger';
+import { ProfessionalListSuccessResponse, ProfessionalSuccessResponse } from './professional.swagger';
 
 
 
@@ -32,7 +31,7 @@ export class ProfessionalController {
   @Get()
   @ApiOperation({ summary: 'find all professionals' })
   @HttpCode(200)
-  @ApiResponse(AdminSuccessResponse)
+  @ApiResponse(ProfessionalListSuccessResponse)
   findAll() {
     return this.professionalService.findAll();
   }
@@ -43,7 +42,7 @@ export class ProfessionalController {
   @Roles(Role.ADM)
   @UseGuards(RoleGuard)
   @HttpCode(200)
-  @ApiResponse(AdminSuccessResponse)
+  @ApiResponse(ProfessionalSuccessResponse)
   findOne(@Param('id') id: string) {
     return this.professionalService.findOne(+id);
   }
@@ -55,20 +54,23 @@ export class ProfessionalController {
   @Roles(Role.ADM)
   @UseGuards(RoleGuard)
   @HttpCode(200)
-  @ApiResponse(AdminSuccessResponse)
+  @ApiResponse(ProfessionalSuccessResponse)
   update(@Param('id') id: string, @Body() professionalDto: ProfessionalDto) {
     return this.professionalService.update(+id, professionalDto);
   }
 
   @Version('1')
-  @Delete(':id')
+  @Delete(':profissionalId/:userId')
   @ApiOperation({ summary: 'remove a professional' })
   @Roles(Role.ADM)
   @UseGuards(RoleGuard)
   @HttpCode(200)
-  @ApiResponse(AdminSuccessResponse)
-  remove(@Param('id') id: string) {
-    return this.professionalService.remove(+id);
+  @ApiResponse(ProfessionalSuccessResponse)
+  remove(
+    @Param('profissionalId') profissionalId: number,
+    @Param('userId') userId: number,
+  ) {
+    return this.professionalService.remove(profissionalId, userId);
   }
 
   @Version('1')
@@ -77,7 +79,7 @@ export class ProfessionalController {
   @Roles(Role.ADM)
   @UseGuards(RoleGuard)
   @HttpCode(200)
-  @ApiResponse(AdminSuccessResponse)
+  @ApiResponse(ProfessionalSuccessResponse)
   findByEmail(@Param('email') email: string) {
     return this.professionalService.findByEmail(email);
   }
