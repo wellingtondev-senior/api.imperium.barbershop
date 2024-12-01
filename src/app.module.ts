@@ -9,6 +9,7 @@ import { ClientModule } from './providers/client/client.module';
 import { SessionHashModule } from './providers/session-hash/session-hash.module';
 import { BullModule } from '@nestjs/bull';
 import { SendMailModule } from './modulos/jobs/sendmail/sendmail.module';
+import { ServiceModule } from './providers/service/service.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { SendMailModule } from './modulos/jobs/sendmail/sendmail.module';
       },
     }),
     SendMailModule,
+    ServiceModule 
   ],
   providers: [],
 })
