@@ -6,7 +6,7 @@ import { SessionHashService } from '../session-hash/session-hash.service';
 import { MailerService } from '../mailer/mailer.service';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../../enums/role.enum';
-import { CredenciaisService } from 'src/modulos/credenciais/credenciais.service';
+import { CredenciaisService } from '../../modulos/credenciais/credenciais.service';
 
 @Injectable()
 export class ProfessionalService {

@@ -7,6 +7,7 @@ import { ProfessionalDto, ProfessionalStatus } from './dto/professional.dto';
 import { Role } from '../../enums/role.enum';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
+import { CredenciaisService } from '../../modulos/credenciais/credenciais.service';
 
 describe('ProfessionalService', () => {
   let service: ProfessionalService;
@@ -14,6 +15,7 @@ describe('ProfessionalService', () => {
   let loggerService: LoggerCustomService;
   let sessionHashService: SessionHashService;
   let mailerService: MailerService;
+  let credenciaisService: CredenciaisService;
 
   const mockProfessionalDto: ProfessionalDto = {
     // Campos obrigatórios
@@ -91,6 +93,9 @@ describe('ProfessionalService', () => {
     appointment: {
       findMany: jest.fn(),
     },
+    service: {
+      deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
   };
 
   const mockLoggerService = {
@@ -104,6 +109,13 @@ describe('ProfessionalService', () => {
 
   const mockMailerService = {
     sendEmailConfirmRegister: jest.fn(),
+  };
+
+  const mockCredenciaisService = {
+    delete: jest.fn().mockResolvedValue({
+      statusCode: HttpStatus.OK,
+      message: 'Credenciais removidas com sucesso'
+    }),
   };
 
   beforeEach(async () => {
@@ -126,6 +138,10 @@ describe('ProfessionalService', () => {
           provide: MailerService,
           useValue: mockMailerService,
         },
+        {
+          provide: CredenciaisService,
+          useValue: mockCredenciaisService,
+        },
       ],
     }).compile();
 
@@ -134,6 +150,7 @@ describe('ProfessionalService', () => {
     loggerService = module.get<LoggerCustomService>(LoggerCustomService);
     sessionHashService = module.get<SessionHashService>(SessionHashService);
     mailerService = module.get<MailerService>(MailerService);
+    credenciaisService = module.get<CredenciaisService>(CredenciaisService);
   });
 
   afterEach(() => {
@@ -269,7 +286,7 @@ describe('ProfessionalService', () => {
 
   describe('remove', () => {
     it('should soft delete a professional with existing schedules', async () => {
-      const mockProfessional = { id: '1', ...mockProfessionalDto };
+      const mockProfessional = { id: '1', userId: 1, ...mockProfessionalDto };
       const mockSchedule = { id: 1, professionalId: '1' };
       
       mockPrismaService.schedule.findFirst.mockResolvedValue(mockSchedule);
@@ -279,7 +296,7 @@ describe('ProfessionalService', () => {
         isAvailable: false
       });
 
-      const result = await service.remove(1);
+      const result = await service.remove(1, 1);
 
       expect(result.statusCode).toBe(HttpStatus.OK);
       expect(result.message).toBe("Professional marked as inactive due to existing schedules");
@@ -289,19 +306,24 @@ describe('ProfessionalService', () => {
     });
 
     it('should hard delete a professional without schedules', async () => {
-      const mockProfessional = { id: '1', ...mockProfessionalDto };
+      const mockProfessional = { id: '1', userId: 1, ...mockProfessionalDto };
       
       mockPrismaService.schedule.findFirst.mockResolvedValue(null);
       mockPrismaService.workingHours.deleteMany.mockResolvedValue({ count: 1 });
       mockPrismaService.socialMedia.deleteMany.mockResolvedValue({ count: 1 });
+      mockPrismaService.service.deleteMany.mockResolvedValue({ count: 1 });
       mockPrismaService.professional.delete.mockResolvedValue(mockProfessional);
+      mockPrismaService.user.delete.mockResolvedValue({ id: 1 });
 
-      const result = await service.remove(1);
+      const result = await service.remove(1, 1);
 
       expect(result.statusCode).toBe(HttpStatus.OK);
       expect(result.message).toEqual(mockProfessional);
       expect(mockPrismaService.workingHours.deleteMany).toHaveBeenCalled();
       expect(mockPrismaService.socialMedia.deleteMany).toHaveBeenCalled();
+      expect(mockPrismaService.service.deleteMany).toHaveBeenCalled();
+      expect(mockPrismaService.professional.delete).toHaveBeenCalled();
+      expect(mockPrismaService.user.delete).toHaveBeenCalled();
       expect(mockLoggerService.log).toHaveBeenCalled();
     });
   });

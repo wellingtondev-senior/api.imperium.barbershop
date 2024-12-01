@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/modulos/prisma/prisma.service';
-import { LoggerCustomService } from 'src/modulos/logger/logger.service';
+import { PrismaService } from '../../modulos/prisma/prisma.service';
+import { LoggerCustomService } from '../../modulos/logger/logger.service';
 import * as bcrypt from 'bcrypt';
 import crypto from 'crypto-js';
 import { CredenciaisDto } from './dto/credenciais.dto';
