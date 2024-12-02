@@ -26,8 +26,7 @@ export class ServiceDto {
 
   @ApiProperty({ description: 'Status do serviço', default: true })
   @IsBoolean()
-  @IsOptional()
-  active?: boolean;
+  active: boolean;
 
   @ApiProperty({ description: 'ID do profissional responsável' })
   @IsNumber()
