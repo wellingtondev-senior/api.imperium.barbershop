@@ -102,8 +102,8 @@ export class ProfessionalDto {
   // Identificação
   @ApiProperty({ required: false, description: 'ID único do profissional' })
   @IsOptional()
-  @IsString()
-  id?: string;
+  @IsInt()
+  id?: number;
 
   @ApiProperty({ description: 'ID do usuário associado ao profissional' })
   @IsNotEmpty()
