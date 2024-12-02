@@ -58,7 +58,7 @@ export class ProfessionalController {
   update(
     @Param('id') id: number, 
     @Body() professionalDto: ProfessionalDto) {
-    return this.professionalService.update(+id, professionalDto);
+    return this.professionalService.update(id, professionalDto);
   }
 
   @Version('1')
