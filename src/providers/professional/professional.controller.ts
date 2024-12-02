@@ -55,7 +55,7 @@ export class ProfessionalController {
   @UseGuards(RoleGuard)
   @HttpCode(200)
   @ApiResponse(ProfessionalSuccessResponse)
-  update(@Param('id') id: string, @Body() professionalDto: ProfessionalDto) {
+  update(@Param('id') id: number, @Body() professionalDto: ProfessionalDto) {
     return this.professionalService.update(+id, professionalDto);
   }
 
