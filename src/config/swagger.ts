@@ -1,7 +1,7 @@
 const CONFIG = {
     swagger:{
-        title:"Feier Core API - DOCUMENTAÇÂO",
-        descricao:`API Privada Feier Core URL ${process.env.API_URL}`,
+        title:"Imperium Barbershop API - Documentação",
+        descricao:`API Privada para o gerenciamento de barbearia Imperium Barbershop. URL da API: ${process.env.API_URL}`,
         version:'1.0',
         
     },

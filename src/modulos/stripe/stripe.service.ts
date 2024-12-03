@@ -84,10 +84,11 @@ export class StripeService {
       this.loggerService.error({
         className: this.className,
         functionName: 'processPayment',
-        message: 'Error processing payment',
+        message: `Error processing payment: ${error.message}`,
         context: {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          clientEmail: scheduleDto.clientInfo.email
+          clientEmail: scheduleDto.clientInfo.email,
+          paymentAmount: scheduleDto.payment.amount,
+          errorType: error instanceof Stripe.errors.StripeCardError ? 'Card Error' : 'General Error',
         },
       });
 
@@ -107,7 +108,7 @@ export class StripeService {
    * @param cardData - Card information
    * @returns Promise<Stripe.Token>
    */
-  private async createCardToken(cardData: CardDTO): Promise<Stripe.Token> {
+  async createCardToken(cardData: CardDTO): Promise<Stripe.Token> {
     try {
       const token = await this.stripe.tokens.create({
         card: {
@@ -123,9 +124,10 @@ export class StripeService {
       this.loggerService.error({
         className: this.className,
         functionName: 'createCardToken',
-        message: 'Error creating card token',
+        message: `Error creating card token: ${error.message}`,
         context: {
-          error: error instanceof Error ? error.message : 'Unknown error',
+          cardLast4: cardData.number.slice(-4),
+          errorType: error instanceof Stripe.errors.StripeCardError ? 'Card Error' : 'General Error',
         },
       });
 
@@ -190,6 +192,56 @@ export class StripeService {
         'Error processing refund',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  async createCustomer(email: string, cardToken: string): Promise<Stripe.Customer> {
+    try {
+      const customer = await this.stripe.customers.create({
+        email,
+        source: cardToken
+      });
+      return customer;
+    } catch (error) {
+      this.loggerService.error({
+        className: this.className,
+        functionName: 'createCustomer',
+        message: `Error creating customer: ${error.message}`,
+        context: {
+          email,
+          errorType: error instanceof Stripe.errors.StripeCardError ? 'Card Error' : 'General Error',
+        },
+      });
+      throw new HttpException('Error creating customer', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async createPaymentIntent(amount: number, currency: string, customerId: string, metadata: any): Promise<Stripe.PaymentIntent> {
+    try {
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount,
+        currency,
+        customer: customerId,
+        payment_method_types: ['card'],
+        metadata,
+        confirm: true,
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never'
+        }
+      });
+      return paymentIntent;
+    } catch (error) {
+      this.loggerService.error({
+        className: this.className,
+        functionName: 'createPaymentIntent',
+        message: `Error creating payment intent: ${error.message}`,
+        context: {
+          customerId,
+          errorType: error instanceof Stripe.errors.StripeCardError ? 'Card Error' : 'General Error',
+        },
+      });
+      throw new HttpException('Error creating payment intent', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

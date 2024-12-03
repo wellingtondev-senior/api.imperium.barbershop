@@ -1,84 +1,51 @@
 ### Variáveis
-@baseUrl = http://localhost:3000/api
+@baseUrl = http://127.0.0.1:58055/v1
 @authToken = seu_token_jwt_aqui
 
-### Serviços
 
-# Criar um novo serviço
-POST {{baseUrl}}/services
+POST {{baseUrl}}/schedule
 Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-    "name": "Corte de Cabelo Masculino",
-    "description": "Corte profissional com técnicas modernas",
-    "price": 50.00,
-    "duration": 30,
-    "profissionalId": 1
-}
-
-### Listar todos os serviços
-GET {{baseUrl}}/services
-Authorization: Bearer {{authToken}}
-
-### Buscar serviço por ID
-GET {{baseUrl}}/services/1
-Authorization: Bearer {{authToken}}
-
-### Atualizar serviço
-PUT {{baseUrl}}/services/1
-Content-Type: application/json
-Authorization: Bearer {{authToken}}
-
-{
-    "name": "Corte de Cabelo Masculino Premium",
-    "description": "Corte profissional com técnicas modernas e produtos premium",
-    "price": 75.00,
-    "duration": 45,
-    "profissionalId": 1
-}
-
-### Deletar serviço
-DELETE {{baseUrl}}/services/1
-Authorization: Bearer {{authToken}}
-
-### Agendamentos
-
-# Criar novo agendamento
-POST {{baseUrl}}/appointments
-Content-Type: application/json
-Authorization: Bearer {{authToken}}
-
-{
-    "date": "2024-01-20T10:00:00Z",
-    "professionalId": 1,
-    "serviceId": 1,
-    "fanId": 1
+    "dateTime": "2024-01-20T10:00:00Z",
+    "professionalId": 3,
+    "servicesId": [13],
+    "clientInfo": {
+        "name": "João Silva",
+        "email": "joao@email.com",
+        "phone": "11999999999",
+        "phoneCountry": "+55"
+    },
+    "payment": {
+        "amount": 100.00,
+        "method": "visa_card",
+        "cardName": "JOAO SILVA",
+        "cardNumber": "4242424242424242",
+        "cardExpiry": "12/25",
+        "cardCvv": "123"
+    }
 }
 
 ### Listar todos os agendamentos
-GET {{baseUrl}}/appointments
+GET {{baseUrl}}/schedule
 Authorization: Bearer {{authToken}}
 
 ### Buscar agendamento por ID
-GET {{baseUrl}}/appointments/1
+GET {{baseUrl}}/schedule/1
 Authorization: Bearer {{authToken}}
 
 ### Atualizar agendamento
-PUT {{baseUrl}}/appointments/1
+PATCH {{baseUrl}}/schedule/1
 Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-    "date": "2024-01-20T11:00:00Z",
-    "status": "confirmed",
-    "professionalId": 1,
-    "serviceId": 1,
-    "fanId": 1
+    "status": "confirmed"
 }
 
 ### Cancelar agendamento
-PUT {{baseUrl}}/appointments/1/cancel
+DELETE {{baseUrl}}/schedule/1
 Authorization: Bearer {{authToken}}
 
 ### Pagamentos
@@ -90,8 +57,11 @@ Authorization: Bearer {{authToken}}
 
 {
     "amount": 50.00,
-    "method": "credit_card",
-    "serviceId": 1
+    "method": "CARD",
+    "cardName": "JOAO SILVA",
+    "cardNumber": "4242424242424242",
+    "cardExpiry": "12/25",
+    "cardCvv": "123"
 }
 
 ### Listar todos os pagamentos
@@ -118,15 +88,28 @@ Authorization: Bearer {{authToken}}
 }
 
 # Tentar agendar horário já ocupado
-POST {{baseUrl}}/appointments
+POST {{baseUrl}}/schedule
 Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-    "date": "2024-01-20T10:00:00Z",
+    "dateTime": "2024-01-20T10:00:00Z",
     "professionalId": 1,
-    "serviceId": 1,
-    "fanId": 1
+    "servicesId": [1],
+    "clientInfo": {
+        "name": "João Silva",
+        "email": "joao@email.com",
+        "phone": "11999999999",
+        "phoneCountry": "+55"
+    },
+    "payment": {
+        "amount": 100.00,
+        "method": "CARD",
+        "cardName": "JOAO SILVA",
+        "cardNumber": "4242424242424242",
+        "cardExpiry": "12/25",
+        "cardCvv": "123"
+    }
 }
 
 # Tentar criar pagamento para serviço inexistente
@@ -136,6 +119,10 @@ Authorization: Bearer {{authToken}}
 
 {
     "amount": 50.00,
-    "method": "credit_card",
+    "method": "CARD",
+    "cardName": "JOAO SILVA",
+    "cardNumber": "4242424242424242",
+    "cardExpiry": "12/25",
+    "cardCvv": "123",
     "serviceId": 999
 }

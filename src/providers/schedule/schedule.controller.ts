@@ -10,7 +10,6 @@ import { ScheduleCreateSuccessResponse, ScheduleListSuccessResponse, ScheduleUpd
 
 @ApiTags('Schedule')
 @Controller('schedule')
-@UseGuards(AuthGuard, RoleGuard)
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
@@ -27,6 +26,8 @@ export class ScheduleController {
   @Get()
   @Version('1')
   @Roles(Role.ADM)
+  @UseGuards(AuthGuard, RoleGuard)
+
   @ApiOperation({ summary: 'Listar todos os agendamentos' })
   @ApiResponse(ScheduleListSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)

@@ -10,7 +10,16 @@ export enum PaymentStatus {
 }
 
 export enum PaymentMethod {
-  CARD = 'card'
+  VISA_CARD = 'visa_card',
+  VISA_DEBIT = 'visa_debit',
+  MASTERCARD = 'mastercard',
+  MASTERCARD_DEBIT = 'mastercard_debit',
+  MASTERCARD_PREPAID = 'mastercard_prepaid',
+  AMEX = 'amex',
+  DISCOVER = 'discover',
+  DINERS = 'diners',
+  JCB = 'jcb',
+  UNIONPAY = 'unionpay'
 }
 
 export class CreatePaymentDto {
@@ -25,7 +34,7 @@ export class CreatePaymentDto {
   @ApiProperty({
     description: 'Método de pagamento',
     enum: PaymentMethod,
-    example: PaymentMethod.CARD
+    example: PaymentMethod.VISA_CARD
   })
   @IsEnum(PaymentMethod)
   method: PaymentMethod;

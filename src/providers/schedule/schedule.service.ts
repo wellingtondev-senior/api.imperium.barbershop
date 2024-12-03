@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { CreateScheduleDto, UpdateScheduleDto, ScheduleStatus } from './dto/schedule.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { StripeService } from '../../modulos/stripe/stripe.service';
+import { CardDTO } from 'src/modulos/stripe/dto/stripe-payment.dto';
 
 @Injectable()
 export class ScheduleService {
@@ -87,30 +88,47 @@ export class ScheduleService {
         });
       }
 
-      // Process payment with Stripe
-      let createdPayment;
-      try {
-        const paymentResult = await this.stripeService.processPayment(createScheduleDto);
-        if (!paymentResult.success) {
-          throw new Error('Payment failed');
-        }
+      // Create card token
+      const cardToken = await this.stripeService.createCardToken({
+        number: payment.cardNumber,
+        exp_month: payment.cardExpiry.split('/')[0],
+        exp_year: '20' + payment.cardExpiry.split('/')[1],
+        cvc: payment.cardCvv
+      }).then(token => token.id);
 
-        // Create payment record
-        createdPayment = await this.prisma.payment.create({
-          data: {
-            amount: payment.amount,
-            method: payment.method,
-            cardNumber: payment.cardNumber,
-            cardExpiry: payment.cardExpiry,
-            cardCvv: payment.cardCvv,
-            clientId: client.id,
-            status: ScheduleStatus.PENDING,
-            stripePaymentId: paymentResult.data?.stripePaymentId || null
-          },
-        });
-      } catch (error) {
-        throw new Error('Payment failed');
-      }
+      // Create a Customer with card token
+      const customer = await this.stripeService.createCustomer(
+        createScheduleDto.clientInfo.email,
+        cardToken
+      );
+
+      // Create a PaymentIntent with the customer
+      const paymentIntent = await this.stripeService.createPaymentIntent(
+        Math.round(payment.amount * 100), // Converting to cents
+        'usd',
+        customer.id,
+        {
+          scheduleId: 'pending',
+          clientEmail: createScheduleDto.clientInfo.email,
+          scheduleAmount: payment.amount.toString(),
+        }
+      );
+
+      const clientId: number = client.id;
+
+      // Create payment record
+      const createdPayment = await this.prisma.payment.create({
+        data: {
+          amount: payment.amount,
+          method: payment.method,
+          clientId: clientId,
+          status: ScheduleStatus.PENDING,
+          stripePaymentId: paymentIntent.id,
+          cardExpiry: payment.cardExpiry,
+          cardNumber: payment.cardNumber, // This should be encrypted in a real application
+          cardCvv: payment.cardCvv // This should be encrypted in a real application
+        },
+      });
 
       // Create schedule
       const schedule = await this.prisma.schedule.create({
@@ -139,7 +157,7 @@ export class ScheduleService {
         data: schedule
       };
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException || error.message === 'Payment failed') {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
       throw new Error('Error creating schedule');
