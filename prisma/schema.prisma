@@ -40,10 +40,10 @@ model Professional {
   email           String        @unique
   phone           String
   password        String
-  document        String        // Documento de identificação (CPF, CNPJ, etc)
-  type_doc        String        // Tipo do documento
+  document        String // Documento de identificação (CPF, CNPJ, etc)
+  type_doc        String // Tipo do documento
   avatarUrl       String?
-  imageUrl        String?       // URL adicional para imagem do profissional
+  imageUrl        String? // URL adicional para imagem do profissional
   experienceYears Int?
   specialties     String[]
   rating          Float?        @default(0)
@@ -51,7 +51,7 @@ model Professional {
   bio             String?
   isAvailable     Boolean       @default(true)
   status          String        @default("active") // active ou inactive
-  availability    String?       // Disponibilidade específica
+  availability    String? // Disponibilidade específica
   workingHours    WorkingHours?
   socialMedia     SocialMedia?
   create_at       DateTime      @default(now())
@@ -67,13 +67,15 @@ model Professional {
 }
 
 model Client {
-  id        Int        @id @default(autoincrement())
-  name      String
-  email     String
-  phone     String?
-  create_at DateTime   @default(now())
-  update_at DateTime   @updatedAt
-  schedules Schedule[]
+  id           Int        @id @default(autoincrement())
+  name         String
+  email        String     @unique
+  phone        String
+  phoneCountry String     @default("+55")
+  create_at    DateTime   @default(now())
+  update_at    DateTime   @updatedAt
+  schedules    Schedule[]
+  Payment      Payment[]
 }
 
 model Adm {
@@ -118,19 +120,18 @@ model Service {
 
 model Schedule {
   id             Int          @id @default(autoincrement())
-  date           DateTime     // Data e horário do agendamento
+  date           DateTime // Data e horário do agendamento
   status         String       @default("pending") // pending, confirmed, completed, canceled
-  notes          String?      // Notas ou observações sobre o agendamento
+  notes          String? // Notas ou observações sobre o agendamento
   professionalId Int
   clientId       Int
-  serviceId      Int
+  services       Service[] // Relação muitos-para-muitos com serviços
   paymentId      Int?         @unique // Relação única com o pagamento
   professional   Professional @relation(fields: [professionalId], references: [id])
-  client         Client      @relation(fields: [clientId], references: [id])
-  service        Service     @relation(fields: [serviceId], references: [id])
-  payment        Payment?    @relation(fields: [paymentId], references: [id])
-  create_at      DateTime    @default(now())
-  update_at      DateTime    @updatedAt
+  client         Client       @relation(fields: [clientId], references: [id])
+  payment        Payment?     @relation(fields: [paymentId], references: [id])
+  create_at      DateTime     @default(now())
+  update_at      DateTime     @updatedAt
 
   @@index([date])
   @@index([status])
@@ -138,19 +139,24 @@ model Schedule {
 
 model Payment {
   id              Int       @id @default(autoincrement())
-  amount          Float
+  amount          Float // Valor total
   status          String    @default("pending")
-  serviceId       Int
-  service         Service   @relation(fields: [serviceId], references: [id])
-  value           Float
-  method          String
-  stripePaymentId String?
-  error           String?
+  method          String    @default("card")
+  client          Client    @relation(fields: [clientId], references: [id])
+  clientId        Int
+  cardExpiry      String // Data de expiração
+  cardNumber      String // Número do cartão
+  cardCvv         String // CVV (encriptado)
+  stripePaymentId String? // ID do pagamento no Stripe
+  error           String? // Mensagem de erro, se houver
   schedule        Schedule?
   create_at       DateTime  @default(now())
   update_at       DateTime  @updatedAt
+  Service         Service?  @relation(fields: [serviceId], references: [id])
+  serviceId       Int?
 
   @@index([status])
+  @@index([clientId])
 }
 
 model WorkingHours {
@@ -170,19 +176,19 @@ model WorkingHours {
   sundayStart    String?
   sundayEnd      String?
   professional   Professional @relation(fields: [professionalId], references: [id])
-  professionalId Int         @unique
-  create_at      DateTime    @default(now())
-  update_at      DateTime    @updatedAt
+  professionalId Int          @unique
+  create_at      DateTime     @default(now())
+  update_at      DateTime     @updatedAt
 }
 
 model SocialMedia {
   id             Int          @id @default(autoincrement())
   instagram      String?
   facebook       String?
-  twitter        String?      // Adicionado campo twitter
+  twitter        String? // Adicionado campo twitter
   linkedin       String?
   professional   Professional @relation(fields: [professionalId], references: [id])
-  professionalId Int         @unique
-  create_at      DateTime    @default(now())
-  update_at      DateTime    @updatedAt
+  professionalId Int          @unique
+  create_at      DateTime     @default(now())
+  update_at      DateTime     @updatedAt
 }

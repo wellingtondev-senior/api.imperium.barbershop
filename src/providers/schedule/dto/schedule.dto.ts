@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsArray, IsDateString, ValidateNested, IsNotEmpty, IsEnum, IsOptional, Min, MaxLength, IsEmail, IsInt } from 'class-validator';
+import { IsString, IsArray, IsDateString, ValidateNested, IsNotEmpty, IsEnum, IsOptional, MaxLength, IsEmail, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CardDTO } from '../../../modulos/stripe/dto/stripe-payment.dto';
+import { CreatePaymentDto } from '../../../providers/schedule/dto/payment.dto';
 
 export enum ScheduleStatus {
   PENDING = 'pending',
@@ -34,34 +34,17 @@ export class ClientInfoDto {
   @IsString()
   @IsNotEmpty()
   phone: string;
+
+  @ApiProperty({
+    description: 'Código do país do telefone',
+    example: '+55'
+  })
+  @IsString()
+  @IsNotEmpty()
+  phoneCountry: string;
 }
 
 export class CreateScheduleDto {
-  @ApiProperty({
-    description: 'Valor do agendamento',
-    example: 100.00
-  })
-  @IsNumber()
-  @Min(0)
-  value: number;
-
-  @ApiProperty({
-    description: 'Valor total do agendamento',
-    example: 100.00
-  })
-  @IsNumber()
-  @Min(0)
-  amount: number;
-
-  @ApiProperty({
-    description: 'Método de pagamento',
-    example: 'card',
-    enum: ['card']
-  })
-  @IsString()
-  @IsEnum(['card'])
-  method: 'card';
-
   @ApiProperty({
     description: 'ID do profissional',
     example: 1
@@ -71,7 +54,7 @@ export class CreateScheduleDto {
 
   @ApiProperty({
     description: 'IDs dos serviços',
-    example: [1]
+    example: [1, 2]
   })
   @IsArray()
   @IsInt({ each: true })
@@ -92,7 +75,7 @@ export class CreateScheduleDto {
   @IsString()
   @IsOptional()
   @MaxLength(500)
-  observation?: string;
+  notes?: string;
 
   @ApiProperty({
     description: 'Informações do cliente'
@@ -102,11 +85,11 @@ export class CreateScheduleDto {
   clientInfo: ClientInfoDto;
 
   @ApiProperty({
-    description: 'Informações do cartão de pagamento'
+    description: 'Informações do pagamento'
   })
   @ValidateNested()
-  @Type(() => CardDTO)
-  payment: CardDTO;
+  @Type(() => CreatePaymentDto)
+  payment: CreatePaymentDto;
 }
 
 export class UpdateScheduleDto {
@@ -151,9 +134,10 @@ export class ScheduleResponseDto {
   clientId: number;
 
   @ApiProperty({
-    description: 'ID do serviço'
+    description: 'IDs dos serviços'
   })
-  serviceId: number;
+  @IsArray()
+  servicesId: number[];
 
   @ApiProperty({
     description: 'ID do pagamento'

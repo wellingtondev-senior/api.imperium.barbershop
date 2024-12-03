@@ -160,7 +160,7 @@ export class ServiceService {
       // Verificar se existem agendamentos ativos
       const hasActiveSchedules = await this.prismaService.schedule.findFirst({
         where: {
-          serviceId: id,
+           id,
           status: {
             in: ['pending', 'confirmed'],
           },
@@ -208,6 +208,33 @@ export class ServiceService {
         message: `Error deleting service: ${error.message}`,
       });
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async findSchedulesByServiceId(id: number) {
+    try {
+      const schedules = await this.prismaService.schedule.findMany({
+        where: {
+          services: {
+            some: {
+              id
+            }
+          }
+        },
+        include: {
+          professional: true,
+          client: true,
+          services: true,
+          payment: true
+        }
+      });
+
+      return {
+        success: true,
+        data: schedules
+      };
+    } catch (error) {
+      throw new Error(`Erro ao buscar agendamentos do serviço: ${error.message}`);
     }
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { LoggerCustomService } from '../logger/logger.service';
-import { CardDTO, StripePaymentDTO } from './dto/stripe-payment.dto';
+import { CardDTO } from './dto/stripe-payment.dto';
 import Stripe from 'stripe';
 import { CreateScheduleDto } from '../../providers/schedule/dto/schedule.dto';
 import { ConfigService } from '@nestjs/config';
@@ -17,86 +17,94 @@ export class StripeService {
     this.className = this.constructor.name;
     this.stripe = new Stripe(this.configService.get('STRIPE_SECRET_KEY'), {
       apiVersion: '2024-11-20.acacia',
+      appInfo: {
+        name: 'imperium-barbershop',
+        version: '1.0.0',
+      },
+      typescript: true,
     });
   }
 
   /**
-   * Processa um pagamento usando o Stripe
-   * @param scheduleDto - DTO com os dados do agendamento
-   * @returns Promise<Stripe.Charge>
+   * Process a payment using Stripe PaymentIntent
+   * @param scheduleDto - Schedule creation DTO with payment information
+   * @returns Promise with payment result
    */
-  async createPayment(scheduleDto: CreateScheduleDto): Promise<Stripe.Charge> {
+  async processPayment(scheduleDto: CreateScheduleDto) {
     try {
-      // Validar se há informações de pagamento
-      if (!scheduleDto.payment || !scheduleDto.value) {
-        throw new HttpException(
-          'Informações de pagamento são obrigatórias',
-          HttpStatus.BAD_REQUEST,
-        );
+      if (!scheduleDto.payment) {
+        throw new Error('Payment information is required');
       }
 
-      // Criar o token do cartão
-      const token = await this.createCardToken(scheduleDto.payment);
+      // Create a Customer
+      const customer = await this.stripe.customers.create({
+        email: scheduleDto.clientInfo.email,
+        source: await this.createCardToken({
+          number: scheduleDto.payment.cardNumber,
+          exp_month: scheduleDto.payment.cardExpiry.split('/')[0],
+          exp_year: '20' + scheduleDto.payment.cardExpiry.split('/')[1],
+          cvc: scheduleDto.payment.cardCvv
+        }).then(token => token.id)
+      });
 
-      // Criar a cobrança
-      const charge = await this.stripe.charges.create({
-        amount: Math.round(scheduleDto.value * 100), // Convertendo para centavos
-        currency: 'brl',
-        source: token.id,
-        description: `Pagamento do agendamento - Cliente: ${scheduleDto.clientInfo.name}`,
+      // Create a PaymentIntent
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount: Math.round(scheduleDto.payment.amount * 100), // Converting to cents
+        currency: 'usd',
+        customer: customer.id,
+        payment_method_types: ['card'],
         metadata: {
-          clientName: scheduleDto.clientInfo.name,
+          scheduleId: 'pending',
           clientEmail: scheduleDto.clientInfo.email,
-          clientPhone: scheduleDto.clientInfo.phone,
-          scheduleValue: scheduleDto.value.toString(),
+          scheduleAmount: scheduleDto.payment.amount.toString(),
         },
+        confirm: true, // Confirm the payment immediately
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never'
+        }
       });
 
-      this.loggerService.log({
-        className: this.className,
-        functionName: 'createPayment',
-        message: 'Pagamento processado com sucesso',
-        context: {
-          chargeId: charge.id,
-          amount: charge.amount,
-          status: charge.status,
-        },
-      });
+      if (paymentIntent.status === 'succeeded') {
+        return {
+          success: true,
+          message: 'Payment processed successfully',
+          data: {
+            stripePaymentId: paymentIntent.id,
+            amount: scheduleDto.payment.amount,
+            status: paymentIntent.status,
+            clientSecret: paymentIntent.client_secret
+          }
+        };
+      } else {
+        throw new Error(`Payment failed with status: ${paymentIntent.status}`);
+      }
 
-      return charge;
     } catch (error) {
       this.loggerService.error({
         className: this.className,
-        functionName: 'createPayment',
-        message: 'Erro ao processar pagamento',
+        functionName: 'processPayment',
+        message: 'Error processing payment',
         context: {
-          error: error instanceof Error ? error.message : 'Erro desconhecido',
-          clientName: scheduleDto.clientInfo.name,
-          value: scheduleDto.value,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          clientEmail: scheduleDto.clientInfo.email
         },
       });
 
       if (error instanceof Stripe.errors.StripeCardError) {
         throw new HttpException(
-          'Cartão inválido ou recusado',
+          'Invalid card information',
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      throw new HttpException(
-        'Erro ao processar pagamento',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new Error(`Error processing payment: ${error.message}`);
     }
   }
 
   /**
-   * Cria um token para o cartão usando a API do Stripe
-   * @param cardData - Dados do cartão
+   * Create a card token using the Stripe API
+   * @param cardData - Card information
    * @returns Promise<Stripe.Token>
    */
   private async createCardToken(cardData: CardDTO): Promise<Stripe.Token> {
@@ -115,44 +123,46 @@ export class StripeService {
       this.loggerService.error({
         className: this.className,
         functionName: 'createCardToken',
-        message: 'Erro ao criar token do cartão',
+        message: 'Error creating card token',
         context: {
-          error: error instanceof Error ? error.message : 'Erro desconhecido',
+          error: error instanceof Error ? error.message : 'Unknown error',
         },
       });
 
       if (error instanceof Stripe.errors.StripeCardError) {
         throw new HttpException(
-          'Dados do cartão inválidos',
+          'Invalid card information',
           HttpStatus.BAD_REQUEST,
         );
       }
 
       throw new HttpException(
-        'Erro ao processar dados do cartão',
+        'Error processing card information',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   /**
-   * Reembolsa uma cobrança
-   * @param chargeId - ID da cobrança no Stripe
+   * Refund a payment
+   * @param paymentIntentId - Stripe PaymentIntent ID
    * @returns Promise<Stripe.Refund>
    */
-  async refundPayment(chargeId: string): Promise<Stripe.Refund> {
+  async refundPayment(paymentIntentId: string): Promise<Stripe.Refund> {
     try {
+      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+      
       const refund = await this.stripe.refunds.create({
-        charge: chargeId,
+        payment_intent: paymentIntentId,
       });
 
       this.loggerService.log({
         className: this.className,
         functionName: 'refundPayment',
-        message: 'Reembolso processado com sucesso',
+        message: 'Refund processed successfully',
         context: {
           refundId: refund.id,
-          chargeId: chargeId,
+          paymentIntentId: paymentIntentId,
           status: refund.status,
         },
       });
@@ -162,22 +172,22 @@ export class StripeService {
       this.loggerService.error({
         className: this.className,
         functionName: 'refundPayment',
-        message: 'Erro ao processar reembolso',
+        message: 'Error processing refund',
         context: {
-          error: error instanceof Error ? error.message : 'Erro desconhecido',
-          chargeId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          paymentIntentId,
         },
       });
 
       if (error instanceof Stripe.errors.StripeInvalidRequestError) {
         throw new HttpException(
-          'Cobrança não encontrada ou já reembolsada',
+          'Payment not found or already refunded',
           HttpStatus.BAD_REQUEST,
         );
       }
 
       throw new HttpException(
-        'Erro ao processar reembolso',
+        'Error processing refund',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

@@ -1,74 +1,63 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, HttpCode } from '@nestjs/common';
 import { ScheduleService } from './schedule.service';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CreateScheduleDto, UpdateScheduleDto } from './dto/schedule.dto';
 import { Roles } from 'src/decorator/roles.decorator';
 import { Role } from 'src/enums/role.enum';
 import { RoleGuard } from 'src/guards/role.guard';
-import { AdminSuccessResponse } from '../adm/admin.swagger';
+import { AuthGuard } from 'src/guards/auth.guard';
+import { CreateScheduleDto, UpdateScheduleDto } from './dto/schedule.dto';
+import { ScheduleCreateSuccessResponse, ScheduleListSuccessResponse, ScheduleUpdateSuccessResponse, ScheduleErrorResponse } from './schedule.swagger';
 
 @ApiTags('Schedule')
 @Controller('schedule')
+@UseGuards(AuthGuard, RoleGuard)
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
-  @Version('1')
   @Post()
-  @ApiOperation({ summary: 'Create a new schedule with payment' })
-  @ApiBody({ description: 'Schedule data with payment information', type: CreateScheduleDto })
+  @Version('1')
   @HttpCode(201)
-  @ApiResponse(AdminSuccessResponse)
+  @ApiOperation({ summary: 'Criar novo agendamento' })
+  @ApiResponse(ScheduleCreateSuccessResponse)
+  @ApiResponse(ScheduleErrorResponse)
   create(@Body() createScheduleDto: CreateScheduleDto) {
     return this.scheduleService.create(createScheduleDto);
   }
 
-  @Version('1')
   @Get()
-  @ApiOperation({ summary: 'Find all schedules' })
+  @Version('1')
   @Roles(Role.ADM)
-  @UseGuards(RoleGuard)
-  @HttpCode(200)
-  @ApiResponse(AdminSuccessResponse)
+  @ApiOperation({ summary: 'Listar todos os agendamentos' })
+  @ApiResponse(ScheduleListSuccessResponse)
+  @ApiResponse(ScheduleErrorResponse)
   findAll() {
     return this.scheduleService.findAll();
   }
 
-  @Version('1')
   @Get(':id')
-  @ApiOperation({ summary: 'Find one schedule' })
-  @HttpCode(200)
-  @ApiResponse(AdminSuccessResponse)
+  @Version('1')
+  @ApiOperation({ summary: 'Buscar agendamento por ID' })
+  @ApiResponse(ScheduleCreateSuccessResponse)
+  @ApiResponse(ScheduleErrorResponse)
   findOne(@Param('id') id: string) {
     return this.scheduleService.findOne(+id);
   }
 
-  @Version('1')
-  @Get('professional/:id')
-  @ApiOperation({ summary: 'Find schedules by professional id' })
-  @HttpCode(200)
-  @ApiResponse(AdminSuccessResponse)
-  findByProfessionalId(@Param('id') id: string) {
-    return this.scheduleService.findByProfessionalId(+id);
-  }
-
-  @Version('1')
   @Patch(':id')
-  @ApiOperation({ summary: 'Update schedule status' })
-  @Roles(Role.ADM)
-  @UseGuards(RoleGuard)
-  @HttpCode(200)
-  @ApiResponse(AdminSuccessResponse)
+  @Version('1')
+  @ApiOperation({ summary: 'Atualizar status do agendamento' })
+  @ApiResponse(ScheduleUpdateSuccessResponse)
+  @ApiResponse(ScheduleErrorResponse)
   update(@Param('id') id: string, @Body() updateScheduleDto: UpdateScheduleDto) {
     return this.scheduleService.update(+id, updateScheduleDto);
   }
 
-  @Version('1')
   @Delete(':id')
-  @ApiOperation({ summary: 'Remove a schedule' })
+  @Version('1')
   @Roles(Role.ADM)
-  @UseGuards(RoleGuard)
-  @HttpCode(200)
-  @ApiResponse(AdminSuccessResponse)
+  @ApiOperation({ summary: 'Cancelar agendamento' })
+  @ApiResponse(ScheduleUpdateSuccessResponse)
+  @ApiResponse(ScheduleErrorResponse)
   remove(@Param('id') id: string) {
     return this.scheduleService.remove(+id);
   }

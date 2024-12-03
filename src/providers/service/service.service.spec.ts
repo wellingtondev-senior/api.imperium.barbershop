@@ -15,6 +15,7 @@ describe('ServiceService', () => {
     duration: 30,
     price: 50.0,
     professionalId: 1,
+    active: true
   };
 
   const mockPrismaService = {

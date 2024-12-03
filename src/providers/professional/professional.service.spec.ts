@@ -30,7 +30,7 @@ describe('ProfessionalService', () => {
     availability: 'available',
 
     // Campos opcionais
-    id: '1',
+    id: 1,
     avatarUrl: 'https://example.com/avatar.jpg',
     experienceYears: 5,
     specialties: ['corte masculino', 'barba'],
@@ -172,7 +172,7 @@ describe('ProfessionalService', () => {
       };
       
       const mockProfessional = {
-        id: '1',
+        id: 1,
         ...mockProfessionalDto,
         create_at: new Date(),
         update_at: new Date(),
@@ -208,7 +208,7 @@ describe('ProfessionalService', () => {
     });
 
     it('should return error if professional email already exists', async () => {
-      mockPrismaService.professional.findMany.mockResolvedValue([{ id: '1', email: mockProfessionalDto.email }]);
+      mockPrismaService.professional.findMany.mockResolvedValue([{ id: 1, email: mockProfessionalDto.email }]);
 
       await expect(service.create(mockProfessionalDto)).rejects.toThrow(
         new HttpException({
@@ -223,8 +223,8 @@ describe('ProfessionalService', () => {
   describe('findAll', () => {
     it('should return all professionals', async () => {
       const mockProfessionals = [
-        { id: '1', ...mockProfessionalDto },
-        { id: '2', ...mockProfessionalDto, email: 'jane@example.com' },
+        { id: 1, ...mockProfessionalDto },
+        { id: 2, ...mockProfessionalDto, email: 'jane@example.com' },
       ];
 
       mockPrismaService.professional.findMany.mockResolvedValue(mockProfessionals);
@@ -245,7 +245,7 @@ describe('ProfessionalService', () => {
 
   describe('findOne', () => {
     it('should return a professional by id', async () => {
-      const mockProfessional = { id: '1', ...mockProfessionalDto };
+      const mockProfessional = { id: 1, ...mockProfessionalDto };
       mockPrismaService.professional.findUnique.mockResolvedValue(mockProfessional);
 
       const result = await service.findOne(1);
@@ -265,7 +265,7 @@ describe('ProfessionalService', () => {
   describe('update', () => {
     it('should update a professional successfully', async () => {
       const updateDto = { ...mockProfessionalDto, name: 'John Updated' };
-      const mockUpdatedProfessional = { id: '1', ...updateDto };
+      const mockUpdatedProfessional = { id: 1, ...updateDto };
 
       mockPrismaService.professional.update.mockResolvedValue(mockUpdatedProfessional);
 
@@ -286,8 +286,8 @@ describe('ProfessionalService', () => {
 
   describe('remove', () => {
     it('should soft delete a professional with existing schedules', async () => {
-      const mockProfessional = { id: '1', userId: 1, ...mockProfessionalDto };
-      const mockSchedule = { id: 1, professionalId: '1' };
+      const mockProfessional = { id: 1, userId: 1, ...mockProfessionalDto };
+      const mockSchedule = { id: 1, professionalId: 1 };
       
       mockPrismaService.schedule.findFirst.mockResolvedValue(mockSchedule);
       mockPrismaService.professional.update.mockResolvedValue({
@@ -306,7 +306,7 @@ describe('ProfessionalService', () => {
     });
 
     it('should hard delete a professional without schedules', async () => {
-      const mockProfessional = { id: '1', userId: 1, ...mockProfessionalDto };
+      const mockProfessional = { id: 1, userId: 1, ...mockProfessionalDto };
       
       mockPrismaService.schedule.findFirst.mockResolvedValue(null);
       mockPrismaService.workingHours.deleteMany.mockResolvedValue({ count: 1 });
@@ -330,7 +330,7 @@ describe('ProfessionalService', () => {
 
   describe('findByEmail', () => {
     it('should return a professional by email', async () => {
-      const mockProfessional = { id: '1', ...mockProfessionalDto };
+      const mockProfessional = { id: 1, ...mockProfessionalDto };
       mockPrismaService.professional.findUnique.mockResolvedValue(mockProfessional);
 
       const result = await service.findByEmail(mockProfessionalDto.email);
