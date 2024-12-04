@@ -138,42 +138,33 @@ model Schedule {
 }
 
 model Payment {
-  id                            String    @id
-  object                        String
-  amount                        Int // Valor em centavos
-  amount_details_tip            Json? // Detalhes do valor como JSON
-  capture_method                String
-  client_secret                 String
-  confirmation_method           String
-  created                       Int
-  currency                      String
-  livemode                      Boolean
-  payment_method                String?
-  payment_method_types          String[] // Array de strings
-  status                        String
-  automatic_payment_methods     Json? // Campos opcionais como JSON
-  canceled_at                   DateTime?
-  cancellation_reason           String?
-  description                   String?
-  last_payment_error            Json?
-  next_action                   Json?
-  payment_method_config_details Json?
-  processing                    Json?
-  receipt_email                 String?
-  setup_future_usage            String?
-  shipping                      Json?
-  source                        String?
+  id              String    @id
+  object          String
+  type            String
+  api_version     String
+  created         Int
+  data            Json      // Store the entire webhook data object
+  livemode        Boolean
+  pending_webhooks Int
+  request         Json      // Store the request object
+
+  // Campos extraídos do data.object para facilitar consultas
+  amount          Int?      // Valor em centavos
+  currency        String?
+  status          String?
+  payment_method  String?
+  client_secret   String?
 
   // Relações existentes
-  client    Client    @relation(fields: [clientId], references: [id])
-  clientId  Int
-  schedule  Schedule? @relation(fields: [scheduleId], references: [id])
-  Service   Service?  @relation(fields: [serviceId], references: [id])
-  serviceId Int?
+  client          Client    @relation(fields: [clientId], references: [id])
+  clientId        Int
+  schedule        Schedule? @relation(fields: [scheduleId], references: [id])
+  Service         Service?  @relation(fields: [serviceId], references: [id])
+  serviceId       Int?
 
-  create_at  DateTime @default(now())
-  update_at  DateTime @updatedAt
-  scheduleId Int?
+  create_at       DateTime  @default(now())
+  update_at       DateTime  @updatedAt
+  scheduleId      Int?
 
   @@index([status])
   @@index([clientId])

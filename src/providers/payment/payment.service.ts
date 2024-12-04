@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PrismaService } from 'src/modulos/prisma/prisma.service';
 import { WebhookPayloadDto } from './dto/webhook-payload.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PaymentService {
@@ -12,17 +13,17 @@ export class PaymentService {
 
   async processWebhook(payload: WebhookPayloadDto) {
     try {
-      const paymentIntent = payload.object;
+      const paymentIntent = payload.data.object;
       
       switch (paymentIntent.status) {
         case 'succeeded':
-          await this.handlePaymentSucceeded(paymentIntent);
+          await this.handlePaymentSucceeded(payload);
           break;
         case 'requires_payment_method':
-          await this.handlePaymentFailed(paymentIntent);
+          await this.handlePaymentFailed(payload);
           break;
         case 'canceled':
-          await this.handlePaymentCanceled(paymentIntent);
+          await this.handlePaymentCanceled(payload);
           break;
         default:
           this.logger.warn(`Status de pagamento não tratado: ${paymentIntent.status}`);
@@ -35,20 +36,30 @@ export class PaymentService {
     }
   }
 
-  private async handlePaymentSucceeded(paymentIntent: any): Promise<void> {
+  private async handlePaymentSucceeded(payload: WebhookPayloadDto): Promise<void> {
     try {
+      const paymentIntent = payload.data.object;
+      const paymentData: Prisma.PaymentUpdateInput = {
+        object: payload.object,
+        type: payload.type,
+        api_version: payload.api_version,
+        created: payload.created,
+        data: payload.data,
+        livemode: payload.livemode,
+        pending_webhooks: payload.pending_webhooks,
+        request: payload.request,
+        // Campos extraídos do data.object para facilitar consultas
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        status: paymentIntent.status,
+        payment_method: paymentIntent.payment_method,
+        client_secret: paymentIntent.client_secret,
+        update_at: new Date()
+      };
+
       await this.prismaService.payment.update({
         where: { id: paymentIntent.id },
-        data: {
-          status: paymentIntent.status,
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-          payment_method: paymentIntent.payment_method,
-          payment_method_types: paymentIntent.payment_method_types,
-          receipt_email: paymentIntent.receipt_email,
-          shipping: paymentIntent.shipping,
-          update_at: new Date()
-        },
+        data: paymentData,
       });
 
       this.logger.log(`Pagamento bem-sucedido para o ID ${paymentIntent.id}`);
@@ -58,15 +69,26 @@ export class PaymentService {
     }
   }
 
-  private async handlePaymentFailed(paymentIntent: any): Promise<void> {
+  private async handlePaymentFailed(payload: WebhookPayloadDto): Promise<void> {
     try {
+      const paymentIntent = payload.data.object;
+      const paymentData: Prisma.PaymentUpdateInput = {
+        object: payload.object,
+        type: payload.type,
+        api_version: payload.api_version,
+        created: payload.created,
+        data: payload.data,
+        livemode: payload.livemode,
+        pending_webhooks: payload.pending_webhooks,
+        request: payload.request,
+        // Campos extraídos do data.object para facilitar consultas
+        status: paymentIntent.status,
+        update_at: new Date()
+      };
+
       await this.prismaService.payment.update({
         where: { id: paymentIntent.id },
-        data: {
-          status: paymentIntent.status,
-          last_payment_error: paymentIntent.last_payment_error,
-          update_at: new Date()
-        },
+        data: paymentData,
       });
 
       this.logger.warn(`Pagamento falhou para o ID ${paymentIntent.id}`);
@@ -76,16 +98,26 @@ export class PaymentService {
     }
   }
 
-  private async handlePaymentCanceled(paymentIntent: any): Promise<void> {
+  private async handlePaymentCanceled(payload: WebhookPayloadDto): Promise<void> {
     try {
+      const paymentIntent = payload.data.object;
+      const paymentData: Prisma.PaymentUpdateInput = {
+        object: payload.object,
+        type: payload.type,
+        api_version: payload.api_version,
+        created: payload.created,
+        data: payload.data,
+        livemode: payload.livemode,
+        pending_webhooks: payload.pending_webhooks,
+        request: payload.request,
+        // Campos extraídos do data.object para facilitar consultas
+        status: paymentIntent.status,
+        update_at: new Date()
+      };
+
       await this.prismaService.payment.update({
         where: { id: paymentIntent.id },
-        data: {
-          status: paymentIntent.status,
-          canceled_at: new Date(),
-          cancellation_reason: paymentIntent.cancellation_reason,
-          update_at: new Date()
-        },
+        data: paymentData,
       });
 
       this.logger.log(`Pagamento cancelado para o ID ${paymentIntent.id}`);

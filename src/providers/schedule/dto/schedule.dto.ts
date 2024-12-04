@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsArray, IsDateString, ValidateNested, IsNotEmpty, IsEnum, IsOptional, MaxLength, IsEmail, IsInt, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PaymentStripeResponseDto } from './payment.dto';
 import { ServiceDto } from 'src/providers/service/dto/service.dto';
 import { ClientInfoDto } from 'src/providers/client/dto/create-client.dto';
 
@@ -38,16 +37,16 @@ export class CreateScheduleDto {
   @ApiProperty({
     description: 'Informações do cliente'
   })
-  @ValidateNested()
-  @Type(() => ClientInfoDto)
-  clientInfo: ClientInfoDto;
+  @IsNotEmpty()
+  @IsObject()
+  clientInfo: Record<string, any>;
 
   @ApiProperty({
     description: 'Informações do pagamento'
   })
-  @ValidateNested()
-  @Type(() => PaymentStripeResponseDto)
-  payment: PaymentStripeResponseDto;
+  @IsNotEmpty()
+  @IsObject()
+  payment:Record<string, any>;
 }
 
 export class UpdateScheduleDto {

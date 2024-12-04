@@ -57,18 +57,23 @@ export class ScheduleService {
         createdPayment = await this.prisma.payment.create({
           data: {
             id: payment.id,
-            object: payment.object,
-            amount: payment.amount,
-            amount_details_tip: JSON.stringify(payment.amount_details?.tip || null),
-            capture_method: payment.capture_method,
-            client_secret: payment.client_secret,
-            confirmation_method: payment.confirmation_method,
+            object: 'payment_intent',
+            type: 'payment_intent.created',
+            api_version: "2024-11-20.acacia",
             created: payment.created,
-            currency: payment.currency,
+            data: JSON.parse(JSON.stringify({ object: payment })),
             livemode: payment.livemode,
-            payment_method: payment.payment_method,
-            payment_method_types: payment.payment_method_types,
+            pending_webhooks: 0,
+            request: JSON.parse(JSON.stringify({
+              id: payment.id,
+              idempotency_key: null
+            })),
+            // Campos extraídos para consulta rápida
+            amount: payment.amount,
+            currency: payment.currency,
             status: payment.status,
+            payment_method: payment.payment_method,
+            client_secret: payment.client_secret,
             clientId: client.id
           }
         });
