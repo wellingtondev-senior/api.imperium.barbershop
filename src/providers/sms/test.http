@@ -1,0 +1,41 @@
+### Enviar SMS
+
+### Variáveis
+@baseUrl = http://127.0.0.1:58055/v1
+@authToken = seu_token_jwt_aqui
+
+@to= +18445092237
+
+
+POST {{baseUrl}}/sms/send
+Content-Type: application/json
+
+{
+    "to": "+18777804236",
+    "message": "Teste de envio de SMS via API"
+}
+
+### Enviar SMS com número inválido (deve falhar)
+POST http://localhost:3000/v1/sms/send
+Content-Type: application/json
+
+{
+    "to": "numero-invalido",
+    "message": "Este teste deve falhar devido ao número inválido"
+}
+
+### Enviar SMS sem mensagem (deve falhar)
+POST http://localhost:3000/v1/sms/send
+Content-Type: application/json
+
+{
+    "to": "+5511999999999"
+}
+
+### Enviar SMS sem número (deve falhar)
+POST http://localhost:3000/v1/sms/send
+Content-Type: application/json
+
+{
+    "message": "Este teste deve falhar devido à falta do número"
+}

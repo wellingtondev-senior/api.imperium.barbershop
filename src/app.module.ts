@@ -11,6 +11,7 @@ import { BullModule } from '@nestjs/bull';
 import { SendMailModule } from './modulos/jobs/sendmail/sendmail.module';
 import { ServiceModule } from './providers/service/service.module';
 import { PaymentModule } from './providers/payment/payment.module';
+import { SmsModule } from './providers/sms/sms.module';
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { PaymentModule } from './providers/payment/payment.module';
     }),
     SendMailModule,
     ServiceModule ,
-    PaymentModule
+    PaymentModule,
+    SmsModule
   ],
   providers: [],
 })
