@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Headers, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Headers, HttpCode, HttpStatus, Version } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { WebhookPayloadDto } from './dto/webhook-payload.dto';
@@ -7,7 +7,8 @@ import { WebhookPayloadDto } from './dto/webhook-payload.dto';
 @Controller('payment')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
-
+  
+  @Version('1')
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Recebe notificações de webhook do Stripe' })
