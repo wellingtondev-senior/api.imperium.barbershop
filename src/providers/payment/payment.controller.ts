@@ -10,13 +10,13 @@ export class PaymentController {
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Receive payment webhook notifications' })
-  @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid webhook payload' })
+  @ApiOperation({ summary: 'Recebe notificações de webhook do Stripe' })
+  @ApiResponse({ status: 200, description: 'Webhook processado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Payload do webhook inválido' })
   async handleWebhook(
-    @Body() payload: WebhookPayloadDto
-,  ) {
-  return payload
-   //return this.paymentService.processWebhook(payload, signature);
+    @Body() payload: WebhookPayloadDto,
+    @Headers('stripe-signature') signature: string,
+  ) {
+    return this.paymentService.processWebhook(payload);
   }
 }
