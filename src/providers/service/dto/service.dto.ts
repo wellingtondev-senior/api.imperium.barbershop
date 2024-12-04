@@ -2,6 +2,15 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsOptional, IsBoolean } from 'class-validator';
 
 export class ServiceDto {
+  @ApiProperty({ 
+    description: 'ID do serviço',
+    required: false,
+    example: 1
+  })
+  @IsNumber()
+  @IsOptional()
+  id?: number;
+
   @ApiProperty({ description: 'Nome do serviço' })
   @IsString()
   name: string;

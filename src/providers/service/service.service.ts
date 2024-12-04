@@ -225,7 +225,7 @@ export class ServiceService {
           professional: true,
           client: true,
           services: true,
-          payment: true
+          Payment: true
         }
       });
 

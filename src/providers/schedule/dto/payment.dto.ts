@@ -1,119 +1,112 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsEnum, IsNotEmpty, Min, IsEmail } from 'class-validator';
+import { IsString, IsNumber, IsEnum, IsNotEmpty, Min, IsEmail, IsBoolean, IsArray, IsOptional } from 'class-validator';
 
-export enum PaymentStatus {
-  PENDING = 'pending',
-  PROCESSING = 'processing',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  REFUNDED = 'refunded'
-}
 
-export enum PaymentMethod {
-  VISA_CARD = 'visa_card',
-  VISA_DEBIT = 'visa_debit',
-  MASTERCARD = 'mastercard',
-  MASTERCARD_DEBIT = 'mastercard_debit',
-  MASTERCARD_PREPAID = 'mastercard_prepaid',
-  AMEX = 'amex',
-  DISCOVER = 'discover',
-  DINERS = 'diners',
-  JCB = 'jcb',
-  UNIONPAY = 'unionpay'
-}
 
-export class CreatePaymentDto {
-  @ApiProperty({
-    description: 'Valor total do pagamento',
-    example: 100.00
-  })
+export class PaymentStripeResponseDto {
+  @ApiProperty({ description: 'ID do pagamento no Stripe' })
+  @IsString()
+  id: string;
+
+  @ApiProperty({ description: 'Método de pagamento' })
+  @IsString()
+  method: string;
+
+  @ApiProperty({ description: 'Status do pagamento' })
+  @IsString()
+  status: string;
+
+  @ApiProperty({ description: 'Valor em centavos' })
   @IsNumber()
-  @Min(0)
   amount: number;
 
-  @ApiProperty({
-    description: 'Método de pagamento',
-    enum: PaymentMethod,
-    example: PaymentMethod.VISA_CARD
-  })
-  @IsEnum(PaymentMethod)
-  method: PaymentMethod;
-
-  @ApiProperty({
-    description: 'Nome no cartão',
-    example: 'JOAO SILVA'
-  })
+  @ApiProperty({ description: 'Moeda' })
   @IsString()
-  @IsNotEmpty()
-  cardName: string;
+  currency: string;
 
-  @ApiProperty({
-    description: 'Número do cartão',
-    example: '4242424242424242'
-  })
+  @ApiProperty({ description: 'Descrição' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  cardNumber: string;
+  description?: string;
 
-  @ApiProperty({
-    description: 'Data de expiração do cartão',
-    example: '12/25'
-  })
+  @ApiProperty({ description: 'Tipo do objeto' })
   @IsString()
-  @IsNotEmpty()
-  cardExpiry: string;
+  object: string;
 
-  @ApiProperty({
-    description: 'CVV do cartão',
-    example: '123'
-  })
+  @ApiProperty({ description: 'Detalhes do valor' })
+  amount_details: {
+    tip: Record<string, unknown>;
+  };
+
+  @ApiProperty({ description: 'Método de captura' })
   @IsString()
-  @IsNotEmpty()
-  cardCvv: string;
+  capture_method: string;
 
+  @ApiProperty({ description: 'Client secret do pagamento' })
+  @IsString()
+  client_secret: string;
 
-}
+  @ApiProperty({ description: 'Método de confirmação' })
+  @IsString()
+  confirmation_method: string;
 
-export class PaymentResponseDto {
-  @ApiProperty({
-    description: 'ID do pagamento'
-  })
-  id: number;
+  @ApiProperty({ description: 'Data de criação' })
+  @IsNumber()
+  created: number;
 
-  @ApiProperty({
-    description: 'Valor total'
-  })
-  amount: number;
+  @ApiProperty({ description: 'Ambiente (teste ou produção)' })
+  @IsBoolean()
+  livemode: boolean;
 
-  @ApiProperty({
-    description: 'Status do pagamento',
-    enum: PaymentStatus
-  })
-  status: PaymentStatus;
+  @ApiProperty({ description: 'ID do método de pagamento' })
+  @IsString()
+  payment_method: string;
 
-  @ApiProperty({
-    description: 'Método de pagamento',
-    enum: PaymentMethod
-  })
-  method: PaymentMethod;
+  @ApiProperty({ description: 'Tipos de métodos de pagamento aceitos' })
+  @IsArray()
+  payment_method_types: string[];
 
-  @ApiProperty({
-    description: 'ID do pagamento no Stripe'
-  })
-  stripePaymentId?: string;
+  @ApiProperty({ description: 'Métodos de pagamento automáticos' })
+  @IsOptional()
+  automatic_payment_methods: null;
 
-  @ApiProperty({
-    description: 'Mensagem de erro, se houver'
-  })
-  error?: string;
+  @ApiProperty({ description: 'Data de cancelamento' })
+  @IsOptional()
+  canceled_at: null;
 
-  @ApiProperty({
-    description: 'Data de criação'
-  })
-  create_at: Date;
+  @ApiProperty({ description: 'Razão do cancelamento' })
+  @IsOptional()
+  cancellation_reason: null;
 
-  @ApiProperty({
-    description: 'Data de atualização'
-  })
-  update_at: Date;
+  @ApiProperty({ description: 'Último erro de pagamento' })
+  @IsOptional()
+  last_payment_error: null;
+
+  @ApiProperty({ description: 'Próxima ação' })
+  @IsOptional()
+  next_action: null;
+
+  @ApiProperty({ description: 'Configurações do método de pagamento' })
+  @IsOptional()
+  payment_method_configuration_details: null;
+
+  @ApiProperty({ description: 'Status do processamento' })
+  @IsOptional()
+  processing: null;
+
+  @ApiProperty({ description: 'Email do recibo' })
+  @IsOptional()
+  receipt_email: null;
+
+  @ApiProperty({ description: 'Configuração de uso futuro' })
+  @IsOptional()
+  setup_future_usage: null;
+
+  @ApiProperty({ description: 'Informações de envio' })
+  @IsOptional()
+  shipping: null;
+
+  @ApiProperty({ description: 'Fonte do pagamento' })
+  @IsOptional()
+  source: null;
 }

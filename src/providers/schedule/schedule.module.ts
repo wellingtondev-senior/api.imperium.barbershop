@@ -5,7 +5,6 @@ import { PrismaModule } from 'src/modulos/prisma/prisma.module';
 import { LoggerCustomModule } from 'src/modulos/logger/logger.module';
 import { JwtModule } from '@nestjs/jwt';
 import { MailerModule } from '../mailer/mailer.module';
-import { StripeModule } from 'src/modulos/stripe/stripe.module';
 import { CredenciaisModule } from 'src/modulos/credenciais/credenciais.module';
 
 @Module({
@@ -14,7 +13,6 @@ import { CredenciaisModule } from 'src/modulos/credenciais/credenciais.module';
     LoggerCustomModule,
     JwtModule,
     MailerModule,
-    StripeModule,
     CredenciaisModule
   ],
   controllers: [ScheduleController],

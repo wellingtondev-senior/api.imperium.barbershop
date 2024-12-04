@@ -17,6 +17,8 @@ export class ScheduleController {
   @Version('1')
   @HttpCode(201)
   @ApiOperation({ summary: 'Criar novo agendamento' })
+  @ApiBody({ description: 'Objeto JSON contendo dados', type: CreateScheduleDto })
+
   @ApiResponse(ScheduleCreateSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
   create(@Body() createScheduleDto: CreateScheduleDto) {
@@ -27,7 +29,6 @@ export class ScheduleController {
   @Version('1')
   @Roles(Role.ADM)
   @UseGuards(AuthGuard, RoleGuard)
-
   @ApiOperation({ summary: 'Listar todos os agendamentos' })
   @ApiResponse(ScheduleListSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
@@ -47,6 +48,7 @@ export class ScheduleController {
   @Patch(':id')
   @Version('1')
   @ApiOperation({ summary: 'Atualizar status do agendamento' })
+  
   @ApiResponse(ScheduleUpdateSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
   update(@Param('id') id: string, @Body() updateScheduleDto: UpdateScheduleDto) {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
-import { CreateClientDto } from './dto/create-client.dto';
+import { ClientInfoDto } from './dto/create-client.dto';
 import { SessionHashService } from '../session-hash/session-hash.service';
 import { MailerService } from '../mailer/mailer.service';
 import * as bcrypt from 'bcrypt';
@@ -13,6 +13,9 @@ export class ClientService {
     private readonly mailerService: MailerService,
   ) {}
 
-  async create(createClientDto: CreateClientDto) {
+  async create(createClientDto: ClientInfoDto) {
+    return this.prisma.client.create({
+      data: createClientDto
+    });
   }
 }

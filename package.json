@@ -60,7 +60,6 @@
     "rxjs": "^7.8.1",
     "sherdog": "^0.1.10",
     "solc": "^0.8.28",
-    "stripe": "^17.4.0",
     "swagger-ui-express": "^5.0.1",
     "tronweb": "^6.0.0",
     "ufc-scraper": "^0.1.6",
