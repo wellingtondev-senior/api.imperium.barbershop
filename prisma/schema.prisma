@@ -111,7 +111,6 @@ model Service {
   professionalId Int
   professional   Professional @relation(fields: [professionalId], references: [id])
   schedules      Schedule[]
-  payments       Payment[]
 
   @@index([active])
   @@index([professionalId])
@@ -146,21 +145,16 @@ model Payment {
   livemode         Boolean
   pending_webhooks Int
   request          Json // Store the request object
-
   // Campos extraídos do data.object para facilitar consultas
   amount         Int? // Valor em centavos
   currency       String?
   status         String?
   payment_method String?
   client_secret  String?
-
   // Relações existentes
   client    Client    @relation(fields: [clientId], references: [id])
   clientId  Int
   schedule  Schedule? @relation(fields: [scheduleId], references: [id])
-  Service   Service?  @relation(fields: [serviceId], references: [id])
-  serviceId Int?
-
   create_at  DateTime @default(now())
   update_at  DateTime @updatedAt
   scheduleId Int?
