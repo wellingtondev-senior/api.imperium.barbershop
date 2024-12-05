@@ -26,6 +26,7 @@ export class PaymentService {
         'payment_intent.canceled': this.handlePaymentCanceled.bind(this),
         'refund.failed': this.handleRefundFailed.bind(this),
         'charge.refund.updated': this.handleRefundUpdated.bind(this),
+        'refund.updated': this.handleRefundStatusUpdated.bind(this),
         // Adicione mais handlers conforme necessário
       };
 
@@ -168,6 +169,46 @@ export class PaymentService {
       this.logger.error(`Erro ao atualizar status do reembolso: ${error.message}`);
       throw new BadRequestException('Falha ao atualizar status do reembolso');
     }
+  }
+
+  private async handleRefundStatusUpdated(payload: WebhookPayloadDto): Promise<void> {
+    try {
+      const refund = payload.data.object;
+      await this.updatePaymentStatus(refund.payment_intent, {
+        object: payload.object,
+        type: payload.type,
+        api_version: payload.api_version,
+        created: payload.created,
+        data: {
+          ...payload.data,
+          refund_status: refund.status,
+          refund_amount: refund.amount,
+          refund_metadata: refund.metadata,
+          last_refund_update: new Date().toISOString()
+        },
+        livemode: payload.livemode,
+        pending_webhooks: payload.pending_webhooks,
+        request: payload.request,
+        status: this.getRefundStatus(refund.status),
+        update_at: new Date()
+      });
+
+      this.logger.log(`Status do reembolso atualizado para o pagamento ID ${refund.payment_intent}. Novo status: ${refund.status}`);
+    } catch (error) {
+      this.logger.error(`Erro ao atualizar status do reembolso: ${error.message}`);
+      throw new BadRequestException('Falha ao atualizar status do reembolso');
+    }
+  }
+
+  private getRefundStatus(refundStatus: string): string {
+    const statusMap: { [key: string]: string } = {
+      'succeeded': 'refunded',
+      'pending': 'refund_pending',
+      'failed': 'refund_failed',
+      'canceled': 'refund_canceled'
+    };
+
+    return statusMap[refundStatus] || 'refund_unknown';
   }
 
   private async updatePaymentStatus(paymentId: string, paymentData: Prisma.PaymentUpdateInput): Promise<void> {
