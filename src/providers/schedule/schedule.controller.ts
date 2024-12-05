@@ -11,14 +11,13 @@ import { ScheduleCreateSuccessResponse, ScheduleListSuccessResponse, ScheduleUpd
 @ApiTags('Schedule')
 @Controller('schedule')
 export class ScheduleController {
-  constructor(private readonly scheduleService: ScheduleService) {}
-
-  @Post()
+  constructor(private readonly scheduleService: ScheduleService) { }
+  
   @Version('1')
+  @Post()
   @HttpCode(201)
   @ApiOperation({ summary: 'Criar novo agendamento' })
   @ApiBody({ description: 'Objeto JSON contendo dados', type: CreateScheduleDto })
-
   @ApiResponse(ScheduleCreateSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
   create(@Body() createScheduleDto: CreateScheduleDto) {
@@ -48,7 +47,7 @@ export class ScheduleController {
   @Patch(':id')
   @Version('1')
   @ApiOperation({ summary: 'Atualizar status do agendamento' })
-  
+
   @ApiResponse(ScheduleUpdateSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
   update(@Param('id') id: string, @Body() updateScheduleDto: UpdateScheduleDto) {

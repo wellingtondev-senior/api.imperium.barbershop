@@ -13,29 +13,25 @@ export class PaymentService {
 
   async processWebhook(payload: WebhookPayloadDto) {
     try {
-       const paymentIntent = payload.data.object;
-
+      const paymentIntent = payload.data.object;
       
-      // switch (paymentIntent.status) {
-      //   case 'succeeded':
-      //     await this.handlePaymentSucceeded(payload);
-      //     break;
-      //   case 'requires_payment_method':
-      //     await this.handlePaymentFailed(payload);
-      //     break;
-      //   case 'canceled':
-      //     await this.handlePaymentCanceled(payload);
-      //     break;
-      //   default:
-      //     this.logger.warn(`Status de pagamento não tratado: ${paymentIntent.status}`);
-      // }
+      switch (paymentIntent.status) {
+        case 'succeeded':
+          await this.handlePaymentSucceeded(payload);
+          break;
+        case 'requires_payment_method':
+          await this.handlePaymentFailed(payload);
+          break;
+        case 'canceled':
+          await this.handlePaymentCanceled(payload);
+          break;
+        default:
+          this.logger.warn(`Status de pagamento não tratado: ${paymentIntent.status}`);
+      }
 
-      return {
-        payload,
-        paymentIntent
-      };
+      return { received: true };
     } catch (error) {
-      this.logger.error('Erro ao processar webhook:', error.message);
+      this.logger.error('Erro ao processar webhook:', error);
       throw new BadRequestException('Falha ao processar webhook');
     }
   }
