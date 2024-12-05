@@ -12,7 +12,7 @@ Content-Type: application/json
 
 {
     "to": "+18777804236",
-    "message": "Teste de envio de SMS via API"
+    "message": "Teste de envio de SMS via API https://imperiumbarbershop.com.br"
 }
 
 ### Enviar SMS com número inválido (deve falhar)

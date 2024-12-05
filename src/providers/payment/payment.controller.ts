@@ -16,7 +16,6 @@ export class PaymentController {
   @ApiResponse({ status: 400, description: 'Payload do webhook inválido' })
   async handleWebhook(
     @Body() payload: WebhookPayloadDto,
-    @Headers('stripe-signature') signature: string,
   ) {
     return this.paymentService.processWebhook(payload);
   }

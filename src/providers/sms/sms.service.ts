@@ -11,7 +11,12 @@ export class SmsService {
 
     async sendSms(data: SMSDto) {
         try {
-            await this.smsQueue.add('sms-payment', data, {
+            const { to, message } = data;
+          
+            await this.smsQueue.add('sms-payment', {
+                to,
+                message
+            }, {
                 attempts: 3,
                 backoff: {
                     type: 'exponential',
