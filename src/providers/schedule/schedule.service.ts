@@ -112,7 +112,7 @@ export class ScheduleService {
             connect: serviceIds.map(id => ({ id }))
           },
           Payment: {
-            connect: { id: createdPayment.id }
+            connect: { id: payment.id }
           }
         },
         include: {
