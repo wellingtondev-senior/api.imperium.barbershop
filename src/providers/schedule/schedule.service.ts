@@ -3,6 +3,7 @@ import { CreateScheduleDto, UpdateScheduleDto } from './dto/schedule.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { ServiceDto } from '../service/dto/service.dto';
 import { JsonValue } from '@prisma/client/runtime/library';
+import { PaymentMethod } from '@stripe/stripe-js';
 
 @Injectable()
 export class ScheduleService {
@@ -86,7 +87,7 @@ export class ScheduleService {
             amount: payment.amount,
             currency: payment.currency,
             status: payment.status,
-            payment_method: payment.payment_method,
+            payment_method: payment.payment_method as string,
             client_secret: payment.client_secret,
             clientId: client.id
           }

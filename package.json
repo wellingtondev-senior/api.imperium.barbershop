@@ -37,6 +37,7 @@
     "@nestjs/swagger": "^7.1.17",
     "@nestjs/throttler": "^5.1.2",
     "@prisma/client": "^5.22.0",
+    "@stripe/stripe-js": "^5.2.0",
     "axios": "^1.7.2",
     "bcrypt": "^5.1.1",
     "bull": "^4.16.3",

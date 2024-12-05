@@ -3,7 +3,7 @@ import { IsString, IsArray, IsDateString, ValidateNested, IsNotEmpty, IsEnum, Is
 import { Type } from 'class-transformer';
 import { ServiceDto } from 'src/providers/service/dto/service.dto';
 import { ClientScheduleDto } from 'src/providers/client/dto/client.dto';
-
+import { PaymentIntent } from "@stripe/stripe-js";
 
 
 export class CreateScheduleDto {
@@ -73,7 +73,7 @@ export class CreateScheduleDto {
   })
   @IsNotEmpty()
   @IsObject()
-  payment: Record<string, any>;
+  payment: PaymentIntent;
 }
 
 export class UpdateScheduleDto {
