@@ -2,10 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsArray, IsDateString, ValidateNested, IsNotEmpty, IsEnum, IsOptional, MaxLength, IsEmail, IsInt, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ServiceDto } from 'src/providers/service/dto/service.dto';
-import { ClientInfoDto } from 'src/providers/client/dto/create-client.dto';
 
 export class CreateScheduleDto {
-
   @ApiProperty({
     description: 'ID do agendamento (opcional)',
     example: 1,
@@ -24,35 +22,80 @@ export class CreateScheduleDto {
     }]
   })
   @IsArray()
-  @IsObject({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => ServiceDto)
   services: ServiceDto[];
 
   @ApiProperty({
-    description: 'Data e hora do agendamento',
-    example: '2024-01-20T10:00:00Z'
+    description: 'Data do agendamento',
+    example: '2024-01-20'
   })
-  @IsDateString()
-  dateTime: string;
+  @IsString()
+  @IsNotEmpty()
+  date: string;
 
   @ApiProperty({
-    description: 'Informações do cliente'
+    description: 'Hora do agendamento',
+    example: '10:00'
+  })
+  @IsString()
+  @IsNotEmpty()
+  time: string;
+
+  @ApiProperty({
+    description: 'Informações do cliente',
+    example: {
+      "cardName": "John Doe",
+      "email": "john@example.com",
+      "phoneCountry": "+55"
+    }
   })
   @IsNotEmpty()
   @IsObject()
-  clientInfo: Record<string, any>;
+  @ValidateNested()
+  @Type(() => ClientScheduleDto)
+  clientInfo: ClientScheduleDto;
 
   @ApiProperty({
     description: 'Informações do pagamento'
   })
   @IsNotEmpty()
   @IsObject()
-  payment:Record<string, any>;
+  payment: Record<string, any>;
+}
+
+export class ClientScheduleDto {
+  @ApiProperty({
+    description: 'Nome no cartão',
+    example: 'John Doe'
+  })
+  @IsString()
+  @IsNotEmpty()
+  cardName: string;
+
+  @ApiProperty({
+    description: 'Email do cliente',
+    example: 'john@example.com'
+  })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty({
+    description: 'Código do país do telefone',
+    example: '+55'
+  })
+  @IsString()
+  @IsNotEmpty()
+  phoneCountry: string;
 }
 
 export class UpdateScheduleDto {
   @ApiProperty({
     description: 'Status do agendamento',
-    example: 'confirmed',
+    example: 'confirmed'
   })
-  status: string
+  @IsString()
+  @IsNotEmpty()
+  status: string;
 }

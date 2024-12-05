@@ -9,9 +9,28 @@ export class ScheduleService {
     private readonly prisma: PrismaService
   ) {}
 
+  private combineDateAndTime(date: string, time: string): Date {
+    try {
+      // Combina a data e hora em uma string ISO
+      const dateTimeString = `${date}T${time}:00`;
+      const dateTime = new Date(dateTimeString);
+
+      if (isNaN(dateTime.getTime())) {
+        throw new BadRequestException('Invalid date or time format');
+      }
+
+      return dateTime;
+    } catch (error) {
+      throw new BadRequestException('Error combining date and time');
+    }
+  }
+
   async create(createScheduleDto: CreateScheduleDto) {
     try {
-      const { clientInfo, payment, services, dateTime } = createScheduleDto;
+      const { clientInfo, payment, services, date, time } = createScheduleDto;
+
+      // Combina date e time em um único DateTime
+      const dateTime = this.combineDateAndTime(date, time);
 
       // Find or create client
       let client;
@@ -24,10 +43,9 @@ export class ScheduleService {
       } else {
         client = await this.prisma.client.create({
           data: {
-            name: clientInfo.name,
+            name: clientInfo.cardName,
             email: clientInfo.email,
-            phone: clientInfo.phone,
-            phoneCountry: clientInfo.phoneCountry
+            phone: clientInfo.phoneCountry
           }
         });
       }
@@ -84,7 +102,8 @@ export class ScheduleService {
       // Create schedule
       const schedule = await this.prisma.schedule.create({
         data: {
-          date: new Date(dateTime),
+          dateTime: dateTime,
+          time: time,
           client: {
             connect: { id: client.id }
           },
@@ -131,7 +150,7 @@ export class ScheduleService {
           Payment: true
         },
         orderBy: {
-          date: 'desc'
+          dateTime: 'desc'
         }
       });
 
@@ -193,7 +212,7 @@ export class ScheduleService {
           Payment: true
         },
         orderBy: {
-          date: 'desc'
+          dateTime: 'desc'
         }
       });
 
@@ -229,7 +248,7 @@ export class ScheduleService {
           Payment: true
         },
         orderBy: {
-          date: 'desc'
+          dateTime: 'desc'
         }
       });
 
@@ -254,7 +273,7 @@ export class ScheduleService {
 
       const schedules = await this.prisma.schedule.findMany({
         where: {
-          date: {
+          dateTime: {
             gte: startDate,
             lte: endDate,
           }

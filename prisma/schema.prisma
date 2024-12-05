@@ -67,15 +67,14 @@ model Professional {
 }
 
 model Client {
-  id           Int        @id @default(autoincrement())
-  name         String
-  email        String     @unique
-  phone        String
-  phoneCountry String     @default("+55")
-  create_at    DateTime   @default(now())
-  update_at    DateTime   @updatedAt
-  schedules    Schedule[]
-  Payment      Payment[]
+  id        Int        @id @default(autoincrement())
+  name      String
+  email     String     @unique
+  phone     String
+  create_at DateTime   @default(now())
+  update_at DateTime   @updatedAt
+  schedules Schedule[]
+  Payment   Payment[]
 }
 
 model Adm {
@@ -120,9 +119,9 @@ model Service {
 
 model Schedule {
   id             Int          @id @default(autoincrement())
-  date           DateTime // Data e horário do agendamento
+  dateTime       DateTime // Data e horário do agendamento
+  time           String
   status         String       @default("pending") // pending, confirmed, completed, canceled
-  notes          String? // Notas ou observações sobre o agendamento
   professionalId Int
   clientId       Int
   services       Service[] // Relação muitos-para-muitos com serviços
@@ -133,38 +132,38 @@ model Schedule {
   update_at      DateTime     @updatedAt
   Payment        Payment[]
 
-  @@index([date])
+  @@index([dateTime])
   @@index([status])
 }
 
 model Payment {
-  id              String    @id
-  object          String
-  type            String
-  api_version     String
-  created         Int
-  data            Json      // Store the entire webhook data object
-  livemode        Boolean
+  id               String  @id
+  object           String
+  type             String
+  api_version      String
+  created          Int
+  data             Json // Store the entire webhook data object
+  livemode         Boolean
   pending_webhooks Int
-  request         Json      // Store the request object
+  request          Json // Store the request object
 
   // Campos extraídos do data.object para facilitar consultas
-  amount          Int?      // Valor em centavos
-  currency        String?
-  status          String?
-  payment_method  String?
-  client_secret   String?
+  amount         Int? // Valor em centavos
+  currency       String?
+  status         String?
+  payment_method String?
+  client_secret  String?
 
   // Relações existentes
-  client          Client    @relation(fields: [clientId], references: [id])
-  clientId        Int
-  schedule        Schedule? @relation(fields: [scheduleId], references: [id])
-  Service         Service?  @relation(fields: [serviceId], references: [id])
-  serviceId       Int?
+  client    Client    @relation(fields: [clientId], references: [id])
+  clientId  Int
+  schedule  Schedule? @relation(fields: [scheduleId], references: [id])
+  Service   Service?  @relation(fields: [serviceId], references: [id])
+  serviceId Int?
 
-  create_at       DateTime  @default(now())
-  update_at       DateTime  @updatedAt
-  scheduleId      Int?
+  create_at  DateTime @default(now())
+  update_at  DateTime @updatedAt
+  scheduleId Int?
 
   @@index([status])
   @@index([clientId])
