@@ -39,6 +39,17 @@ export class PaymentService {
   private async handlePaymentSucceeded(payload: WebhookPayloadDto): Promise<void> {
     try {
       const paymentIntent = payload.data.object;
+      
+      // Verificar se o pagamento existe
+      const existingPayment = await this.prismaService.payment.findUnique({
+        where: { id: paymentIntent.id }
+      });
+
+      if (!existingPayment) {
+        this.logger.error(`Pagamento não encontrado para o ID ${paymentIntent.id}`);
+        throw new BadRequestException('Pagamento não encontrado');
+      }
+
       const paymentData: Prisma.PaymentUpdateInput = {
         object: payload.object,
         type: payload.type,
@@ -72,6 +83,17 @@ export class PaymentService {
   private async handlePaymentFailed(payload: WebhookPayloadDto): Promise<void> {
     try {
       const paymentIntent = payload.data.object;
+
+      // Verificar se o pagamento existe
+      const existingPayment = await this.prismaService.payment.findUnique({
+        where: { id: paymentIntent.id }
+      });
+
+      if (!existingPayment) {
+        this.logger.error(`Pagamento não encontrado para o ID ${paymentIntent.id}`);
+        throw new BadRequestException('Pagamento não encontrado');
+      }
+
       const paymentData: Prisma.PaymentUpdateInput = {
         object: payload.object,
         type: payload.type,
@@ -101,6 +123,17 @@ export class PaymentService {
   private async handlePaymentCanceled(payload: WebhookPayloadDto): Promise<void> {
     try {
       const paymentIntent = payload.data.object;
+
+      // Verificar se o pagamento existe
+      const existingPayment = await this.prismaService.payment.findUnique({
+        where: { id: paymentIntent.id }
+      });
+
+      if (!existingPayment) {
+        this.logger.error(`Pagamento não encontrado para o ID ${paymentIntent.id}`);
+        throw new BadRequestException('Pagamento não encontrado');
+      }
+
       const paymentData: Prisma.PaymentUpdateInput = {
         object: payload.object,
         type: payload.type,
