@@ -66,7 +66,7 @@ export class ScheduleService {
       }
 
       // Create payment record with Stripe response
-      let createdPayment: { object: string; id: string; create_at: Date; update_at: Date; data: JsonValue; status: string | null; type: string; api_version: string; created: number; livemode: boolean; pending_webhooks: number; request: JsonValue; amount: number | null; currency: string | null; payment_method: string | null; client_secret: string | null; clientId: number; serviceId: number | null; scheduleId: number | null; };
+      let createdPayment: { object: string; id: string; create_at: Date; update_at: Date; data: JsonValue; status: string | null; type: string; api_version: string; created: number; livemode: boolean; pending_webhooks: number; request: JsonValue; amount: number | null; currency: string | null; payment_method: string | null; client_secret: string | null; clientId: number;  scheduleId: number | null; };
       try {
         createdPayment = await this.prisma.payment.create({
           data: {

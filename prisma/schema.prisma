@@ -124,7 +124,7 @@ model Schedule {
   professionalId Int
   clientId       Int
   services       Service[] // Relação muitos-para-muitos com serviços
-  paymentId      Int?         @unique // Relação única com o pagamento
+  paymentId      String?       // Relação única com o pagamento
   professional   Professional @relation(fields: [professionalId], references: [id])
   client         Client       @relation(fields: [clientId], references: [id])
   create_at      DateTime     @default(now())
@@ -136,7 +136,7 @@ model Schedule {
 }
 
 model Payment {
-  id               String  @id
+  id               String  @id 
   object           String
   type             String
   api_version      String
