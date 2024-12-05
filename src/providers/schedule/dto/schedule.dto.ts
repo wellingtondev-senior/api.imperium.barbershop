@@ -17,6 +17,15 @@ export class CreateScheduleDto {
   id?: number;
 
   @ApiProperty({
+    description: 'ID do agendamento (opcional)',
+    example: 1,
+    required: false
+  })
+  @IsInt()
+  @IsNotEmpty()
+  professionalId: number
+
+  @ApiProperty({
     description: 'Serviços solicitados',
     example: [{
       "id": 1,

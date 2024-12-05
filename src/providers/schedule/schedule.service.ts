@@ -53,14 +53,7 @@ export class ScheduleService {
         });
       }
 
-      // Validate professional
-      const professional = await this.prisma.professional.findUnique({
-        where: { id: 1 } // Você precisa passar o ID correto do profissional aqui
-      });
-
-      if (!professional) {
-        throw new BadRequestException('Professional not found');
-      }
+    
 
       // Validate services
       const serviceIds = services.map((service:ServiceDto) => service.id);
@@ -111,7 +104,7 @@ export class ScheduleService {
             connect: { id: client.id }
           },
           professional: {
-            connect: { id: professional.id }
+            connect: { id: createScheduleDto.professionalId }
           },
           status: createScheduleDto.payment.status,
           services: {
