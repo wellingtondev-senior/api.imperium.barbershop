@@ -2,30 +2,22 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 
 
-export class ClientInfoDto {
+export class ClientScheduleDto {
   @ApiProperty({
-    description: 'Nome do cliente',
-    example: 'João Silva'
+    description: 'Nome no cartão',
+    example: 'John Doe'
   })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  cardName: string;
 
   @ApiProperty({
     description: 'Email do cliente',
-    example: 'joao@email.com'
+    example: 'john@example.com'
   })
-  @IsString()
   @IsEmail()
-  email: string;
-
-  @ApiProperty({
-    description: 'Telefone do cliente',
-    example: '11999999999'
-  })
-  @IsString()
   @IsNotEmpty()
-  phone: string;
+  email: string;
 
   @ApiProperty({
     description: 'Código do país do telefone',

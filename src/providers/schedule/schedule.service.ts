@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { CreateScheduleDto, UpdateScheduleDto } from './dto/schedule.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { ServiceDto } from '../service/dto/service.dto';
+import { JsonValue } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class ScheduleService {
@@ -33,7 +34,7 @@ export class ScheduleService {
       const dateTime = this.combineDateAndTime(date, time);
 
       // Find or create client
-      let client;
+      let client: { id: number; cardName: string; email: string; phoneCountry: string; create_at: Date; update_at: Date; };
       const existingClient = await this.prisma.client.findFirst({
         where: { email: clientInfo.email }
       });
@@ -43,9 +44,9 @@ export class ScheduleService {
       } else {
         client = await this.prisma.client.create({
           data: {
-            name: clientInfo.cardName,
+          cardName: clientInfo.cardName,
             email: clientInfo.email,
-            phone: clientInfo.phoneCountry
+            phoneCountry: clientInfo.phoneCountry
           }
         });
       }
@@ -70,7 +71,7 @@ export class ScheduleService {
       }
 
       // Create payment record with Stripe response
-      let createdPayment;
+      let createdPayment: { object: string; id: string; create_at: Date; update_at: Date; data: JsonValue; status: string | null; type: string; api_version: string; created: number; livemode: boolean; pending_webhooks: number; request: JsonValue; amount: number | null; currency: string | null; payment_method: string | null; client_secret: string | null; clientId: number; serviceId: number | null; scheduleId: number | null; };
       try {
         createdPayment = await this.prisma.payment.create({
           data: {

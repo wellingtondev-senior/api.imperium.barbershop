@@ -67,14 +67,14 @@ model Professional {
 }
 
 model Client {
-  id        Int        @id @default(autoincrement())
-  name      String
-  email     String     @unique
-  phone     String
-  create_at DateTime   @default(now())
-  update_at DateTime   @updatedAt
-  schedules Schedule[]
-  Payment   Payment[]
+  id           Int        @id @default(autoincrement())
+  cardName     String
+  email        String     @unique
+  phoneCountry String
+  create_at    DateTime   @default(now())
+  update_at    DateTime   @updatedAt
+  schedules    Schedule[]
+  Payment      Payment[]
 }
 
 model Adm {

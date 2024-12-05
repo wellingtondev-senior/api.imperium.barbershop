@@ -2,6 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsArray, IsDateString, ValidateNested, IsNotEmpty, IsEnum, IsOptional, MaxLength, IsEmail, IsInt, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ServiceDto } from 'src/providers/service/dto/service.dto';
+import { ClientScheduleDto } from 'src/providers/client/dto/client.dto';
+
+
 
 export class CreateScheduleDto {
   @ApiProperty({
@@ -62,32 +65,6 @@ export class CreateScheduleDto {
   @IsNotEmpty()
   @IsObject()
   payment: Record<string, any>;
-}
-
-export class ClientScheduleDto {
-  @ApiProperty({
-    description: 'Nome no cartão',
-    example: 'John Doe'
-  })
-  @IsString()
-  @IsNotEmpty()
-  cardName: string;
-
-  @ApiProperty({
-    description: 'Email do cliente',
-    example: 'john@example.com'
-  })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @ApiProperty({
-    description: 'Código do país do telefone',
-    example: '+55'
-  })
-  @IsString()
-  @IsNotEmpty()
-  phoneCountry: string;
 }
 
 export class UpdateScheduleDto {
