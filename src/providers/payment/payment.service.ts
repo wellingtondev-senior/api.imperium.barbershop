@@ -13,7 +13,8 @@ export class PaymentService {
 
   async processWebhook(payload: WebhookPayloadDto) {
     try {
-      // const paymentIntent = payload.data.object;
+       const paymentIntent = payload.data.object;
+
       
       // switch (paymentIntent.status) {
       //   case 'succeeded':
@@ -29,9 +30,12 @@ export class PaymentService {
       //     this.logger.warn(`Status de pagamento não tratado: ${paymentIntent.status}`);
       // }
 
-      return payload;
+      return {
+        payload,
+        paymentIntent
+      };
     } catch (error) {
-      this.logger.error('Erro ao processar webhook:', error);
+      this.logger.error('Erro ao processar webhook:', error.message);
       throw new BadRequestException('Falha ao processar webhook');
     }
   }
