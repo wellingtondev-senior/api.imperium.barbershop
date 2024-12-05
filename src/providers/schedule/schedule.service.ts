@@ -10,10 +10,12 @@ export class ScheduleService {
     private readonly prisma: PrismaService
   ) {}
 
-  private combineDateAndTime(date: string, time: string): Date {
+  private combineDateAndTime(date: Date, time: string): Date {
     try {
+      // Extrair apenas a data do ISO string
+      const dateOnly = new Date(date).toISOString().split('T')[0];
       // Combina a data e hora em uma string ISO
-      const dateTimeString = `${date}T${time}:00`;
+      const dateTimeString = `${dateOnly}T${time}:00`;
       const dateTime = new Date(dateTimeString);
 
       if (isNaN(dateTime.getTime())) {

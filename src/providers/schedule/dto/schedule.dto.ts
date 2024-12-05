@@ -31,11 +31,11 @@ export class CreateScheduleDto {
 
   @ApiProperty({
     description: 'Data do agendamento',
-    example: '2024-01-20'
+    example: '2024-12-21T03:00:00.000Z'
   })
   @IsString()
   @IsNotEmpty()
-  date: string;
+  date: Date;
 
   @ApiProperty({
     description: 'Hora do agendamento',
