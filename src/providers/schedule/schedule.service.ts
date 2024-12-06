@@ -377,13 +377,10 @@ export class ScheduleService {
   }
 
   async findByPaymentId(paymentId: string) {
-    const schedule = await this.prismaService.schedule.findFirst({
+    const schedule = await this.prismaService.schedule.findMany({
       where: {
-        Payment: {
-          some: {
-            id: paymentId
-          }
-        }
+        paymentId: paymentId
+        
       },
       include: {
         client: true,
@@ -393,7 +390,7 @@ export class ScheduleService {
       }
     });
 
-    if (!schedule) {
+    if (schedule.length === 0) {
       throw new NotFoundException(`Schedule with payment ID ${paymentId} not found`);
     }
 
