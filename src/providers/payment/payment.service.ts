@@ -120,7 +120,7 @@ export class PaymentService {
           `at ${schedule.time} has failed.\n` +
           `Services: ${servicesNames}\n` +
           `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
-          `Please update your payment method to secure your appointment.`;
+          `Please update your payment method at: ${process.env.URL_FRONTEND}/schedule/confirmation/${paymentIntent.id}`;
 
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
@@ -152,8 +152,8 @@ export class PaymentService {
         status: paymentIntent.status,
         update_at: new Date()
       });
-       // Buscar e atualizar o agendamento associado
-       const schedule = await this.prismaService.schedule.findFirst({
+           // Buscar e atualizar o agendamento associado
+      const schedule = await this.prismaService.schedule.findFirst({
         where: { paymentId: paymentIntent.id },
         include: {
           client: true,
@@ -167,8 +167,25 @@ export class PaymentService {
           where: { id: schedule.id },
           data: { status: 'canceled' }
         });
-      }
 
+        // Send SMS notification about payment failure
+        const servicesNames = schedule.services.map(service => service.name).join(', ');
+        const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+
+        const message = `Hello ${schedule.client.cardName}!\n` +
+          `Your payment for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
+          `at ${schedule.time} has been cancelled.\n` +
+          `Services: ${servicesNames}\n` +
+          `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
+          `You can retry your payment at: ${process.env.URL_FRONTEND}/schedule/confirmation/${paymentIntent.id}`;
+
+        await this.smsService.sendSms({
+          to: schedule.client.phoneCountry,
+          message: message
+        });
+
+        this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
+      }
       this.logger.log(`Pagamento cancelado para o ID ${paymentIntent.id}`);
     } catch (error) {
       this.logger.error(`Erro ao atualizar pagamento cancelado: ${error.message}`);
@@ -195,8 +212,8 @@ export class PaymentService {
         status: 'refund_failed',
         update_at: new Date()
       });
-       // Buscar e atualizar o agendamento associado
-       const schedule = await this.prismaService.schedule.findFirst({
+           // Buscar e atualizar o agendamento associado
+      const schedule = await this.prismaService.schedule.findFirst({
         where: { paymentId: refund.payment_intent.id },
         include: {
           client: true,
@@ -210,8 +227,25 @@ export class PaymentService {
           where: { id: schedule.id },
           data: { status: 'canceled' }
         });
-      }
 
+        // Send SMS notification about payment failure
+        const servicesNames = schedule.services.map(service => service.name).join(', ');
+        const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+
+        const message = `Hello ${schedule.client.cardName}!\n` +
+          `Your refund request for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
+          `at ${schedule.time} has failed.\n` +
+          `Services: ${servicesNames}\n` +
+          `Refund Amount: U$ ${totalValue.toFixed(2)}\n\n` +
+          `Check your refund status at: ${process.env.URL_FRONTEND}/schedule/confirmation/${refund.payment_intent}`;
+
+        await this.smsService.sendSms({
+          to: schedule.client.phoneCountry,
+          message: message
+        });
+
+        this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
+      }
       this.logger.error(`Reembolso falhou para o pagamento ID ${refund.payment_intent}. Motivo: ${refund.failure_reason}`);
     } catch (error) {
       this.logger.error(`Erro ao processar falha no reembolso: ${error.message}`);
@@ -238,23 +272,40 @@ export class PaymentService {
         status: 'refunded',
         update_at: new Date()
       });
-       // Buscar e atualizar o agendamento associado
-       const schedule = await this.prismaService.schedule.findFirst({
-        where: { paymentId: refund.payment_intent.id },
-        include: {
-          client: true,
-          services: true,
-          professional: true,
-        }
-      });
-
-      if (schedule) {
-        await this.prismaService.schedule.update({
-          where: { id: schedule.id },
-          data: { status: 'canceled' }
-        });
-      }
-
+          // Buscar e atualizar o agendamento associado
+          const schedule = await this.prismaService.schedule.findFirst({
+            where: { paymentId: refund.payment_intent.id },
+            include: {
+              client: true,
+              services: true,
+              professional: true,
+            }
+          });
+    
+          if (schedule) {
+            await this.prismaService.schedule.update({
+              where: { id: schedule.id },
+              data: { status: 'canceled' }
+            });
+    
+            // Send SMS notification about payment failure
+            const servicesNames = schedule.services.map(service => service.name).join(', ');
+            const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+    
+            const message = `Hello ${schedule.client.cardName}!\n` +
+              `Your refund for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
+              `at ${schedule.time} has been processed.\n` +
+              `Services: ${servicesNames}\n` +
+              `Refund Amount: U$ ${totalValue.toFixed(2)}\n\n` +
+              `View your refund details at: ${process.env.URL_FRONTEND}/schedule/confirmation/${refund.payment_intent}`;
+    
+            await this.smsService.sendSms({
+              to: schedule.client.phoneCountry,
+              message: message
+            });
+    
+            this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
+          }
 
       this.logger.log(`Reembolso atualizado para o pagamento ID ${refund.payment_intent}. Status: ${refund.status}`);
     } catch (error) {
@@ -284,7 +335,40 @@ export class PaymentService {
         status: this.getRefundStatus(refund.status),
         update_at: new Date()
       });
+    // Buscar e atualizar o agendamento associado
+    const schedule = await this.prismaService.schedule.findFirst({
+      where: { paymentId: refund.payment_intent.id },
+      include: {
+        client: true,
+        services: true,
+        professional: true,
+      }
+    });
 
+    if (schedule) {
+      await this.prismaService.schedule.update({
+        where: { id: schedule.id },
+        data: { status: 'canceled' }
+      });
+
+      // Send SMS notification about payment failure
+      const servicesNames = schedule.services.map(service => service.name).join(', ');
+      const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+
+      const message = `Hello ${schedule.client.cardName}!\n` +
+        `Your refund status for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
+        `at ${schedule.time} has been updated.\n` +
+        `Services: ${servicesNames}\n` +
+        `Refund Amount: U$ ${totalValue.toFixed(2)}\n\n` +
+        `Check your refund status at: ${process.env.URL_FRONTEND}/schedule/confirmation/${refund.payment_intent}`;
+
+      await this.smsService.sendSms({
+        to: schedule.client.phoneCountry,
+        message: message
+      });
+
+      this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
+    }
       this.logger.log(`Status do reembolso atualizado para o pagamento ID ${refund.payment_intent}. Novo status: ${refund.status}`);
     } catch (error) {
       this.logger.error(`Erro ao atualizar status do reembolso: ${error.message}`);
@@ -324,6 +408,41 @@ export class PaymentService {
         status: 'succeeded',
         update_at: new Date()
       });
+      
+    // Buscar e atualizar o agendamento associado
+    const schedule = await this.prismaService.schedule.findFirst({
+      where: { paymentId: charge.payment_intent.id },
+      include: {
+        client: true,
+        services: true,
+        professional: true,
+      }
+    });
+
+    if (schedule) {
+      await this.prismaService.schedule.update({
+        where: { id: schedule.id },
+        data: { status: 'pending' }
+      });
+
+      // Send SMS notification about payment failure
+      const servicesNames = schedule.services.map(service => service.name).join(', ');
+      const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+
+      const message = `Hello ${schedule.client.cardName}!\n` +
+        `Your payment for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
+        `at ${schedule.time} has been successful!\n` +
+        `Services: ${servicesNames}\n` +
+        `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
+        `View your appointment details at: ${process.env.URL_FRONTEND}/schedule/confirmation/${charge.payment_intent}`;
+
+      await this.smsService.sendSms({
+        to: schedule.client.phoneCountry,
+        message: message
+      });
+
+      this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
+    }
 
       this.logger.log(`Cobrança bem-sucedida para o pagamento ID ${charge.payment_intent}`);
     } catch (error) {
@@ -354,6 +473,40 @@ export class PaymentService {
         status: charge.status,
         update_at: new Date()
       });
+    // Buscar e atualizar o agendamento associado
+    const schedule = await this.prismaService.schedule.findFirst({
+      where: { paymentId: charge.payment_intent.id },
+      include: {
+        client: true,
+        services: true,
+        professional: true,
+      }
+    });
+
+    if (schedule) {
+      await this.prismaService.schedule.update({
+        where: { id: schedule.id },
+        data: { status: 'canceled' }
+      });
+
+      // Send SMS notification about payment failure
+      const servicesNames = schedule.services.map(service => service.name).join(', ');
+      const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+
+      const message = `Hello ${schedule.client.cardName}!\n` +
+        `Your payment status for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
+        `at ${schedule.time} has been updated.\n` +
+        `Services: ${servicesNames}\n` +
+        `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
+        `Check your payment status at: ${process.env.URL_FRONTEND}/schedule/confirmation/${charge.payment_intent}`;
+
+      await this.smsService.sendSms({
+        to: schedule.client.phoneCountry,
+        message: message
+      });
+
+      this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
+    }
 
       this.logger.log(`Status da cobrança atualizado para o pagamento ID ${charge.payment_intent}. Novo status: ${charge.status}`);
     } catch (error) {
