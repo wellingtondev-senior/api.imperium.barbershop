@@ -129,7 +129,7 @@ model Schedule {
   client         Client       @relation(fields: [clientId], references: [id])
   create_at      DateTime     @default(now())
   update_at      DateTime     @updatedAt
-  Payment        Payment[]
+  Payment        Payment @relation(fields: [paymentId], references: [id])
 
   @@index([dateTime])
   @@index([status])
