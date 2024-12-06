@@ -201,11 +201,20 @@ export class ScheduleService {
           dateTime: 'desc'
         }
       });
-
+      const payment = await this.prismaService.payment.findMany({
+        where:{
+          id: {
+            in: schedules.map((schedule) => schedule.paymentId)
+          }
+        }
+    });
       return {
         success: true,
         message: 'Schedules retrieved successfully',
-        data: schedules
+        data: {
+          ...schedules,
+          Payment: payment
+        }
       };
     } catch (error) {
       throw new Error(`Error retrieving schedules: ${error.message}`);
