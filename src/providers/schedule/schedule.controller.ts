@@ -12,7 +12,7 @@ import { ScheduleCreateSuccessResponse, ScheduleListSuccessResponse, ScheduleUpd
 @Controller('schedule')
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) { }
-  
+
   @Version('1')
   @Post()
   @HttpCode(201)
@@ -42,6 +42,14 @@ export class ScheduleController {
   @ApiResponse(ScheduleErrorResponse)
   findOne(@Param('id') id: string) {
     return this.scheduleService.findOne(+id);
+  }
+  @Version('1')
+  @Get('payment/:paymentId')
+  @ApiOperation({ summary: 'Buscar agendamento por PaymentId' })
+  @ApiResponse(ScheduleCreateSuccessResponse)
+  @ApiResponse(ScheduleErrorResponse)
+  findByPaymentId(@Param('paymentId') paymentId: string) {
+    return this.scheduleService.findByPaymentId(paymentId);
   }
 
   @Patch(':id')

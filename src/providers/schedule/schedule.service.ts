@@ -376,6 +376,30 @@ export class ScheduleService {
     }
   }
 
+  async findByPaymentId(paymentId: string) {
+    const schedule = await this.prismaService.schedule.findFirst({
+      where: {
+        Payment: {
+          some: {
+            id: paymentId
+          }
+        }
+      },
+      include: {
+        client: true,
+        professional: true,
+        services: true,
+        Payment: true
+      }
+    });
+
+    if (!schedule) {
+      throw new NotFoundException(`Schedule with payment ID ${paymentId} not found`);
+    }
+
+    return schedule;
+  }
+
   async update(id: number, updateScheduleDto: UpdateScheduleDto) {
     try {
       const schedule = await this.prismaService.schedule.findUnique({
