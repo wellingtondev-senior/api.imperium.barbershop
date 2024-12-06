@@ -158,7 +158,6 @@ export class ScheduleService {
           payment_method: payment.payment_method as string,
           client_secret: payment.client_secret,
           clientId: client.id,
-          scheduleId: createdSchedule.id // Vinculamos ao schedule criado
         }
       });
 

@@ -124,7 +124,7 @@ model Schedule {
   professionalId Int
   clientId       Int
   services       Service[] // Relação muitos-para-muitos com serviços
-  paymentId      String? // Relação única com o pagamento
+  paymentId      String // Relação única com o pagamento
   professional   Professional @relation(fields: [professionalId], references: [id])
   client         Client       @relation(fields: [clientId], references: [id])
   create_at      DateTime     @default(now())
@@ -154,10 +154,9 @@ model Payment {
   // Relações existentes
   client           Client    @relation(fields: [clientId], references: [id])
   clientId         Int
-  schedule         Schedule? @relation(fields: [scheduleId], references: [id])
   create_at        DateTime  @default(now())
   update_at        DateTime  @updatedAt
-  scheduleId       Int?
+  schedule         Schedule[]
 
   @@index([status])
   @@index([clientId])
