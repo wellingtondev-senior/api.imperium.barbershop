@@ -23,10 +23,9 @@ export class ScheduleController {
   create(@Body() createScheduleDto: CreateScheduleDto) {
     return this.scheduleService.create(createScheduleDto);
   }
-
-  @Get()
   @Version('1')
-  @Roles(Role.ADM)
+  @Get()
+  @Roles(Role.ADM, Role.PROFESSIONAL)
   @UseGuards(AuthGuard, RoleGuard)
   @ApiOperation({ summary: 'Listar todos os agendamentos' })
   @ApiResponse(ScheduleListSuccessResponse)
