@@ -3,8 +3,24 @@ import { IsString, IsArray, IsDateString, ValidateNested, IsNotEmpty, IsEnum, Is
 import { Type } from 'class-transformer';
 import { ServiceDto } from 'src/providers/service/dto/service.dto';
 import { ClientScheduleDto } from 'src/providers/client/dto/client.dto';
-import { PaymentIntent } from "@stripe/stripe-js";
 
+// Define payment interface for DTO validation
+export interface PaymentData {
+  id: string;
+  object: string;
+  amount: number;
+  client_secret: string;
+  created: number;
+  currency: string;
+  status: string;
+  payment_method: string;
+  livemode: boolean;
+  type?: string;
+  api_version?: string;
+  pending_webhooks?: number;
+  request?: any;
+  data?: any;
+}
 
 export class CreateScheduleDto {
   @ApiProperty({
@@ -73,7 +89,7 @@ export class CreateScheduleDto {
   })
   @IsNotEmpty()
   @IsObject()
-  payment: PaymentIntent;
+  payment: PaymentData;
 }
 
 export class UpdateScheduleDto {

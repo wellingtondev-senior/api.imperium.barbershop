@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ScheduleService } from './schedule.service';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
-import { CreateScheduleDto, UpdateScheduleDto } from './dto/schedule.dto';
+import { CreateScheduleDto, UpdateScheduleDto, PaymentData } from './dto/schedule.dto';
 import { MailerService } from '../mailer/mailer.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ServiceDto } from '../service/dto/service.dto';
@@ -64,41 +64,6 @@ describe('ScheduleService', () => {
     jest.clearAllMocks();
   });
 
-  const mockPayment = {
-    id: 'pay_123',
-    object: 'payment_intent',
-    amount: 5000,
-    amount_details: { tip: {} },
-    capture_method: 'automatic',
-    client_secret: 'secret_123',
-    confirmation_method: 'automatic',
-    created: Math.floor(Date.now() / 1000),
-    currency: 'brl',
-    description: 'Test payment',
-    livemode: false,
-    payment_method: 'card',
-    payment_method_types: ['card'],
-    status: 'pending',
-    automatic_payment_methods: null,
-    canceled_at: null,
-    cancellation_reason: null,
-    last_payment_error: null,
-    latest_charge: null,
-    metadata: {},
-    next_action: null,
-    processing: null,
-    receipt_email: null,
-    setup_future_usage: null,
-    shipping: null,
-    source: null,
-    statement_descriptor: null,
-    statement_descriptor_suffix: null,
-    transfer_data: null,
-    transfer_group: null,
-    method: 'card',
-    payment_method_configuration_details: null
-  };
-
   const mockService: ServiceDto = {
     id: 1,
     name: 'Haircut',
@@ -106,19 +71,58 @@ describe('ScheduleService', () => {
     price: 30,
     duration: 30,
     active: true,
-    professionalId: 1
+    professionalId: 1,
   };
 
   const mockCreateScheduleDto: CreateScheduleDto = {
     services: [mockService],
-    dateTime: '2024-01-20T10:00:00Z',
-    payment: mockPayment,
+    date: new Date('2024-01-20T10:00:00Z'),
+    time: '10:00',
+    professionalId: 1,
+    payment: {
+      id: 'pi_123',
+      object: 'payment_intent',
+      amount: 3000,
+      client_secret: 'secret_123',
+      created: 1642665600,
+      currency: 'usd',
+      status: 'succeeded',
+      payment_method: 'pm_123',
+      livemode: false,
+      type: 'payment_intent.created',
+      api_version: '2024-11-20.acacia',
+      pending_webhooks: 0,
+      request: {
+        id: 'pi_123',
+        idempotency_key: null
+      },
+      data: null
+    },
     clientInfo: {
-      name: 'John Doe',
+      cardName: 'John Doe',
       email: 'john@example.com',
-      phone: '11999999999',
-      phoneCountry: '+55'
-    }
+      phoneCountry: '+55',
+    },
+  };
+
+  const mockPayment: PaymentData = {
+    id: 'pi_123',
+    object: 'payment_intent',
+    amount: 3000,
+    client_secret: 'secret_123',
+    created: 1642665600,
+    currency: 'usd',
+    status: 'succeeded',
+    payment_method: 'pm_123',
+    livemode: false,
+    type: 'payment_intent.created',
+    api_version: '2024-11-20.acacia',
+    pending_webhooks: 0,
+    request: {
+      id: 'pi_123',
+      idempotency_key: null
+    },
+    data: null
   };
 
   describe('create', () => {
