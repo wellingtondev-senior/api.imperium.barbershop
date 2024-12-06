@@ -3,11 +3,15 @@ import { CreateScheduleDto, UpdateScheduleDto } from './dto/schedule.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { ServiceDto } from '../service/dto/service.dto';
 import { JsonValue } from '@prisma/client/runtime/library';
+import { SmsService } from '../sms/sms.service';
+import { format } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 
 @Injectable()
 export class ScheduleService {
   constructor(
-    private readonly prisma: PrismaService
+    private readonly prismaService: PrismaService,
+    private readonly smsService: SmsService
   ) {}
 
   private combineDateAndTime(date: Date, time: string): Date {
@@ -28,6 +32,34 @@ export class ScheduleService {
     }
   }
 
+  private formatScheduleMessage(schedule: any, services: any[]): string {
+    const formattedDate = format(new Date(schedule.dateTime), "MMMM dd, yyyy", { locale: enUS });
+    const servicesNames = services.map(service => service.name).join(', ');
+    const totalValue = services.reduce((total, service) => total + service.price, 0);
+
+    return `Hello ${schedule.client.cardName}! Your appointment has been confirmed:\n` +
+           `Date: ${formattedDate}\n` +
+           `Time: ${schedule.time}\n` +
+           `Services: ${servicesNames}\n` +
+           `Total Value: U$ ${totalValue.toFixed(2)}\n` +
+           `Professional: ${schedule.professional.name}\n\n` +
+           `Payment Status: ${schedule.Payment[0].status === 'succeeded' ? 'Confirmed' : 'Pending'}`;
+  }
+
+  private async sendScheduleConfirmationSMS(schedule: any) {
+    try {
+      const message = this.formatScheduleMessage(schedule, schedule.services);
+      
+      await this.smsService.sendSms({
+        to: schedule.client.phoneCountry,
+        message
+      });
+    } catch (error) {
+      console.error('Error sending SMS:', error);
+      // We don't throw the error to avoid interrupting the main flow
+    }
+  }
+
   async create(createScheduleDto: CreateScheduleDto) {
     try {
       const { clientInfo, payment, services, date, time } = createScheduleDto;
@@ -37,18 +69,18 @@ export class ScheduleService {
 
       // Find or create client
       let client: { id: number; cardName: string; email: string; phoneCountry: string; create_at: Date; update_at: Date; };
-      const existingClient = await this.prisma.client.findFirst({
+      const existingClient = await this.prismaService.client.findFirst({
         where: { email: clientInfo.email }
       });
 
       if (existingClient) {
         client = existingClient;
       } else {
-        client = await this.prisma.client.create({
+        client = await this.prismaService.client.create({
           data: {
           cardName: clientInfo.cardName,
             email: clientInfo.email,
-            phoneCountry: clientInfo.phoneCountry
+            phoneCountry: "+" + clientInfo.phoneCountry
           }
         });
       }
@@ -57,7 +89,7 @@ export class ScheduleService {
 
       // Verify if all services exist
       const serviceIds = services.map((service:ServiceDto) => service.id);
-      const servicesExist = await this.prisma.service.findMany({
+      const servicesExist = await this.prismaService.service.findMany({
         where: {
           id: {
             in: serviceIds
@@ -66,13 +98,13 @@ export class ScheduleService {
       });
 
       if (servicesExist.length !== serviceIds.length) {
-        throw new BadRequestException('Um ou mais serviços não foram encontrados');
+        throw new BadRequestException('One or more services were not found');
       }
 
       // Create payment record with Stripe response
       let createdPayment: { object: string; id: string; create_at: Date; update_at: Date; data: JsonValue; status: string | null; type: string; api_version: string; created: number; livemode: boolean; pending_webhooks: number; request: JsonValue; amount: number | null; currency: string | null; payment_method: string | null; client_secret: string | null; clientId: number;  scheduleId: number | null; };
       try {
-        createdPayment = await this.prisma.payment.create({
+        createdPayment = await this.prismaService.payment.create({
           data: {
             id: payment.id,
             object: 'payment_intent',
@@ -100,7 +132,7 @@ export class ScheduleService {
       }
 
       // Create schedule
-      const schedule = await this.prisma.schedule.create({
+      const schedule = await this.prismaService.schedule.create({
         data: {
           dateTime: dateTime,
           time: time,
@@ -110,7 +142,7 @@ export class ScheduleService {
           professional: {
             connect: { id: createScheduleDto.professionalId }
           },
-          status: createScheduleDto.payment.status,
+          status: "pending",
           services: {
             connect: servicesExist.map(service => ({
               id: service.id
@@ -126,6 +158,9 @@ export class ScheduleService {
           professional: true
         },
       });
+
+      // Enviar SMS de confirmação
+      await this.sendScheduleConfirmationSMS(schedule);
 
       return {
         success: true,
@@ -143,7 +178,7 @@ export class ScheduleService {
 
   async findAll() {
     try {
-      const schedules = await this.prisma.schedule.findMany({
+      const schedules = await this.prismaService.schedule.findMany({
         include: {
           professional: true,
           client: true,
@@ -167,7 +202,7 @@ export class ScheduleService {
 
   async findOne(id: number) {
     try {
-      const schedule = await this.prisma.schedule.findUnique({
+      const schedule = await this.prismaService.schedule.findUnique({
         where: { id },
         include: {
           professional: true,
@@ -196,7 +231,7 @@ export class ScheduleService {
 
   async findByProfessional(professionalId: number) {
     try {
-      const professional = await this.prisma.professional.findUnique({
+      const professional = await this.prismaService.professional.findUnique({
         where: { id: professionalId }
       });
 
@@ -204,7 +239,7 @@ export class ScheduleService {
         throw new NotFoundException('Professional not found');
       }
 
-      const schedules = await this.prisma.schedule.findMany({
+      const schedules = await this.prismaService.schedule.findMany({
         where: { professionalId },
         include: {
           professional: true,
@@ -232,7 +267,7 @@ export class ScheduleService {
 
   async findByClient(clientId: number) {
     try {
-      const client = await this.prisma.client.findUnique({
+      const client = await this.prismaService.client.findUnique({
         where: { id: clientId }
       });
 
@@ -240,7 +275,7 @@ export class ScheduleService {
         throw new NotFoundException('Client not found');
       }
 
-      const schedules = await this.prisma.schedule.findMany({
+      const schedules = await this.prismaService.schedule.findMany({
         where: { clientId },
         include: {
           professional: true,
@@ -272,7 +307,7 @@ export class ScheduleService {
         throw new BadRequestException('Invalid date range');
       }
 
-      const schedules = await this.prisma.schedule.findMany({
+      const schedules = await this.prismaService.schedule.findMany({
         where: {
           dateTime: {
             gte: startDate,
@@ -302,7 +337,7 @@ export class ScheduleService {
 
   async findByStatus(status: string) {
     try {
-      const schedules = await this.prisma.schedule.findMany({
+      const schedules = await this.prismaService.schedule.findMany({
         where: { status },
         include: {
           professional: true,
@@ -324,7 +359,7 @@ export class ScheduleService {
 
   async update(id: number, updateScheduleDto: UpdateScheduleDto) {
     try {
-      const schedule = await this.prisma.schedule.findUnique({
+      const schedule = await this.prismaService.schedule.findUnique({
         where: { id }
       });
 
@@ -332,7 +367,7 @@ export class ScheduleService {
         throw new NotFoundException('Schedule not found');
       }
 
-      const updatedSchedule = await this.prisma.schedule.update({
+      const updatedSchedule = await this.prismaService.schedule.update({
         where: { id },
         data: {
           status: updateScheduleDto.status
@@ -360,7 +395,7 @@ export class ScheduleService {
 
   async cancel(id: number) {
     try {
-      const schedule = await this.prisma.schedule.findUnique({
+      const schedule = await this.prismaService.schedule.findUnique({
         where: { id },
         include: {
           Payment: true,
@@ -372,7 +407,7 @@ export class ScheduleService {
         throw new NotFoundException('Schedule not found');
       }
 
-      await this.prisma.schedule.update({
+      await this.prismaService.schedule.update({
         where: { id },
         data: {
           status: "canceled" ,
@@ -406,7 +441,7 @@ export class ScheduleService {
 
   async remove(id: number) {
     try {
-      const schedule = await this.prisma.schedule.findUnique({
+      const schedule = await this.prismaService.schedule.findUnique({
         where: { id }
       });
 
@@ -414,7 +449,7 @@ export class ScheduleService {
         throw new NotFoundException('Schedule not found');
       }
 
-      await this.prisma.schedule.delete({
+      await this.prismaService.schedule.delete({
         where: { id }
       });
 
@@ -432,7 +467,7 @@ export class ScheduleService {
 
   async updatePaymentStatus(id: number, status: string) {
     try {
-      const schedule = await this.prisma.schedule.findUnique({
+      const schedule = await this.prismaService.schedule.findUnique({
         where: { id },
         include: { Payment: true }
       });
@@ -441,7 +476,7 @@ export class ScheduleService {
         throw new NotFoundException('Schedule or Payment not found');
       }
 
-      const updatedPayment = await this.prisma.payment.update({
+      const updatedPayment = await this.prismaService.payment.update({
         where: { id: schedule.Payment[0].id },
         data: { status }
       });

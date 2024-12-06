@@ -6,6 +6,7 @@ import { LoggerCustomModule } from 'src/modulos/logger/logger.module';
 import { JwtModule } from '@nestjs/jwt';
 import { MailerModule } from '../mailer/mailer.module';
 import { CredenciaisModule } from 'src/modulos/credenciais/credenciais.module';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { CredenciaisModule } from 'src/modulos/credenciais/credenciais.module';
     LoggerCustomModule,
     JwtModule,
     MailerModule,
-    CredenciaisModule
+    CredenciaisModule,
+    SmsModule
   ],
   controllers: [ScheduleController],
   providers: [ScheduleService],

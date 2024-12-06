@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from 'src/modulos/prisma/prisma.service';
 import { WebhookPayloadDto } from './dto/webhook-payload.dto';
 import { Prisma } from '@prisma/client';
+import { SmsService } from '../sms/sms.service';
 
 type WebhookEventHandlers = {
   [key: string]: (data: any) => Promise<void>;
@@ -13,7 +14,10 @@ export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   private readonly webhookSecret = process.env.PAYMENT_WEBHOOK_SECRET;
 
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly smsService: SmsService,
+  ) {}
 
   async processWebhook(payload: WebhookPayloadDto) {
     try {
@@ -74,6 +78,8 @@ export class PaymentService {
   private async handlePaymentFailed(payload: WebhookPayloadDto): Promise<void> {
     try {
       const paymentIntent = payload.data.object;
+      
+      // Atualizar status do pagamento
       await this.updatePaymentStatus(paymentIntent.id, {
         object: payload.object,
         type: payload.type,
@@ -86,6 +92,41 @@ export class PaymentService {
         status: paymentIntent.status,
         update_at: new Date()
       });
+
+      // Buscar e atualizar o agendamento associado
+      const schedule = await this.prismaService.schedule.findFirst({
+        where: { paymentId: paymentIntent.id },
+        include: {
+          client: true,
+          services: true,
+          professional: true,
+        }
+      });
+
+      if (schedule) {
+        await this.prismaService.schedule.update({
+          where: { id: schedule.id },
+          data: { status: 'canceled' }
+        });
+
+        // Send SMS notification about payment failure
+        const servicesNames = schedule.services.map(service => service.name).join(', ');
+        const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+
+        const message = `Hello ${schedule.client.cardName}!\n` +
+          `Your payment for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
+          `at ${schedule.time} has failed.\n` +
+          `Services: ${servicesNames}\n` +
+          `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
+          `Please update your payment method to secure your appointment.`;
+
+        await this.smsService.sendSms({
+          to: schedule.client.phoneCountry,
+          message: message
+        });
+
+        this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
+      }
 
       this.logger.warn(`Pagamento falhou para o ID ${paymentIntent.id}`);
     } catch (error) {
