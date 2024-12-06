@@ -383,6 +383,13 @@ export class ScheduleService {
           Payment: true
         }
       });
+      const payment = await this.prismaService.payment.findFirst({
+        where: {
+          id: paymentId
+        },
+      });
+
+
 
       if (!schedule) {
         throw new NotFoundException(`Schedule with payment ID ${paymentId} not found`);
@@ -391,7 +398,10 @@ export class ScheduleService {
       return {
         success: true,
         message: 'Schedule found successfully',
-        data: schedule
+        data: {
+          ...schedule,
+          Payment: payment
+        }
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
