@@ -3,6 +3,7 @@ import { ScheduleService } from './schedule.service';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { CreateScheduleDto, UpdateScheduleDto, PaymentData } from './dto/schedule.dto';
 import { MailerService } from '../mailer/mailer.service';
+import { SmsService } from '../sms/sms.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ServiceDto } from '../service/dto/service.dto';
 
@@ -10,6 +11,7 @@ describe('ScheduleService', () => {
   let service: ScheduleService;
   let prismaService: PrismaService;
   let mailerService: MailerService;
+  let smsService: SmsService;
 
   const mockPrismaService = {
     schedule: {
@@ -40,6 +42,10 @@ describe('ScheduleService', () => {
     sendMail: jest.fn(),
   };
 
+  const mockSmsService = {
+    sendSms: jest.fn().mockResolvedValue({ success: true }),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -52,12 +58,17 @@ describe('ScheduleService', () => {
           provide: MailerService,
           useValue: mockMailerService,
         },
+        {
+          provide: SmsService,
+          useValue: mockSmsService,
+        },
       ],
     }).compile();
 
     service = module.get<ScheduleService>(ScheduleService);
     prismaService = module.get<PrismaService>(PrismaService);
     mailerService = module.get<MailerService>(MailerService);
+    smsService = module.get<SmsService>(SmsService);
   });
 
   afterEach(() => {

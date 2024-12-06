@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { CreateScheduleDto, UpdateScheduleDto } from './dto/schedule.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { ServiceDto } from '../service/dto/service.dto';
@@ -9,6 +9,8 @@ import { enUS } from 'date-fns/locale';
 
 @Injectable()
 export class ScheduleService {
+  private readonly logger = new Logger(ScheduleService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly smsService: SmsService
@@ -33,17 +35,26 @@ export class ScheduleService {
   }
 
   private formatScheduleMessage(schedule: any, services: any[]): string {
-    const formattedDate = format(new Date(schedule.dateTime), "MMMM dd, yyyy", { locale: enUS });
-    const servicesNames = services.map(service => service.name).join(', ');
-    const totalValue = services.reduce((total, service) => total + service.price, 0);
+    try {
+      const dateTime = new Date(schedule.dateTime);
+      if (isNaN(dateTime.getTime())) {
+        throw new Error('Invalid date');
+      }
+      const formattedDate = format(dateTime, "MMMM dd, yyyy", { locale: enUS });
+      const servicesNames = services.map(service => service.name).join(', ');
+      const totalValue = services.reduce((total, service) => total + service.price, 0);
 
-    return `Hello ${schedule.client.cardName}! Your appointment has been confirmed:\n` +
-           `Date: ${formattedDate}\n` +
-           `Time: ${schedule.time}\n` +
-           `Services: ${servicesNames}\n` +
-           `Total Value: U$ ${totalValue.toFixed(2)}\n` +
-           `Professional: ${schedule.professional.name}\n\n` +
-           `Payment Status: ${schedule.Payment[0].status === 'succeeded' ? 'Confirmed' : 'Pending'}`;
+      return `Hello ${schedule.client.cardName}! Your appointment has been confirmed:\n` +
+             `Date: ${formattedDate}\n` +
+             `Time: ${schedule.time}\n` +
+             `Services: ${servicesNames}\n` +
+             `Total Value: U$ ${totalValue.toFixed(2)}\n` +
+             `Professional: ${schedule.professional.name}\n\n` +
+             `Payment Status: ${schedule.Payment[0].status === 'succeeded' ? 'Confirmed' : 'Pending'}`;
+    } catch (error) {
+      this.logger.error('Error formatting schedule message:', error);
+      return 'Error formatting schedule message. Your appointment has been confirmed but please contact support for details.';
+    }
   }
 
   private async sendScheduleConfirmationSMS(schedule: any) {
@@ -55,7 +66,7 @@ export class ScheduleService {
         message
       });
     } catch (error) {
-      console.error('Error sending SMS:', error);
+      this.logger.error('Error sending SMS:', error);
       // We don't throw the error to avoid interrupting the main flow
     }
   }
@@ -63,6 +74,15 @@ export class ScheduleService {
   async create(createScheduleDto: CreateScheduleDto) {
     try {
       const { clientInfo, payment, services, date, time } = createScheduleDto;
+
+      // Check if professional exists
+      const professional = await this.prismaService.professional.findUnique({
+        where: { id: createScheduleDto.professionalId }
+      });
+
+      if (!professional) {
+        throw new BadRequestException('Professional not found');
+      }
 
       // Combina date e time em um único DateTime
       const dateTime = this.combineDateAndTime(date, time);
@@ -98,7 +118,7 @@ export class ScheduleService {
       });
 
       if (servicesExist.length !== serviceIds.length) {
-        throw new BadRequestException('One or more services were not found');
+        throw new BadRequestException('One or more services not found');
       }
 
       // Create payment record with Stripe response
@@ -171,7 +191,6 @@ export class ScheduleService {
       if (error instanceof NotFoundException || error instanceof BadRequestException || error.message === 'Payment failed') {
         throw error;
       }
-      console.error('Error creating schedule:', error);
       throw new Error('Error creating schedule');
     }
   }
