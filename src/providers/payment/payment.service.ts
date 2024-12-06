@@ -152,6 +152,22 @@ export class PaymentService {
         status: paymentIntent.status,
         update_at: new Date()
       });
+       // Buscar e atualizar o agendamento associado
+       const schedule = await this.prismaService.schedule.findFirst({
+        where: { paymentId: paymentIntent.id },
+        include: {
+          client: true,
+          services: true,
+          professional: true,
+        }
+      });
+
+      if (schedule) {
+        await this.prismaService.schedule.update({
+          where: { id: schedule.id },
+          data: { status: 'canceled' }
+        });
+      }
 
       this.logger.log(`Pagamento cancelado para o ID ${paymentIntent.id}`);
     } catch (error) {
@@ -179,6 +195,22 @@ export class PaymentService {
         status: 'refund_failed',
         update_at: new Date()
       });
+       // Buscar e atualizar o agendamento associado
+       const schedule = await this.prismaService.schedule.findFirst({
+        where: { paymentId: refund.payment_intent.id },
+        include: {
+          client: true,
+          services: true,
+          professional: true,
+        }
+      });
+
+      if (schedule) {
+        await this.prismaService.schedule.update({
+          where: { id: schedule.id },
+          data: { status: 'canceled' }
+        });
+      }
 
       this.logger.error(`Reembolso falhou para o pagamento ID ${refund.payment_intent}. Motivo: ${refund.failure_reason}`);
     } catch (error) {
@@ -206,6 +238,23 @@ export class PaymentService {
         status: 'refunded',
         update_at: new Date()
       });
+       // Buscar e atualizar o agendamento associado
+       const schedule = await this.prismaService.schedule.findFirst({
+        where: { paymentId: refund.payment_intent.id },
+        include: {
+          client: true,
+          services: true,
+          professional: true,
+        }
+      });
+
+      if (schedule) {
+        await this.prismaService.schedule.update({
+          where: { id: schedule.id },
+          data: { status: 'canceled' }
+        });
+      }
+
 
       this.logger.log(`Reembolso atualizado para o pagamento ID ${refund.payment_intent}. Status: ${refund.status}`);
     } catch (error) {
