@@ -31,6 +31,8 @@ export class PaymentService {
         'refund.failed': this.handleRefundFailed.bind(this),
         'charge.refund.updated': this.handleRefundUpdated.bind(this),
         'refund.updated': this.handleRefundStatusUpdated.bind(this),
+        'charge.succeeded': this.handleChargeSucceeded.bind(this),
+        'charge.updated': this.handleChargeUpdated.bind(this),
         // Adicione mais handlers conforme necessário
       };
 
@@ -250,6 +252,65 @@ export class PaymentService {
     };
 
     return statusMap[refundStatus] || 'refund_unknown';
+  }
+
+  private async handleChargeSucceeded(payload: WebhookPayloadDto): Promise<void> {
+    try {
+      const charge = payload.data.object;
+      await this.updatePaymentStatus(charge.payment_intent, {
+        object: payload.object,
+        type: payload.type,
+        api_version: payload.api_version,
+        created: payload.created,
+        data: {
+          ...payload.data,
+          charge_id: charge.id,
+          charge_status: charge.status,
+          charge_amount: charge.amount,
+          payment_method_details: charge.payment_method_details
+        },
+        livemode: payload.livemode,
+        pending_webhooks: payload.pending_webhooks,
+        request: payload.request,
+        status: 'succeeded',
+        update_at: new Date()
+      });
+
+      this.logger.log(`Cobrança bem-sucedida para o pagamento ID ${charge.payment_intent}`);
+    } catch (error) {
+      this.logger.error(`Erro ao processar cobrança bem-sucedida: ${error.message}`);
+      throw new BadRequestException('Falha ao processar cobrança bem-sucedida');
+    }
+  }
+
+  private async handleChargeUpdated(payload: WebhookPayloadDto): Promise<void> {
+    try {
+      const charge = payload.data.object;
+      await this.updatePaymentStatus(charge.payment_intent, {
+        object: payload.object,
+        type: payload.type,
+        api_version: payload.api_version,
+        created: payload.created,
+        data: {
+          ...payload.data,
+          charge_id: charge.id,
+          charge_status: charge.status,
+          charge_amount: charge.amount,
+          payment_method_details: charge.payment_method_details,
+          last_charge_update: new Date().toISOString()
+        },
+        livemode: payload.livemode,
+        pending_webhooks: payload.pending_webhooks,
+        request: payload.request,
+        status: charge.status,
+        update_at: new Date()
+      });
+
+      this.logger.log(`Status da cobrança atualizado para o pagamento ID ${charge.payment_intent}. Novo status: ${charge.status}`);
+    } catch (error) {
+      this.logger.error(`Erro ao atualizar status da cobrança: ${error.message}`);
+      throw new BadRequestException('Falha ao atualizar status da cobrança');
+    }
   }
 
   private async updatePaymentStatus(paymentId: string, paymentData: Prisma.PaymentUpdateInput): Promise<void> {
