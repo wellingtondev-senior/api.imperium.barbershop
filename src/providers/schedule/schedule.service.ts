@@ -3,7 +3,6 @@ import { CreateScheduleDto, UpdateScheduleDto } from './dto/schedule.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { ServiceDto } from '../service/dto/service.dto';
 import { JsonValue } from '@prisma/client/runtime/library';
-import { PaymentMethod } from '@stripe/stripe-js';
 
 @Injectable()
 export class ScheduleService {
@@ -111,9 +110,8 @@ export class ScheduleService {
           services: {
             connect: serviceIds.map(id => ({ id }))
           },
-          Payment: {
-            connect: { id: payment.id }
-          }
+          paymentId: payment.id 
+          
         },
         include: {
           client: true,
