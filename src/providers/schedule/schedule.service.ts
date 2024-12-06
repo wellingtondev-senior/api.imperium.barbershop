@@ -105,8 +105,6 @@ export class ScheduleService {
         });
       }
 
-
-
       // Verify if all services exist
       const serviceIds = services.map((service: ServiceDto) => service.id);
       const servicesExist = await this.prismaService.service.findMany({
@@ -147,46 +145,54 @@ export class ScheduleService {
             clientId: client.id
           }
         });
+
+        // Create schedule with payment relationship
+        const createdSchedule = await this.prismaService.schedule.create({
+          data: {
+            dateTime,
+            time,
+            professionalId: createScheduleDto.professionalId,
+            clientId: client.id,
+            services: {
+              connect: services.map((service) => ({
+                id: service.id
+              }))
+            },
+            Payment: {
+              connect: {
+                id: createdPayment.id
+              }
+            }
+          },
+          include: {
+            client: true,
+            professional: true,
+            services: true,
+            Payment: true
+          }
+        });
+
+        // Update payment with schedule relationship
+        await this.prismaService.payment.update({
+          where: {
+            id: createdPayment.id
+          },
+          data: {
+            scheduleId: createdSchedule.id
+          }
+        });
+
+        // Send SMS confirmation
+        await this.sendScheduleConfirmationSMS(createdSchedule);
+
+        return {
+          success: true,
+          message: 'Schedule created successfully',
+          data: createdSchedule
+        };
       } catch (error) {
         throw new Error('Payment failed');
       }
-
-      // Create schedule
-      const schedule = await this.prismaService.schedule.create({
-        data: {
-          dateTime: dateTime,
-          time: time,
-          client: {
-            connect: { id: client.id }
-          },
-          professional: {
-            connect: { id: createScheduleDto.professionalId }
-          },
-          status: "pending",
-          services: {
-            connect: servicesExist.map(service => ({
-              id: service.id
-            }))
-          },
-          paymentId: payment.id
-
-        },
-        include: {
-          client: true,
-          services: true,
-          Payment: true,
-          professional: true
-        },
-      });
-
-      // Enviar SMS de confirmação
-      await this.sendScheduleConfirmationSMS(schedule);
-
-      return {
-        success: true,
-        message: 'Schedule created successfully',
-        data: schedule
-      };
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException || error.message === 'Payment failed') {
         throw error;
@@ -378,25 +384,30 @@ export class ScheduleService {
 
   async findByPaymentId(paymentId: string) {
     try {
-      const schedule = await this.prismaService.payment.findFirst({
+      const payment = await this.prismaService.payment.findUnique({
         where: {
-          id:paymentId
+          id: paymentId
         },
         include: {
-          client: true,
-          schedule:true
-         
+          schedule: {
+            include: {
+              client: true,
+              professional: true,
+              services: true,
+              Payment: true
+            }
+          }
         }
       });
 
-      if (!schedule) {
+      if (!payment || !payment.schedule) {
         throw new NotFoundException(`Schedule with payment ID ${paymentId} not found`);
       }
 
       return {
         success: true,
         message: 'Schedule found successfully',
-        data: schedule
+        data: payment.schedule
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
