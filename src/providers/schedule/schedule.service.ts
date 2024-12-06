@@ -88,14 +88,11 @@ export class ScheduleService {
       const dateTime = this.combineDateAndTime(date, time);
 
       // Find or create client
-      let client: { id: number; cardName: string; email: string; phoneCountry: string; create_at: Date; update_at: Date; };
-      const existingClient = await this.prismaService.client.findFirst({
+      let client = await this.prismaService.client.findFirst({
         where: { email: clientInfo.email }
       });
 
-      if (existingClient) {
-        client = existingClient;
-      } else {
+      if (!client) {
         client = await this.prismaService.client.create({
           data: {
             cardName: clientInfo.cardName,
@@ -119,85 +116,76 @@ export class ScheduleService {
         throw new BadRequestException('One or more services not found');
       }
 
-      // Create payment record with Stripe response
-      let createdPayment: { object: string; id: string; create_at: Date; update_at: Date; data: JsonValue; status: string | null; type: string; api_version: string; created: number; livemode: boolean; pending_webhooks: number; request: JsonValue; amount: number | null; currency: string | null; payment_method: string | null; client_secret: string | null; clientId: number; scheduleId: number | null; };
-      try {
-        createdPayment = await this.prismaService.payment.create({
-          data: {
+      // Primeiro criamos o schedule
+      const createdSchedule = await this.prismaService.schedule.create({
+        data: {
+          dateTime,
+          time,
+          professionalId: createScheduleDto.professionalId,
+          clientId: client.id,
+          services: {
+            connect: services.map((service) => ({
+              id: service.id
+            }))
+          },
+          paymentId: payment.id // Definimos o paymentId aqui
+        },
+        include: {
+          client: true,
+          professional: true,
+          services: true
+        }
+      });
+
+      // Depois criamos o payment já vinculado ao schedule
+      const createdPayment = await this.prismaService.payment.create({
+        data: {
+          id: payment.id,
+          object: 'payment_intent',
+          type: 'payment_intent.created',
+          api_version: "2024-11-20.acacia",
+          created: payment.created,
+          data: JSON.parse(JSON.stringify({ object: payment })),
+          livemode: payment.livemode,
+          pending_webhooks: 0,
+          request: JSON.parse(JSON.stringify({
             id: payment.id,
-            object: 'payment_intent',
-            type: 'payment_intent.created',
-            api_version: "2024-11-20.acacia",
-            created: payment.created,
-            data: JSON.parse(JSON.stringify({ object: payment })),
-            livemode: payment.livemode,
-            pending_webhooks: 0,
-            request: JSON.parse(JSON.stringify({
-              id: payment.id,
-              idempotency_key: null
-            })),
-            // Campos extraídos para consulta rápida
-            amount: payment.amount,
-            currency: payment.currency,
-            status: payment.status,
-            payment_method: payment.payment_method as string,
-            client_secret: payment.client_secret,
-            clientId: client.id
-          }
-        });
+            idempotency_key: null
+          })),
+          amount: payment.amount,
+          currency: payment.currency,
+          status: payment.status,
+          payment_method: payment.payment_method as string,
+          client_secret: payment.client_secret,
+          clientId: client.id,
+          scheduleId: createdSchedule.id // Vinculamos ao schedule criado
+        }
+      });
 
-        // Create schedule with payment relationship
-        const createdSchedule = await this.prismaService.schedule.create({
-          data: {
-            dateTime,
-            time,
-            professionalId: createScheduleDto.professionalId,
-            clientId: client.id,
-            services: {
-              connect: services.map((service) => ({
-                id: service.id
-              }))
-            },
-            Payment: {
-              connect: {
-                id: createdPayment.id
-              }
-            }
-          },
-          include: {
-            client: true,
-            professional: true,
-            services: true,
-            Payment: true
-          }
-        });
+      // Buscamos o schedule completo com todas as relações
+      const completeSchedule = await this.prismaService.schedule.findUnique({
+        where: { id: createdSchedule.id },
+        include: {
+          client: true,
+          professional: true,
+          services: true,
+          Payment: true
+        }
+      });
 
-        // Update payment with schedule relationship
-        await this.prismaService.payment.update({
-          where: {
-            id: createdPayment.id
-          },
-          data: {
-            scheduleId: createdSchedule.id
-          }
-        });
+      // Send SMS confirmation
+      await this.sendScheduleConfirmationSMS(completeSchedule);
 
-        // Send SMS confirmation
-        await this.sendScheduleConfirmationSMS(createdSchedule);
-
-        return {
-          success: true,
-          message: 'Schedule created successfully',
-          data: createdSchedule
-        };
-      } catch (error) {
-        throw new Error('Payment failed');
-      }
+      return {
+        success: true,
+        message: 'Schedule created successfully',
+        data: completeSchedule
+      };
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException || error.message === 'Payment failed') {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new Error('Error creating schedule');
+      throw new Error(`Error creating schedule: ${error.message}`);
     }
   }
 
@@ -384,30 +372,27 @@ export class ScheduleService {
 
   async findByPaymentId(paymentId: string) {
     try {
-      const payment = await this.prismaService.payment.findUnique({
+      // Buscamos o schedule diretamente usando o paymentId
+      const schedule = await this.prismaService.schedule.findFirst({
         where: {
-          id: paymentId
+          paymentId: paymentId
         },
         include: {
-          schedule: {
-            include: {
-              client: true,
-              professional: true,
-              services: true,
-              Payment: true
-            }
-          }
+          client: true,
+          professional: true,
+          services: true,
+          Payment: true
         }
       });
 
-      if (!payment || !payment.schedule) {
+      if (!schedule) {
         throw new NotFoundException(`Schedule with payment ID ${paymentId} not found`);
       }
 
       return {
         success: true,
         message: 'Schedule found successfully',
-        data: payment.schedule
+        data: schedule
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
