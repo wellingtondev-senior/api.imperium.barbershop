@@ -55,14 +55,18 @@ export class ScheduleService {
 
     
 
-      // Validate services
+      // Verify if all services exist
       const serviceIds = services.map((service:ServiceDto) => service.id);
-      const dbServices = await this.prisma.service.findMany({
-        where: { id: { in: serviceIds } }
+      const servicesExist = await this.prisma.service.findMany({
+        where: {
+          id: {
+            in: serviceIds
+          }
+        }
       });
 
-      if (dbServices.length !== services.length) {
-        throw new BadRequestException('One or more services not found');
+      if (servicesExist.length !== serviceIds.length) {
+        throw new BadRequestException('Um ou mais serviços não foram encontrados');
       }
 
       // Create payment record with Stripe response
@@ -108,7 +112,9 @@ export class ScheduleService {
           },
           status: createScheduleDto.payment.status,
           services: {
-            connect: serviceIds.map(id => ({ id }))
+            connect: servicesExist.map(service => ({
+              id: service.id
+            }))
           },
           paymentId: payment.id 
           
