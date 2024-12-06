@@ -26,7 +26,7 @@ export class ScheduleController {
   @Version('1')
   @Get()
   @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(AuthGuard, RoleGuard)
+  @UseGuards(RoleGuard)
   @ApiOperation({ summary: 'Listar todos os agendamentos' })
   @ApiResponse(ScheduleListSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
