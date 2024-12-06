@@ -124,7 +124,7 @@ model Schedule {
   professionalId Int
   clientId       Int
   services       Service[] // Relação muitos-para-muitos com serviços
-  paymentId      String?       // Relação única com o pagamento
+  paymentId      String? // Relação única com o pagamento
   professional   Professional @relation(fields: [professionalId], references: [id])
   client         Client       @relation(fields: [clientId], references: [id])
   create_at      DateTime     @default(now())
@@ -136,7 +136,7 @@ model Schedule {
 }
 
 model Payment {
-  id               String  @id 
+  id               String    @id
   object           String
   type             String
   api_version      String
@@ -146,18 +146,18 @@ model Payment {
   pending_webhooks Int
   request          Json // Store the request object
   // Campos extraídos do data.object para facilitar consultas
-  amount         Int? // Valor em centavos
-  currency       String?
-  status         String?
-  payment_method String?
-  client_secret  String?
+  amount           Int? // Valor em centavos
+  currency         String?
+  status           String?
+  payment_method   String?
+  client_secret    String?
   // Relações existentes
-  client    Client    @relation(fields: [clientId], references: [id])
-  clientId  Int
-  schedule  Schedule? @relation(fields: [scheduleId], references: [id])
-  create_at  DateTime @default(now())
-  update_at  DateTime @updatedAt
-  scheduleId Int?
+  client           Client    @relation(fields: [clientId], references: [id])
+  clientId         Int
+  schedule         Schedule? @relation(fields: [scheduleId], references: [id])
+  create_at        DateTime  @default(now())
+  update_at        DateTime  @updatedAt
+  scheduleId       Int?
 
   @@index([status])
   @@index([clientId])

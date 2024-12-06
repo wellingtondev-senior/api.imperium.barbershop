@@ -378,19 +378,14 @@ export class ScheduleService {
 
   async findByPaymentId(paymentId: string) {
     try {
-      const schedule = await this.prismaService.schedule.findFirst({
+      const schedule = await this.prismaService.payment.findFirst({
         where: {
-          Payment: {
-            some: {
-              id: paymentId
-            }
-          }
+          id:paymentId
         },
         include: {
           client: true,
-          professional: true,
-          services: true,
-          Payment: true
+          schedule:true
+         
         }
       });
 
