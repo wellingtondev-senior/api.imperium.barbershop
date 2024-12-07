@@ -515,6 +515,35 @@ export class PaymentService {
     }
   }
 
+  async findAll(status?: string) {
+    try {
+      const query = this.prismaService.payment.findMany({
+        where: status ? {
+          status: status
+        } : {},
+        include: {
+          schedule: {
+            include: {
+              client: true,
+              professional: true,
+              services: true
+            }
+          }
+        }
+      });
+
+      const payments = await query;
+
+      return {
+        success: true,
+        message: 'Payments retrieved successfully',
+        data: payments
+      };
+    } catch (error) {
+      throw new Error(`Failed to retrieve payments: ${error.message}`);
+    }
+  }
+
   private async updatePaymentStatus(paymentId: string, paymentData: Prisma.PaymentUpdateInput): Promise<void> {
     const existingPayment = await this.prismaService.payment.findUnique({
       where: { id: paymentId }
