@@ -14,4 +14,11 @@ export class ClientController {
   create(@Body() createClientDto: ClientScheduleDto) {
     return this.clientService.create(createClientDto);
   }
+
+  @Get()
+  @ApiOperation({ summary: 'List all clients' })
+  @ApiResponse({ status: 200, description: 'Clients retrieved successfully' })
+  findAll() {
+    return this.clientService.findAll();
+  }
 }

@@ -15,4 +15,28 @@ export class ClientService {
       data: createClientDto
     });
   }
+
+  async findAll() {
+    try {
+      const clients = await this.prisma.client.findMany({
+        include: {
+          schedules: {
+            include: {
+              services: true,
+              professional: true,
+              Payment: true
+            }
+          }
+        }
+      });
+
+      return {
+        success: true,
+        message: 'Clients retrieved successfully',
+        data: clients
+      };
+    } catch (error) {
+      throw new Error(`Failed to retrieve clients: ${error.message}`);
+    }
+  }
 }
