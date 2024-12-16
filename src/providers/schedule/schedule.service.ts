@@ -289,8 +289,14 @@ export class ScheduleService {
       return {
         success: true,
         message: 'Professional schedules retrieved successfully',
-        data: schedules
+        data: schedules.map((schedule) => {
+          return {
+            ...schedule,
+            paymentId:null
+          }
+        })
       };
+    
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
