@@ -24,6 +24,25 @@ export class PaymentService {
       const eventType = payload.type;
       const eventData = payload.data.object;
 
+      // Primeiro, criar ou atualizar o pagamento
+      await this.updateOrCreatePayment(eventData.id, {
+        id: eventData.id,
+        object: payload.object,
+        type: payload.type,
+        api_version: payload.api_version,
+        created: payload.created,
+        data: payload.data,
+        livemode: payload.livemode,
+        pending_webhooks: payload.pending_webhooks,
+        request: payload.request,
+        amount: eventData.amount,
+        currency: eventData.currency,
+        status: eventData.status,
+        payment_method: eventData.payment_method,
+        client_secret: eventData.client_secret,
+        update_at: new Date()
+      });
+
       const handlers: WebhookEventHandlers = {
         'payment_intent.succeeded': this.handlePaymentSucceeded.bind(this),
         'payment_intent.requires_payment_method': this.handlePaymentFailed.bind(this),
@@ -33,7 +52,6 @@ export class PaymentService {
         'refund.updated': this.handleRefundStatusUpdated.bind(this),
         'charge.succeeded': this.handleChargeSucceeded.bind(this),
         'charge.updated': this.handleChargeUpdated.bind(this),
-        // Adicione mais handlers conforme necessário
       };
 
       const handler = handlers[eventType];
@@ -50,10 +68,32 @@ export class PaymentService {
     }
   }
 
+  private async updateOrCreatePayment(paymentId: string, paymentData: any): Promise<void> {
+    try {
+      const existingPayment = await this.prismaService.payment.findUnique({
+        where: { id: paymentId }
+      });
+
+      if (existingPayment) {
+        await this.prismaService.payment.update({
+          where: { id: paymentId },
+          data: paymentData,
+        });
+      } else {
+        await this.prismaService.payment.create({
+          data: paymentData,
+        });
+      }
+    } catch (error) {
+      this.logger.error(`Erro ao atualizar/criar pagamento: ${error.message}`);
+      throw new BadRequestException('Falha ao atualizar/criar pagamento');
+    }
+  }
+
   private async handlePaymentSucceeded(payload: WebhookPayloadDto): Promise<void> {
     try {
       const paymentIntent = payload.data.object;
-      await this.updatePaymentStatus(paymentIntent.id, {
+      await this.updateOrCreatePayment(paymentIntent.id, {
         object: payload.object,
         type: payload.type,
         api_version: payload.api_version,
@@ -70,6 +110,40 @@ export class PaymentService {
         update_at: new Date()
       });
 
+      // Buscar e atualizar o agendamento após garantir que o pagamento existe
+      const schedule = await this.prismaService.schedule.findFirst({
+        where: { paymentId: paymentIntent.id },
+        include: {
+          client: true,
+          services: true,
+          professional: true,
+        }
+      });
+
+      if (schedule) {
+        await this.prismaService.schedule.update({
+          where: { id: schedule.id },
+          data: { status: 'confirmed' }
+        });
+
+        const servicesNames = schedule.services.map(service => service.name).join(', ');
+        const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+
+        const message = `Hello ${schedule.client.cardName}!\n` +
+          `Your payment for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
+          `at ${schedule.time} has been successful!\n` +
+          `Services: ${servicesNames}\n` +
+          `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
+          `View your appointment details at: ${process.env.URL_FRONTEND}/schedule/confirmation/${paymentIntent.id}`;
+
+        await this.smsService.sendSms({
+          to: schedule.client.phoneCountry,
+          message: message
+        });
+
+        this.logger.log(`Agendamento ${schedule.id} confirmado e SMS enviado`);
+      }
+
       this.logger.log(`Pagamento bem-sucedido para o ID ${paymentIntent.id}`);
     } catch (error) {
       this.logger.error(`Erro ao atualizar pagamento bem-sucedido: ${error.message}`);
@@ -82,7 +156,7 @@ export class PaymentService {
       const paymentIntent = payload.data.object;
       
       // Atualizar status do pagamento
-      await this.updatePaymentStatus(paymentIntent.id, {
+      await this.updateOrCreatePayment(paymentIntent.id, {
         object: payload.object,
         type: payload.type,
         api_version: payload.api_version,
@@ -140,7 +214,7 @@ export class PaymentService {
   private async handlePaymentCanceled(payload: WebhookPayloadDto): Promise<void> {
     try {
       const paymentIntent = payload.data.object;
-      await this.updatePaymentStatus(paymentIntent.id, {
+      await this.updateOrCreatePayment(paymentIntent.id, {
         object: payload.object,
         type: payload.type,
         api_version: payload.api_version,
@@ -196,7 +270,7 @@ export class PaymentService {
   private async handleRefundFailed(payload: WebhookPayloadDto): Promise<void> {
     try {
       const refund = payload.data.object;
-      await this.updatePaymentStatus(refund.payment_intent, {
+      await this.updateOrCreatePayment(refund.payment_intent, {
         object: payload.object,
         type: payload.type,
         api_version: payload.api_version,
@@ -256,7 +330,7 @@ export class PaymentService {
   private async handleRefundUpdated(payload: WebhookPayloadDto): Promise<void> {
     try {
       const refund = payload.data.object;
-      await this.updatePaymentStatus(refund.payment_intent, {
+      await this.updateOrCreatePayment(refund.payment_intent, {
         object: payload.object,
         type: payload.type,
         api_version: payload.api_version,
@@ -317,7 +391,7 @@ export class PaymentService {
   private async handleRefundStatusUpdated(payload: WebhookPayloadDto): Promise<void> {
     try {
       const refund = payload.data.object;
-      await this.updatePaymentStatus(refund.payment_intent, {
+      await this.updateOrCreatePayment(refund.payment_intent, {
         object: payload.object,
         type: payload.type,
         api_version: payload.api_version,
@@ -390,7 +464,7 @@ export class PaymentService {
   private async handleChargeSucceeded(payload: WebhookPayloadDto): Promise<void> {
     try {
       const charge = payload.data.object;
-      await this.updatePaymentStatus(charge.payment_intent, {
+      await this.updateOrCreatePayment(charge.payment_intent, {
         object: payload.object,
         type: payload.type,
         api_version: payload.api_version,
@@ -454,7 +528,7 @@ export class PaymentService {
   private async handleChargeUpdated(payload: WebhookPayloadDto): Promise<void> {
     try {
       const charge = payload.data.object;
-      await this.updatePaymentStatus(charge.payment_intent, {
+      await this.updateOrCreatePayment(charge.payment_intent, {
         object: payload.object,
         type: payload.type,
         api_version: payload.api_version,
@@ -542,21 +616,5 @@ export class PaymentService {
     } catch (error) {
       throw new Error(`Failed to retrieve payments: ${error.message}`);
     }
-  }
-
-  private async updatePaymentStatus(paymentId: string, paymentData: Prisma.PaymentUpdateInput): Promise<void> {
-    const existingPayment = await this.prismaService.payment.findUnique({
-      where: { id: paymentId }
-    });
-
-    if (!existingPayment) {
-      this.logger.error(`Pagamento não encontrado para o ID ${paymentId}`);
-      throw new BadRequestException('Pagamento não encontrado');
-    }
-
-    await this.prismaService.payment.update({
-      where: { id: paymentId },
-      data: paymentData,
-    });
   }
 }
