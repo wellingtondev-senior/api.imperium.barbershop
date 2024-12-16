@@ -274,7 +274,8 @@ export class ScheduleService {
               availability: true,
               create_at: true,
               update_at: true,
-              userId: true
+              userId: true,
+              password:false
             }
           },
           client: true,
