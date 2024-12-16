@@ -51,6 +51,15 @@ export class ScheduleController {
     return this.scheduleService.findByPaymentId(paymentId);
   }
 
+  @Version('1')
+  @Get('professional/:professionalId')
+  @ApiOperation({ summary: 'Buscar agendamentos por ID do profissional' })
+  @ApiResponse(ScheduleListSuccessResponse)
+  @ApiResponse(ScheduleErrorResponse)
+  findByProfessional(@Param('professionalId') professionalId: string) {
+    return this.scheduleService.findByProfessional(+professionalId);
+  }
+
   @Patch(':id')
   @Version('1')
   @ApiOperation({ summary: 'Atualizar status do agendamento' })
