@@ -253,34 +253,6 @@ export class ScheduleService {
 
       const schedules = await this.prismaService.schedule.findMany({
         where: { professionalId },
-        include: {
-          professional: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-              document: true,
-              type_doc: true,
-              avatarUrl: true,
-              imageUrl: true,
-              experienceYears: true,
-              specialties: true,
-              rating: true,
-              location: true,
-              bio: true,
-              isAvailable: true,
-              status: true,
-              availability: true,
-              create_at: true,
-              update_at: true,
-              userId: true,
-              password:false
-            }
-          },
-          client: true,
-          services: true
-        },
         orderBy: {
           dateTime: 'desc'
         }
