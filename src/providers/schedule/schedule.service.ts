@@ -257,7 +257,7 @@ export class ScheduleService {
           professional: true,
           client: true,
           services: true,
-          Payment: true
+         
         },
         orderBy: {
           dateTime: 'desc'
