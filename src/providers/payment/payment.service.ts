@@ -71,17 +71,53 @@ export class PaymentService {
   private async updateOrCreatePayment(paymentId: string, paymentData: any): Promise<void> {
     try {
       const existingPayment = await this.prismaService.payment.findUnique({
-        where: { id: paymentId }
+        where: { id: paymentId },
+        include: { client: true }
       });
+
+      // Buscar informações do cliente do billing_details se disponível
+      const billingDetails = paymentData.data?.object?.billing_details;
+      let clientData = null;
+
+      if (billingDetails) {
+        // Procurar cliente pelo email
+        const existingClient = await this.prismaService.client.findFirst({
+          where: { email: billingDetails.email }
+        });
+
+        if (existingClient) {
+          clientData = { connect: { id: existingClient.id } };
+        } else if (billingDetails.email && billingDetails.name) {
+          // Criar novo cliente se não existir
+          clientData = {
+            create: {
+              email: billingDetails.email,
+              cardName: billingDetails.name,
+              phoneCountry: billingDetails.phone || ''
+            }
+          };
+        }
+      }
 
       if (existingPayment) {
         await this.prismaService.payment.update({
           where: { id: paymentId },
-          data: paymentData,
+          data: {
+            ...paymentData,
+            client: clientData // Só inclui se clientData não for null
+          },
         });
       } else {
         await this.prismaService.payment.create({
-          data: paymentData,
+          data: {
+            ...paymentData,
+            client: clientData || {
+              // Fallback para um cliente padrão ou conectar com um existente
+              connect: {
+                id: 1 // ID do cliente padrão do sistema
+              }
+            }
+          },
         });
       }
     } catch (error) {
