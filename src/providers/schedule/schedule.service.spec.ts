@@ -138,18 +138,28 @@ describe('ScheduleService', () => {
 
   describe('create', () => {
     it('should create a schedule successfully', async () => {
-      mockPrismaService.client.findFirst.mockResolvedValue({ id: 1 });
-      mockPrismaService.professional.findUnique.mockResolvedValue({ id: 1 });
+      const mockScheduleData = {
+        id: 1,
+        dateTime: new Date('2024-01-20T10:00:00Z'),
+        time: '10:00',
+        status: 'pending',
+        professional: { id: 1, name: 'John Professional' },
+        client: { 
+          id: 1, 
+          cardName: 'John Doe',
+          phoneCountry: '+5511999999999',
+          email: 'john@example.com'
+        },
+        services: [mockService],
+        Payment: [mockPayment]
+      };
+
+      mockPrismaService.client.findFirst.mockResolvedValue(mockScheduleData.client);
+      mockPrismaService.professional.findUnique.mockResolvedValue(mockScheduleData.professional);
       mockPrismaService.service.findMany.mockResolvedValue([mockService]);
       mockPrismaService.payment.create.mockResolvedValue(mockPayment);
-      mockPrismaService.schedule.create.mockResolvedValue({
-        id: 1,
-        date: new Date('2024-01-20T10:00:00Z'),
-        status: 'pending',
-        professional: { id: 1 },
-        services: [mockService],
-        Payment: mockPayment,
-      });
+      mockPrismaService.schedule.create.mockResolvedValue(mockScheduleData);
+      mockPrismaService.schedule.findUnique.mockResolvedValue(mockScheduleData);
 
       const result = await service.create(mockCreateScheduleDto);
 

@@ -59,6 +59,11 @@ export class ScheduleService {
 
   private async sendScheduleConfirmationSMS(schedule: any) {
     try {
+      if (!schedule || !schedule.services || !schedule.client || !schedule.professional) {
+        this.logger.warn('Missing required schedule information for SMS');
+        return;
+      }
+
       const message = this.formatScheduleMessage(schedule, schedule.services);
 
       await this.smsService.sendSms({
