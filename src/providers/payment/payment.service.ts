@@ -25,23 +25,11 @@ export class PaymentService {
       const eventData = payload.data.object;
 
       // Primeiro, criar ou atualizar o pagamento
-      await this.updateOrCreatePayment(eventData.id, {
-        id: eventData.id,
-        object: payload.object,
-        type: payload.type,
-        api_version: payload.api_version,
-        created: payload.created,
-        data: payload.data,
-        livemode: payload.livemode,
-        pending_webhooks: payload.pending_webhooks,
-        request: payload.request,
-        amount: eventData.amount,
-        currency: eventData.currency,
-        status: eventData.status,
-        payment_method: eventData.payment_method,
-        client_secret: eventData.client_secret,
-        update_at: new Date()
-      });
+      const updated = await this.updatePayment(eventData);
+
+      if (!updated) {
+        throw new Error('Falha ao atualizar pagamento');
+      }
 
       const handlers: WebhookEventHandlers = {
         'payment_intent.succeeded': this.handlePaymentSucceeded.bind(this),
@@ -68,19 +56,15 @@ export class PaymentService {
     }
   }
 
-  private async updateOrCreatePayment(paymentId: string, paymentData: any): Promise<void> {
+  async updatePayment(eventData: any): Promise<boolean> {
     try {
-      const existingPayment = await this.prismaService.payment.findUnique({
-        where: { id: paymentId },
-        include: { client: true }
-      });
+      const { data, type, api_version, created, livemode, pending_webhooks, request } = eventData;
+      const { charge_id, charge_status, charge_amount, payment_method_details } = data;
+      const billingDetails = data.object?.billing_details;
 
-      // Buscar informações do cliente do billing_details se disponível
-      const billingDetails = paymentData.data?.object?.billing_details;
-      let clientData = null;
+      let clientData = undefined;
 
       if (billingDetails) {
-        // Procurar cliente pelo email
         const existingClient = await this.prismaService.client.findFirst({
           where: { email: billingDetails.email }
         });
@@ -88,7 +72,6 @@ export class PaymentService {
         if (existingClient) {
           clientData = { connect: { id: existingClient.id } };
         } else if (billingDetails.email && billingDetails.name) {
-          // Criar novo cliente se não existir
           clientData = {
             create: {
               email: billingDetails.email,
@@ -99,52 +82,41 @@ export class PaymentService {
         }
       }
 
-      if (existingPayment) {
-        await this.prismaService.payment.update({
-          where: { id: paymentId },
-          data: {
-            ...paymentData,
-            client: clientData // Só inclui se clientData não for null
-          },
-        });
-      } else {
-        await this.prismaService.payment.create({
-          data: {
-            ...paymentData,
-            client: clientData || {
-              // Fallback para um cliente padrão ou conectar com um existente
-              connect: {
-                id: 1 // ID do cliente padrão do sistema
-              }
-            }
-          },
-        });
-      }
+      const paymentData = {
+        id: charge_id,
+        object: data.object,
+        type,
+        api_version,
+        created,
+        data,
+        livemode,
+        pending_webhooks,
+        request,
+        status: charge_status,
+        amount: charge_amount,
+        client: clientData
+      };
+
+      await this.prismaService.payment.update({
+        where: { id: charge_id },
+        data: paymentData
+      });
+
+      return true;
     } catch (error) {
-      this.logger.error(`Erro ao atualizar/criar pagamento: ${error.message}`);
-      throw new BadRequestException('Falha ao atualizar/criar pagamento');
+      this.logger.error('Erro ao atualizar pagamento: ', error);
+      return false;
     }
   }
 
   private async handlePaymentSucceeded(payload: WebhookPayloadDto): Promise<void> {
     try {
       const paymentIntent = payload.data.object;
-      await this.updateOrCreatePayment(paymentIntent.id, {
-        object: payload.object,
-        type: payload.type,
-        api_version: payload.api_version,
-        created: payload.created,
-        data: payload.data,
-        livemode: payload.livemode,
-        pending_webhooks: payload.pending_webhooks,
-        request: payload.request,
-        amount: paymentIntent.amount,
-        currency: paymentIntent.currency,
-        status: paymentIntent.status,
-        payment_method: paymentIntent.payment_method,
-        client_secret: paymentIntent.client_secret,
-        update_at: new Date()
-      });
+      const updated = await this.updatePayment(paymentIntent);
+      
+      if (!updated) {
+        throw new Error('Falha ao atualizar pagamento');
+      }
 
       // Buscar e atualizar o agendamento após garantir que o pagamento existe
       const schedule = await this.prismaService.schedule.findFirst({
@@ -162,19 +134,13 @@ export class PaymentService {
           data: { status: 'confirmed' }
         });
 
-        const servicesNames = schedule.services.map(service => service.name).join(', ');
-        const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
-
-        const message = `Hello ${schedule.client.cardName}!\n` +
-          `Your payment for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
-          `at ${schedule.time} has been successful!\n` +
-          `Services: ${servicesNames}\n` +
-          `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
-          `View your appointment details at: ${process.env.URL_FRONTEND}/schedule/confirmation/${paymentIntent.id}`;
+        const link = `${process.env.URL_FRONTEND}/schedule/confirmation/${paymentIntent.id}`;
 
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
-          message: message
+          client: schedule.client.cardName,
+          service: schedule.services,
+          link: link
         });
 
         this.logger.log(`Agendamento ${schedule.id} confirmado e SMS enviado`);
@@ -190,20 +156,11 @@ export class PaymentService {
   private async handlePaymentFailed(payload: WebhookPayloadDto): Promise<void> {
     try {
       const paymentIntent = payload.data.object;
+      const updated = await this.updatePayment(paymentIntent);
       
-      // Atualizar status do pagamento
-      await this.updateOrCreatePayment(paymentIntent.id, {
-        object: payload.object,
-        type: payload.type,
-        api_version: payload.api_version,
-        created: payload.created,
-        data: payload.data,
-        livemode: payload.livemode,
-        pending_webhooks: payload.pending_webhooks,
-        request: payload.request,
-        status: paymentIntent.status,
-        update_at: new Date()
-      });
+      if (!updated) {
+        throw new Error('Falha ao atualizar pagamento');
+      }
 
       // Buscar e atualizar o agendamento associado
       const schedule = await this.prismaService.schedule.findFirst({
@@ -221,20 +178,13 @@ export class PaymentService {
           data: { status: 'canceled' }
         });
 
-        // Send SMS notification about payment failure
-        const servicesNames = schedule.services.map(service => service.name).join(', ');
-        const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
-
-        const message = `Hello ${schedule.client.cardName}!\n` +
-          `Your payment for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
-          `at ${schedule.time} has failed.\n` +
-          `Services: ${servicesNames}\n` +
-          `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
-          `Please update your payment method at: ${process.env.URL_FRONTEND}/schedule/confirmation/${paymentIntent.id}`;
+        const link = `${process.env.URL_FRONTEND}/schedule/confirmation/${paymentIntent.id}`;
 
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
-          message: message
+          client: schedule.client.cardName,
+          service: schedule.services,
+          link: link
         });
 
         this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
@@ -250,19 +200,13 @@ export class PaymentService {
   private async handlePaymentCanceled(payload: WebhookPayloadDto): Promise<void> {
     try {
       const paymentIntent = payload.data.object;
-      await this.updateOrCreatePayment(paymentIntent.id, {
-        object: payload.object,
-        type: payload.type,
-        api_version: payload.api_version,
-        created: payload.created,
-        data: payload.data,
-        livemode: payload.livemode,
-        pending_webhooks: payload.pending_webhooks,
-        request: payload.request,
-        status: paymentIntent.status,
-        update_at: new Date()
-      });
-           // Buscar e atualizar o agendamento associado
+      const updated = await this.updatePayment(paymentIntent);
+      
+      if (!updated) {
+        throw new Error('Falha ao atualizar pagamento');
+      }
+
+      // Buscar e atualizar o agendamento associado
       const schedule = await this.prismaService.schedule.findFirst({
         where: { paymentId: paymentIntent.id },
         include: {
@@ -278,20 +222,13 @@ export class PaymentService {
           data: { status: 'canceled' }
         });
 
-        // Send SMS notification about payment failure
-        const servicesNames = schedule.services.map(service => service.name).join(', ');
-        const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
-
-        const message = `Hello ${schedule.client.cardName}!\n` +
-          `Your payment for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
-          `at ${schedule.time} has been cancelled.\n` +
-          `Services: ${servicesNames}\n` +
-          `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
-          `You can retry your payment at: ${process.env.URL_FRONTEND}/schedule/confirmation/${paymentIntent.id}`;
+        const link = `${process.env.URL_FRONTEND}/schedule/confirmation/${paymentIntent.id}`;
 
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
-          message: message
+          client: schedule.client.cardName,
+          service: schedule.services,
+          link: link
         });
 
         this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
@@ -306,23 +243,13 @@ export class PaymentService {
   private async handleRefundFailed(payload: WebhookPayloadDto): Promise<void> {
     try {
       const refund = payload.data.object;
-      await this.updateOrCreatePayment(refund.payment_intent, {
-        object: payload.object,
-        type: payload.type,
-        api_version: payload.api_version,
-        created: payload.created,
-        data: {
-          ...payload.data,
-          refund_status: refund.status,
-          refund_reason: refund.failure_reason
-        },
-        livemode: payload.livemode,
-        pending_webhooks: payload.pending_webhooks,
-        request: payload.request,
-        status: 'refund_failed',
-        update_at: new Date()
-      });
-           // Buscar e atualizar o agendamento associado
+      const updated = await this.updatePayment(refund.payment_intent);
+      
+      if (!updated) {
+        throw new Error('Falha ao atualizar pagamento');
+      }
+
+      // Buscar e atualizar o agendamento associado
       const schedule = await this.prismaService.schedule.findFirst({
         where: { paymentId: refund.payment_intent.id },
         include: {
@@ -338,24 +265,18 @@ export class PaymentService {
           data: { status: 'canceled' }
         });
 
-        // Send SMS notification about payment failure
-        const servicesNames = schedule.services.map(service => service.name).join(', ');
-        const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
-
-        const message = `Hello ${schedule.client.cardName}!\n` +
-          `Your refund request for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
-          `at ${schedule.time} has failed.\n` +
-          `Services: ${servicesNames}\n` +
-          `Refund Amount: U$ ${totalValue.toFixed(2)}\n\n` +
-          `Check your refund status at: ${process.env.URL_FRONTEND}/schedule/confirmation/${refund.payment_intent}`;
+        const link = `${process.env.URL_FRONTEND}/schedule/confirmation/${refund.payment_intent}`;
 
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
-          message: message
+          client: schedule.client.cardName,
+          service: schedule.services,
+          link: link
         });
 
-        this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
+        this.logger.log(`Agendamento ${schedule.id} cancelado e SMS enviado`);
       }
+
       this.logger.error(`Reembolso falhou para o pagamento ID ${refund.payment_intent}. Motivo: ${refund.failure_reason}`);
     } catch (error) {
       this.logger.error(`Erro ao processar falha no reembolso: ${error.message}`);
@@ -366,56 +287,39 @@ export class PaymentService {
   private async handleRefundUpdated(payload: WebhookPayloadDto): Promise<void> {
     try {
       const refund = payload.data.object;
-      await this.updateOrCreatePayment(refund.payment_intent, {
-        object: payload.object,
-        type: payload.type,
-        api_version: payload.api_version,
-        created: payload.created,
-        data: {
-          ...payload.data,
-          refund_status: refund.status,
-          refund_amount: refund.amount
-        },
-        livemode: payload.livemode,
-        pending_webhooks: payload.pending_webhooks,
-        request: payload.request,
-        status: 'refunded',
-        update_at: new Date()
+      const updated = await this.updatePayment(refund.payment_intent);
+      
+      if (!updated) {
+        throw new Error('Falha ao atualizar pagamento');
+      }
+
+      // Buscar e atualizar o agendamento associado
+      const schedule = await this.prismaService.schedule.findFirst({
+        where: { paymentId: refund.payment_intent.id },
+        include: {
+          client: true,
+          services: true,
+          professional: true,
+        }
       });
-          // Buscar e atualizar o agendamento associado
-          const schedule = await this.prismaService.schedule.findFirst({
-            where: { paymentId: refund.payment_intent.id },
-            include: {
-              client: true,
-              services: true,
-              professional: true,
-            }
-          });
-    
-          if (schedule) {
-            await this.prismaService.schedule.update({
-              where: { id: schedule.id },
-              data: { status: 'canceled' }
-            });
-    
-            // Send SMS notification about payment failure
-            const servicesNames = schedule.services.map(service => service.name).join(', ');
-            const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
-    
-            const message = `Hello ${schedule.client.cardName}!\n` +
-              `Your refund for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
-              `at ${schedule.time} has been processed.\n` +
-              `Services: ${servicesNames}\n` +
-              `Refund Amount: U$ ${totalValue.toFixed(2)}\n\n` +
-              `View your refund details at: ${process.env.URL_FRONTEND}/schedule/confirmation/${refund.payment_intent}`;
-    
-            await this.smsService.sendSms({
-              to: schedule.client.phoneCountry,
-              message: message
-            });
-    
-            this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
-          }
+
+      if (schedule) {
+        await this.prismaService.schedule.update({
+          where: { id: schedule.id },
+          data: { status: 'canceled' }
+        });
+
+        const link = `${process.env.URL_FRONTEND}/schedule/confirmation/${refund.payment_intent}`;
+
+        await this.smsService.sendSms({
+          to: schedule.client.phoneCountry,
+          client: schedule.client.cardName,
+          service: schedule.services,
+          link: link
+        });
+
+        this.logger.log(`Agendamento ${schedule.id} cancelado e SMS enviado`);
+      }
 
       this.logger.log(`Reembolso atualizado para o pagamento ID ${refund.payment_intent}. Status: ${refund.status}`);
     } catch (error) {
@@ -427,58 +331,40 @@ export class PaymentService {
   private async handleRefundStatusUpdated(payload: WebhookPayloadDto): Promise<void> {
     try {
       const refund = payload.data.object;
-      await this.updateOrCreatePayment(refund.payment_intent, {
-        object: payload.object,
-        type: payload.type,
-        api_version: payload.api_version,
-        created: payload.created,
-        data: {
-          ...payload.data,
-          refund_status: refund.status,
-          refund_amount: refund.amount,
-          refund_metadata: refund.metadata,
-          last_refund_update: new Date().toISOString()
-        },
-        livemode: payload.livemode,
-        pending_webhooks: payload.pending_webhooks,
-        request: payload.request,
-        status: this.getRefundStatus(refund.status),
-        update_at: new Date()
-      });
-    // Buscar e atualizar o agendamento associado
-    const schedule = await this.prismaService.schedule.findFirst({
-      where: { paymentId: refund.payment_intent.id },
-      include: {
-        client: true,
-        services: true,
-        professional: true,
+      const updated = await this.updatePayment(refund.payment_intent);
+      
+      if (!updated) {
+        throw new Error('Falha ao atualizar pagamento');
       }
-    });
 
-    if (schedule) {
-      await this.prismaService.schedule.update({
-        where: { id: schedule.id },
-        data: { status: 'canceled' }
+      // Buscar e atualizar o agendamento associado
+      const schedule = await this.prismaService.schedule.findFirst({
+        where: { paymentId: refund.payment_intent.id },
+        include: {
+          client: true,
+          services: true,
+          professional: true,
+        }
       });
 
-      // Send SMS notification about payment failure
-      const servicesNames = schedule.services.map(service => service.name).join(', ');
-      const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+      if (schedule) {
+        await this.prismaService.schedule.update({
+          where: { id: schedule.id },
+          data: { status: 'canceled' }
+        });
 
-      const message = `Hello ${schedule.client.cardName}!\n` +
-        `Your refund status for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
-        `at ${schedule.time} has been updated.\n` +
-        `Services: ${servicesNames}\n` +
-        `Refund Amount: U$ ${totalValue.toFixed(2)}\n\n` +
-        `Check your refund status at: ${process.env.URL_FRONTEND}/schedule/confirmation/${refund.payment_intent}`;
+        const link = `${process.env.URL_FRONTEND}/schedule/confirmation/${refund.payment_intent}`;
 
-      await this.smsService.sendSms({
-        to: schedule.client.phoneCountry,
-        message: message
-      });
+        await this.smsService.sendSms({
+          to: schedule.client.phoneCountry,
+          client: schedule.client.cardName,
+          service: schedule.services,
+          link: link
+        });
 
-      this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
-    }
+        this.logger.log(`Agendamento ${schedule.id} cancelado e SMS enviado`);
+      }
+
       this.logger.log(`Status do reembolso atualizado para o pagamento ID ${refund.payment_intent}. Novo status: ${refund.status}`);
     } catch (error) {
       this.logger.error(`Erro ao atualizar status do reembolso: ${error.message}`);
@@ -500,59 +386,39 @@ export class PaymentService {
   private async handleChargeSucceeded(payload: WebhookPayloadDto): Promise<void> {
     try {
       const charge = payload.data.object;
-      await this.updateOrCreatePayment(charge.payment_intent, {
-        object: payload.object,
-        type: payload.type,
-        api_version: payload.api_version,
-        created: payload.created,
-        data: {
-          ...payload.data,
-          charge_id: charge.id,
-          charge_status: charge.status,
-          charge_amount: charge.amount,
-          payment_method_details: charge.payment_method_details
-        },
-        livemode: payload.livemode,
-        pending_webhooks: payload.pending_webhooks,
-        request: payload.request,
-        status: 'succeeded',
-        update_at: new Date()
-      });
+      const updated = await this.updatePayment(charge.payment_intent);
       
-    // Buscar e atualizar o agendamento associado
-    const schedule = await this.prismaService.schedule.findFirst({
-      where: { paymentId: charge.payment_intent.id },
-      include: {
-        client: true,
-        services: true,
-        professional: true,
+      if (!updated) {
+        throw new Error('Falha ao atualizar pagamento');
       }
-    });
 
-    if (schedule) {
-      await this.prismaService.schedule.update({
-        where: { id: schedule.id },
-        data: { status: 'pending' }
+      // Buscar e atualizar o agendamento associado
+      const schedule = await this.prismaService.schedule.findFirst({
+        where: { paymentId: charge.payment_intent.id },
+        include: {
+          client: true,
+          services: true,
+          professional: true,
+        }
       });
 
-      // Send SMS notification about payment failure
-      const servicesNames = schedule.services.map(service => service.name).join(', ');
-      const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+      if (schedule) {
+        await this.prismaService.schedule.update({
+          where: { id: schedule.id },
+          data: { status: 'pending' }
+        });
 
-      const message = `Hello ${schedule.client.cardName}!\n` +
-        `Your payment for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
-        `at ${schedule.time} has been successful!\n` +
-        `Services: ${servicesNames}\n` +
-        `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
-        `View your appointment details at: ${process.env.URL_FRONTEND}/schedule/confirmation/${charge.payment_intent}`;
+        const link = `${process.env.URL_FRONTEND}/schedule/confirmation/${charge.payment_intent}`;
 
-      await this.smsService.sendSms({
-        to: schedule.client.phoneCountry,
-        message: message
-      });
+        await this.smsService.sendSms({
+          to: schedule.client.phoneCountry,
+          client: schedule.client.cardName,
+          service: schedule.services,
+          link: link
+        });
 
-      this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
-    }
+        this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
+      }
 
       this.logger.log(`Cobrança bem-sucedida para o pagamento ID ${charge.payment_intent}`);
     } catch (error) {
@@ -564,59 +430,39 @@ export class PaymentService {
   private async handleChargeUpdated(payload: WebhookPayloadDto): Promise<void> {
     try {
       const charge = payload.data.object;
-      await this.updateOrCreatePayment(charge.payment_intent, {
-        object: payload.object,
-        type: payload.type,
-        api_version: payload.api_version,
-        created: payload.created,
-        data: {
-          ...payload.data,
-          charge_id: charge.id,
-          charge_status: charge.status,
-          charge_amount: charge.amount,
-          payment_method_details: charge.payment_method_details,
-          last_charge_update: new Date().toISOString()
-        },
-        livemode: payload.livemode,
-        pending_webhooks: payload.pending_webhooks,
-        request: payload.request,
-        status: charge.status,
-        update_at: new Date()
-      });
-    // Buscar e atualizar o agendamento associado
-    const schedule = await this.prismaService.schedule.findFirst({
-      where: { paymentId: charge.payment_intent.id },
-      include: {
-        client: true,
-        services: true,
-        professional: true,
+      const updated = await this.updatePayment(charge.payment_intent);
+      
+      if (!updated) {
+        throw new Error('Falha ao atualizar pagamento');
       }
-    });
 
-    if (schedule) {
-      await this.prismaService.schedule.update({
-        where: { id: schedule.id },
-        data: { status: 'canceled' }
+      // Buscar e atualizar o agendamento associado
+      const schedule = await this.prismaService.schedule.findFirst({
+        where: { paymentId: charge.payment_intent.id },
+        include: {
+          client: true,
+          services: true,
+          professional: true,
+        }
       });
 
-      // Send SMS notification about payment failure
-      const servicesNames = schedule.services.map(service => service.name).join(', ');
-      const totalValue = schedule.services.reduce((sum, service) => sum + service.price, 0);
+      if (schedule) {
+        await this.prismaService.schedule.update({
+          where: { id: schedule.id },
+          data: { status: 'canceled' }
+        });
 
-      const message = `Hello ${schedule.client.cardName}!\n` +
-        `Your payment status for the appointment on ${new Date(schedule.dateTime).toLocaleDateString()} ` +
-        `at ${schedule.time} has been updated.\n` +
-        `Services: ${servicesNames}\n` +
-        `Total Value: U$ ${totalValue.toFixed(2)}\n\n` +
-        `Check your payment status at: ${process.env.URL_FRONTEND}/schedule/confirmation/${charge.payment_intent}`;
+        const link = `${process.env.URL_FRONTEND}/schedule/confirmation/${charge.payment_intent}`;
 
-      await this.smsService.sendSms({
-        to: schedule.client.phoneCountry,
-        message: message
-      });
+        await this.smsService.sendSms({
+          to: schedule.client.phoneCountry,
+          client: schedule.client.cardName,
+          service: schedule.services,
+          link: link
+        });
 
-      this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
-    }
+        this.logger.log(`Agendamento ${schedule.id} cancelado devido à falha no pagamento e SMS enviado`);
+      }
 
       this.logger.log(`Status da cobrança atualizado para o pagamento ID ${charge.payment_intent}. Novo status: ${charge.status}`);
     } catch (error) {

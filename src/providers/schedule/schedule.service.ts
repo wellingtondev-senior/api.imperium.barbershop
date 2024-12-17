@@ -49,8 +49,7 @@ export class ScheduleService {
         `Time: ${schedule.time}\n` +
         `Services: ${servicesNames}\n` +
         `Total Value: U$ ${totalValue.toFixed(2)}\n` +
-        `Professional: ${schedule.professional.name}\n\n` +
-        `Payment Status: ${schedule.Payment[0].status === 'succeeded' ? 'Confirmed' : 'Pending'}`;
+        `Professional: ${schedule.professional.name}`;
     } catch (error) {
       this.logger.error('Error formatting schedule message:', error);
       return 'Error formatting schedule message. Your appointment has been confirmed but please contact support for details.';
@@ -64,11 +63,11 @@ export class ScheduleService {
         return;
       }
 
-      const message = this.formatScheduleMessage(schedule, schedule.services);
-
       await this.smsService.sendSms({
         to: schedule.client.phoneCountry,
-        message
+        client: schedule.client.cardName,
+        service: schedule.services,
+        link: `${process.env.URL_FRONTEND}/schedule/confirmation/${schedule.paymentId}`
       });
     } catch (error) {
       this.logger.error('Error sending SMS:', error);
@@ -121,28 +120,7 @@ export class ScheduleService {
         throw new BadRequestException('One or more services not found');
       }
 
-      // Primeiro criamos o schedule
-      const createdSchedule = await this.prismaService.schedule.create({
-        data: {
-          dateTime,
-          time,
-          professionalId: createScheduleDto.professionalId,
-          clientId: client.id,
-          services: {
-            connect: services.map((service) => ({
-              id: service.id
-            }))
-          },
-          paymentId: payment.id // Definimos o paymentId aqui
-        },
-        include: {
-          client: true,
-          professional: true,
-          services: true
-        }
-      });
-
-      // Depois criamos o payment já vinculado ao schedule
+      // Primeiro criamos o payment
       const createdPayment = await this.prismaService.payment.create({
         data: {
           id: payment.id,
@@ -159,16 +137,27 @@ export class ScheduleService {
           })),
           amount: payment.amount,
           currency: payment.currency,
-          status: payment.status,
+          status: payment?.status,
           payment_method: payment.payment_method as string,
           client_secret: payment.client_secret,
           clientId: client.id,
         }
       });
 
-      // Buscamos o schedule completo com todas as relações
-      const completeSchedule = await this.prismaService.schedule.findUnique({
-        where: { id: createdSchedule.id },
+      // Depois criamos o schedule já com o payment existente
+      const createdSchedule = await this.prismaService.schedule.create({
+        data: {
+          dateTime,
+          time,
+          professionalId: createScheduleDto.professionalId,
+          clientId: client.id,
+          services: {
+            connect: services.map((service) => ({
+              id: service.id
+            }))
+          },
+          paymentId: createdPayment.id
+        },
         include: {
           client: true,
           professional: true,
@@ -178,12 +167,12 @@ export class ScheduleService {
       });
 
       // Send SMS confirmation
-      await this.sendScheduleConfirmationSMS(completeSchedule);
+      await this.sendScheduleConfirmationSMS(createdSchedule);
 
       return {
         success: true,
         message: 'Schedule created successfully',
-        data: completeSchedule
+        data: createdSchedule
       };
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {

@@ -1,40 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
-import { InjectQueue } from '@nestjs/bull';
-import SMSDto from './dto/sms.dto';
+import { TwilioProducer } from 'src/modulos/jobs/twilio/twilio.producer';
+import { ReceivePayloadApiDto } from 'src/modulos/jobs/twilio/dto/payload-api.dto';
 
 @Injectable()
 export class SmsService {
     constructor(
-        @InjectQueue('sms-queue') private readonly smsQueue: Queue,
+        private readonly twilioProducer: TwilioProducer,
     ) {}
 
-    async sendSms(data: SMSDto) {
+    async sendSms(data: ReceivePayloadApiDto) {
         try {
-            const { to, message } = data;
-          
-            await this.smsQueue.add('sms-payment', {
-                to,
-                message
-            }, {
-                attempts: 3,
-                backoff: {
-                    type: 'exponential',
-                    delay: 1000,
-                },
-                removeOnComplete: true,
-            });
-
+            await this.twilioProducer.sendSmsPayment(data);
             return {
                 success: true,
                 message: 'SMS adicionado à fila com sucesso',
             };
         } catch (error) {
-            return {
-                success: false,
-                message: 'Erro ao adicionar SMS à fila',
-                error: error.message,
-            };
+            throw new Error(`Erro ao enviar SMS: ${error.message}`);
         }
     }
 }

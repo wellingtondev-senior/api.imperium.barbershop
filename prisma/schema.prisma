@@ -148,7 +148,7 @@ model Payment {
   // Campos extraídos do data.object para facilitar consultas
   amount           Int? // Valor em centavos
   currency         String?
-  status           String?
+  status           String
   payment_method   String?
   client_secret    String?
   // Relações existentes

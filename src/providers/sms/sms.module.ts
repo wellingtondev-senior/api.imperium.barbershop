@@ -3,13 +3,12 @@ import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { SmsController } from './sms.controller';
 import { SmsService } from './sms.service';
+import { TwilioModule } from 'src/modulos/jobs/twilio/twilio.module';
 
 @Module({
     imports: [
         ConfigModule.forRoot(),
-        BullModule.registerQueue({
-            name: 'sms-queue',
-        }),
+        TwilioModule
     ],
     controllers: [SmsController],
     providers: [SmsService],

@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Version } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SmsService } from './sms.service';
-import { SMSDto } from './dto/sms.dto';
+import { ReceivePayloadApiDto } from 'src/modulos/jobs/twilio/dto/payload-api.dto';
 
 @ApiTags('SMS')
 @Controller('sms')
@@ -13,7 +13,7 @@ export class SmsController {
     @ApiOperation({ summary: 'Enviar SMS' })
     @ApiResponse({ status: 200, description: 'SMS enviado com sucesso' })
     @ApiResponse({ status: 400, description: 'Requisição inválida' })
-    async sendSms(@Body() payload: SMSDto) {
+    async sendSms(@Body() payload: ReceivePayloadApiDto) {
         return this.smsService.sendSms(payload);
     }
 }
