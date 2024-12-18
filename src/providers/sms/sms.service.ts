@@ -40,14 +40,14 @@ export class SmsService {
         const {to} = receivePayloadApiDto
         try {
            let message = `Hello ${receivePayloadApiDto.client}!\n\n`;
-           message += `Your appointment has been confirmed \n\n`;
+           message += `Your appointment has been confirmed \n`;
             message += `Services:\n`;
            
-        //    let total = 0;
-        //    receivePayloadApiDto.service.forEach(service => {
-        //        message += `• ${service.name}: $ ${service.price.toFixed(2)}\n`;
-        //        total += service.price;
-        //    });
+            let total = 0;
+           receivePayloadApiDto.service.forEach(service => {
+               message += `• ${service.name}: $ ${service.price.toFixed(2)}\n`;
+           total += service.price;
+           });
            
         //    message += `\n💰 Total: $ ${total.toFixed(2)}\n\n`;
         //    message += `To view your appointment details, please visit:\n`;
