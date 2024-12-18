@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { TwilioProducer } from 'src/modulos/jobs/twilio/twilio.producer';
-import { ReceivePayloadApiDto } from 'src/modulos/jobs/twilio/dto/payload-api.dto';
+import { ReceivePayloadApiDto } from 'src/modulos/jobs/sms/dto/payload-api.dto';
+import { SMSProducer } from 'src/modulos/jobs/sms/sms.producer';
 import { LoggerCustomService } from 'src/modulos/logger/logger.service';
 
 @Injectable()
 export class SmsService {
     private readonly className = this.constructor.name;
     constructor(
-        private readonly twilioProducer: TwilioProducer,
+        private readonly smsProducer: SMSProducer,
         private readonly loggerService: LoggerCustomService
     ) {}
 
     async sendSms(receivePayloadApiDto: ReceivePayloadApiDto) {
         try {
-            await this.twilioProducer.sendSmsPayment(receivePayloadApiDto);
+            await this.smsProducer.sendSmsPayment(receivePayloadApiDto);
             this.loggerService.warn({
                 className: this.className,
                 functionName: 'sendSms',

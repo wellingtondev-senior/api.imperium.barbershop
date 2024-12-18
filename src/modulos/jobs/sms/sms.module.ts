@@ -3,7 +3,7 @@ import { ConfigModule} from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { PrismaModule } from 'src/modulos/prisma/prisma.module';
 import { LoggerCustomModule } from 'src/modulos/logger/logger.module';
-import { TwilioProducer } from './twilio.producer';
+import { SMSProducer } from './sms.producer';
 
 @Module({
   imports: [
@@ -15,10 +15,10 @@ import { TwilioProducer } from './twilio.producer';
     LoggerCustomModule
   ],
   providers: [
-    TwilioProducer 
+    SMSProducer 
   ],
   exports: [
-    TwilioProducer 
+    SMSProducer 
   ],
 })
-export class TwilioModule {}
+export class SMSModule {}

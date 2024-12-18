@@ -12,7 +12,10 @@ export class ReceivePayloadApiDto{
 
   @IsNotEmpty()
   @IsObject()
-  service: object[];
+  service: {
+    name: string;
+    price: number;
+  };
 
   @IsNotEmpty()
   @IsString()

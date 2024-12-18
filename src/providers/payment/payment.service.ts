@@ -139,7 +139,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: schedule.services,
+          service: {
+            name: schedule.services[0].name,
+            price: schedule.services[0].price
+          },
           link: link
         });
 
@@ -183,7 +186,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: schedule.services,
+          service: {
+            name: schedule.services[0].name,
+            price: schedule.services[0].price
+          },
           link: link
         });
 
@@ -227,7 +233,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: schedule.services,
+          service: {
+            name: schedule.services[0].name,
+            price: schedule.services[0].price
+          },
           link: link
         });
 
@@ -270,7 +279,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: schedule.services,
+          service: {
+            name: schedule.services[0].name,
+            price: schedule.services[0].price
+          },
           link: link
         });
 
@@ -314,7 +326,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: schedule.services,
+          service: {
+            name: schedule.services[0].name,
+            price: schedule.services[0].price
+          },
           link: link
         });
 
@@ -358,7 +373,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: schedule.services,
+          service: {
+            name: schedule.services[0].name,
+            price: schedule.services[0].price
+          },
           link: link
         });
 
@@ -413,7 +431,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: schedule.services,
+          service: {
+            name: schedule.services[0].name,
+            price: schedule.services[0].price
+          },
           link: link
         });
 
@@ -457,7 +478,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: schedule.services,
+          service: {
+            name: schedule.services[0].name,
+            price: schedule.services[0].price
+          },
           link: link
         });
 

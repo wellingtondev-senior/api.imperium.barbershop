@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Version } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SmsService } from './sms.service';
-import { ReceivePayloadApiDto } from 'src/modulos/jobs/twilio/dto/payload-api.dto';
+import { ReceivePayloadApiDto } from 'src/modulos/jobs/sms/dto/payload-api.dto';
 
 @ApiTags('SMS')
 @Controller('sms')

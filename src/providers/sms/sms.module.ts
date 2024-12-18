@@ -1,15 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { BullModule } from '@nestjs/bull';
 import { SmsController } from './sms.controller';
 import { SmsService } from './sms.service';
-import { TwilioModule } from 'src/modulos/jobs/twilio/twilio.module';
 import { LoggerCustomModule } from 'src/modulos/logger/logger.module';
+import { SMSModule } from 'src/modulos/jobs/sms/sms.module';
 
 @Module({
     imports: [
         ConfigModule.forRoot(),
-        TwilioModule,
+        SMSModule,
         LoggerCustomModule
     ],
     controllers: [SmsController],

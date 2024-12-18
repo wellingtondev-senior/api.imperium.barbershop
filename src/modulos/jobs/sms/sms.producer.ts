@@ -4,7 +4,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { ReceivePayloadApiDto } from './dto/payload-api.dto';
 
 @Injectable()
-export class TwilioProducer {
+export class SMSProducer {
     constructor(
         @InjectQueue('sms-queue') private readonly smsQueue: Queue,
     ) {}
