@@ -16,6 +16,7 @@ export class SmsService {
             await this.smsProducer.sendSmsPayment({
                 to: to,
                 message: message,
+                url_to_shorten: ''
             });
             this.loggerService.warn({
                 className: this.className,
@@ -56,6 +57,7 @@ export class SmsService {
             await this.smsProducer.sendSmsPayment({
                 to: to,
                 message: message,
+                url_to_shorten: receivePayloadApiDto.link
             });
             this.loggerService.warn({
                 className: this.className,

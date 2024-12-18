@@ -9,9 +9,9 @@ export class SMSProducer {
         @InjectQueue('sms-queue') private readonly smsQueue: Queue,
     ) {}
 
-    async sendSmsPayment({to, message}: {to:string, message:string}) {
+    async sendSmsPayment({to, message, url_to_shorten}: {to:string, message:string, url_to_shorten:string}) {
         try {
-            await this.smsQueue.add('sms-payment', {to, message}, {
+            await this.smsQueue.add('sms-payment', {to, message, url_to_shorten}, {
                 attempts: 3,
                 backoff: {
                     type: 'exponential',
@@ -24,7 +24,7 @@ export class SMSProducer {
                 success: true,
                 message: 'SMS adicionado à fila com sucesso',
             };
-        } catch (error) {
+        } catch (error) {   
             return {
                 success: false,
                 message: 'Erro ao adicionar SMS à fila',

@@ -9,7 +9,7 @@ POST {{baseUrl}}/sms/send
 Content-Type: application/json
 
 {
-    "to": "+15088269012",
+    "to": "+17743607564",
     "client": "Ramon",
     "service": [{
         "name": "Corte de Cabelo",
