@@ -45,7 +45,7 @@ export class SmsService {
            
             let total = 0;
            receivePayloadApiDto.service.forEach(service => {
-               message += `• ${service.name}: $ ${service.price.toFixed(2)}\n`;
+               message += ` ${service.name}: $ ${service.price.toFixed(2)}\n`;
            total += service.price;
            });
            
