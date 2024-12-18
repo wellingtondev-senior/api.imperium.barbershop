@@ -49,9 +49,9 @@ export class SmsService {
            total += service.price;
            });
            
-        //    message += `\n💰 Total: $ ${total.toFixed(2)}\n\n`;
-        //    message += `To view your appointment details, please visit:\n`;
-        //    message += `${receivePayloadApiDto.link}`;
+           message += `\n Total: $ ${total.toFixed(2)}\n\n`;
+           message += `To view your appointment details, please visit:\n`;
+           message += `${receivePayloadApiDto.link}`;
 
             await this.smsProducer.sendSmsPayment({
                 to: to,
