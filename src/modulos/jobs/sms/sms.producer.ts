@@ -9,9 +9,9 @@ export class SMSProducer {
         @InjectQueue('sms-queue') private readonly smsQueue: Queue,
     ) {}
 
-    async sendSmsPayment(data: ReceivePayloadApiDto) {
+    async sendSmsPayment({to, message}: {to:string, message:string}) {
         try {
-            await this.smsQueue.add('sms-payment', data, {
+            await this.smsQueue.add('sms-payment', {to, message}, {
                 attempts: 3,
                 backoff: {
                     type: 'exponential',

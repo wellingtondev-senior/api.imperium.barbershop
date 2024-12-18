@@ -47,8 +47,17 @@ describe('SmsService', () => {
       const mockPayload: ReceivePayloadApiDto = {
         to: '+5521979299562',
         client: 'John Doe',
-        service: { name: 'Corte de Cabelo', price: 50.00 },
+        service: [
+          { name: 'Corte de Cabelo', price: 50.00 }
+        ],
         link: 'https://imperiumbarbershop.com.br',
+      };
+
+      const expectedMessage = `Hello John Doe!\n\nYour appointment has been confirmed ✅\n\n📅 Services:\n• Corte de Cabelo: $ 50.00\n\n💰 Total: $ 50.00\n\nTo view your appointment details, please visit:\nhttps://imperiumbarbershop.com.br`;
+      
+      const expectedPayload = {
+        to: '+5521979299562',
+        message: expectedMessage
       };
 
       mockSMSProducer.sendSmsPayment.mockResolvedValueOnce({
@@ -62,7 +71,7 @@ describe('SmsService', () => {
         success: true,
         message: 'SMS adicionado à fila com sucesso',
       });
-      expect(mockSMSProducer.sendSmsPayment).toHaveBeenCalledWith(mockPayload);
+      expect(mockSMSProducer.sendSmsPayment).toHaveBeenCalledWith(expectedPayload);
       expect(mockLoggerService.warn).toHaveBeenCalled();
     });
 
@@ -70,7 +79,9 @@ describe('SmsService', () => {
       const mockPayload: ReceivePayloadApiDto = {
         to: '+5521979299562',
         client: 'John Doe',
-        service: { name: 'Corte de Cabelo', price: 50.00 },
+        service: [
+          { name: 'Corte de Cabelo', price: 50.00 }
+        ],
         link: 'https://imperiumbarbershop.com.br',
       };
 

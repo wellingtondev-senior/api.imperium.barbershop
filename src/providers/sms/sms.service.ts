@@ -11,13 +11,16 @@ export class SmsService {
         private readonly loggerService: LoggerCustomService
     ) {}
 
-    async sendSms(receivePayloadApiDto: ReceivePayloadApiDto) {
+    async sendSmsResponse(to: string, message: string) {
         try {
-            await this.smsProducer.sendSmsPayment(receivePayloadApiDto);
+            await this.smsProducer.sendSmsPayment({
+                to: to,
+                message: message,
+            });
             this.loggerService.warn({
                 className: this.className,
                 functionName: 'sendSms',
-                message: `Enviado sms  com sucesso para ${receivePayloadApiDto.to}`,
+                message: `Enviado sms  com sucesso para ${to}`,
               });
         
             return {
@@ -28,7 +31,47 @@ export class SmsService {
             this.loggerService.error({
                 className: this.className,
                 functionName: 'sendSms',
-                message: `Erro ao envoiar sms para ${receivePayloadApiDto.to}`,
+                message: `Erro ao envoiar sms para ${to}`,
+              });
+            throw new Error(`Erro ao enviar SMS: ${error.message}`);
+        }
+    }
+    async sendSms(receivePayloadApiDto:ReceivePayloadApiDto) {
+        const {to} = receivePayloadApiDto
+        try {
+           let message = `Hello ${receivePayloadApiDto.client}!\n\n`;
+           message += `Your appointment has been confirmed ✅\n\n`;
+           message += `📅 Services:\n`;
+           
+           let total = 0;
+           receivePayloadApiDto.service.forEach(service => {
+               message += `• ${service.name}: $ ${service.price.toFixed(2)}\n`;
+               total += service.price;
+           });
+           
+           message += `\n💰 Total: $ ${total.toFixed(2)}\n\n`;
+           message += `To view your appointment details, please visit:\n`;
+           message += `${receivePayloadApiDto.link}`;
+
+            await this.smsProducer.sendSmsPayment({
+                to: to,
+                message: message,
+            });
+            this.loggerService.warn({
+                className: this.className,
+                functionName: 'sendSms',
+                message: `Enviado sms  com sucesso para ${to}`,
+              });
+        
+            return {
+                success: true,
+                message: 'SMS adicionado à fila com sucesso',
+            };
+        } catch (error) {
+            this.loggerService.error({
+                className: this.className,
+                functionName: 'sendSms',
+                message: `Erro ao envoiar sms para ${to}`,
               });
             throw new Error(`Erro ao enviar SMS: ${error.message}`);
         }

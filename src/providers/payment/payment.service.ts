@@ -13,6 +13,7 @@ type WebhookEventHandlers = {
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   private readonly webhookSecret = process.env.PAYMENT_WEBHOOK_SECRET;
+  private readonly link = `${process.env.URL_FRONTEND}/schedule/confirmation`;
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -134,16 +135,15 @@ export class PaymentService {
           data: { status: 'confirmed' }
         });
 
-        const link = `${process.env.URL_FRONTEND}/schedule/confirmation/${paymentIntent.id}`;
 
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: {
-            name: schedule.services[0].name,
-            price: schedule.services[0].price
-          },
-          link: link
+          service: schedule.services.map(service => ({
+            name: service.name,
+            price: service.price
+          })),
+          link: `${this.link}/${paymentIntent.id}`
         });
 
         this.logger.log(`Agendamento ${schedule.id} confirmado e SMS enviado`);
@@ -186,10 +186,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: {
-            name: schedule.services[0].name,
-            price: schedule.services[0].price
-          },
+          service: schedule.services.map(service => ({
+            name: service.name,
+            price: service.price
+          })),
           link: link
         });
 
@@ -233,10 +233,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: {
-            name: schedule.services[0].name,
-            price: schedule.services[0].price
-          },
+          service: schedule.services.map(service => ({
+            name: service.name,
+            price: service.price
+          })),
           link: link
         });
 
@@ -279,10 +279,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: {
-            name: schedule.services[0].name,
-            price: schedule.services[0].price
-          },
+          service: schedule.services.map(service => ({
+            name: service.name,
+            price: service.price
+          })),
           link: link
         });
 
@@ -326,10 +326,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: {
-            name: schedule.services[0].name,
-            price: schedule.services[0].price
-          },
+          service: schedule.services.map(service => ({
+            name: service.name,
+            price: service.price
+          })),
           link: link
         });
 
@@ -373,10 +373,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: {
-            name: schedule.services[0].name,
-            price: schedule.services[0].price
-          },
+          service: schedule.services.map(service => ({
+            name: service.name,
+            price: service.price
+          })),
           link: link
         });
 
@@ -431,10 +431,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: {
-            name: schedule.services[0].name,
-            price: schedule.services[0].price
-          },
+          service: schedule.services.map(service => ({
+            name: service.name,
+            price: service.price
+          })),
           link: link
         });
 
@@ -478,10 +478,10 @@ export class PaymentService {
         await this.smsService.sendSms({
           to: schedule.client.phoneCountry,
           client: schedule.client.cardName,
-          service: {
-            name: schedule.services[0].name,
-            price: schedule.services[0].price
-          },
+          service: schedule.services.map(service => ({
+            name: service.name,
+            price: service.price
+          })),
           link: link
         });
 
