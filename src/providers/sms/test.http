@@ -1,15 +1,14 @@
 ### Enviar SMS
-
-### Variáveis
 #@baseUrl = http://127.0.0.1:58055/v1
 @baseUrl = https://imperium-barbershop-api.dva83a.easypanel.host/v1
 @authToken = seu_token_jwt_aqui
+
 
 POST {{baseUrl}}/sms/send
 Content-Type: application/json
 
 {
-    "to": "+17743607564",
+    "to": "+5521979299562",
     "client": "Ramon",
     "service": [{
         "name": "Corte de Cabelo",

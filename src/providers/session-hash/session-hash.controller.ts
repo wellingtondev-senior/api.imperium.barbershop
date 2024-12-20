@@ -12,7 +12,7 @@ export class SessionHashController {
   
   @Version('1')
   @Get('validate/:hash/:userId')
-  @Roles(Role.MASTER, Role.ADM)
+  @Roles(Role.PROFESSIONAL, Role.ADM)
   @UseGuards(RoleGuard)
   @ApiOperation({ 
     summary: 'Validar hash de confirmação',
