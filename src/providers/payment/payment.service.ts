@@ -99,7 +99,7 @@ export class PaymentService {
       }
 
       const paymentData = {
-        id: charge_id,
+        id: charge_id!,
         object: data.object,
         type,
         api_version,
@@ -114,7 +114,7 @@ export class PaymentService {
       };
 
       await this.prismaService.payment.update({
-        where: { id: charge_id },
+        where: { id: charge_id! },
         data: paymentData
       });
 
