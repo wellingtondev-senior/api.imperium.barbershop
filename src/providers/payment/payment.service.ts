@@ -112,12 +112,10 @@ export class PaymentService {
         amount: charge_amount,
         client: clientData
       };
-
-      await this.prismaService.payment.update({
-        where: { id: charge_id! },
+     if(charge_id) await this.prismaService.payment.update({
+        where: { id: charge_id },
         data: paymentData
       });
-
       return true;
     } catch (error) {
       this.logger.error('Error updating payment: ', error);
