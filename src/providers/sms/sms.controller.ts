@@ -7,6 +7,7 @@ import { AppointmentDataDto } from './dto/sms.payload.dto';
 @Controller('sms')
 export class SmsController {
     constructor(private readonly smsService: SmsService) {}
+    
     @Version('1')
     @Post()
     @ApiOperation({ summary: 'Send SMS' })

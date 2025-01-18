@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { SMSProducer } from 'src/modulos/jobs/sms/sms.producer';
 import { AppointmentDataDto } from './dto/sms.payload.dto';
 
@@ -49,8 +49,12 @@ export class SmsService {
       });
 
       if (result.success) {
-        this.logger.log(`SMS sent successfully to ${data.to}`);
-        return { success: true, message: 'SMS sent successfully' };
+        this.logger.log(result.message);
+       
+      return {
+        statusCode: HttpStatus.CREATED,
+        message:result.message
+      };
       } else {
         throw new Error(result.message || 'Failed to send SMS');
       }

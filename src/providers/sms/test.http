@@ -3,7 +3,6 @@
 @baseUrl = https://imperium-barbershop-api.dva83a.easypanel.host/v1
 @authToken = seu_token_jwt_aqui
 
-
 POST {{baseUrl}}/sms
 Content-Type: application/json
 
@@ -14,5 +13,7 @@ Content-Type: application/json
         "name": "Corte de Cabelo",
         "price": 50.00
     }],
+    "appointmentDate": "2025-01-18T15:00:00.000Z",
+    "barberName": "Wellington",
     "link": "https://imperiumbarbershop.com.br"
 }
