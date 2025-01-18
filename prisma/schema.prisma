@@ -35,9 +35,9 @@ model Credenciais {
 }
 
 model Professional {
-  id              Int           @id @default(autoincrement())
+  id              Int             @id @default(autoincrement())
   name            String
-  email           String        @unique
+  email           String          @unique
   phone           String
   password        String
   document        String // Documento de identificação (CPF, CNPJ, etc)
@@ -46,20 +46,21 @@ model Professional {
   imageUrl        String? // URL adicional para imagem do profissional
   experienceYears Int?
   specialties     String[]
-  rating          Float?        @default(0)
+  rating          Float?          @default(0)
   location        String?
   bio             String?
-  isAvailable     Boolean       @default(true)
-  status          String        @default("active") // active ou inactive
+  isAvailable     Boolean         @default(true)
+  status          String          @default("active") // active ou inactive
   availability    String? // Disponibilidade específica
   workingHours    WorkingHours?
   socialMedia     SocialMedia?
-  create_at       DateTime      @default(now())
-  update_at       DateTime      @updatedAt
+  create_at       DateTime        @default(now())
+  update_at       DateTime        @updatedAt
   userId          Int
-  user            User          @relation(fields: [userId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
   services        Service[]
   schedules       Schedule[]
+  Notifications   Notifications[]
 
   @@index([isAvailable])
   @@index([status])
@@ -67,14 +68,15 @@ model Professional {
 }
 
 model Client {
-  id           Int        @id @default(autoincrement())
-  cardName     String
-  email        String     @unique
-  phoneCountry String
-  create_at    DateTime   @default(now())
-  update_at    DateTime   @updatedAt
-  schedules    Schedule[]
-  Payment      Payment[]
+  id            Int             @id @default(autoincrement())
+  cardName      String
+  email         String          @unique
+  phoneCountry  String
+  create_at     DateTime        @default(now())
+  update_at     DateTime        @updatedAt
+  schedules     Schedule[]
+  Payment       Payment[]
+  Notifications Notifications[]
 }
 
 model Adm {
@@ -129,14 +131,14 @@ model Schedule {
   client         Client       @relation(fields: [clientId], references: [id])
   create_at      DateTime     @default(now())
   update_at      DateTime     @updatedAt
-  Payment        Payment @relation(fields: [paymentId], references: [id])
+  Payment        Payment      @relation(fields: [paymentId], references: [id])
 
   @@index([dateTime])
   @@index([status])
 }
 
 model Payment {
-  id               String    @id
+  id               String     @id
   object           String
   type             String
   api_version      String
@@ -152,10 +154,10 @@ model Payment {
   payment_method   String?
   client_secret    String?
   // Relações existentes
-  client           Client    @relation(fields: [clientId], references: [id])
+  client           Client     @relation(fields: [clientId], references: [id])
   clientId         Int
-  create_at        DateTime  @default(now())
-  update_at        DateTime  @updatedAt
+  create_at        DateTime   @default(now())
+  update_at        DateTime   @updatedAt
   schedule         Schedule[]
 
   @@index([status])
@@ -194,4 +196,29 @@ model SocialMedia {
   professionalId Int          @unique
   create_at      DateTime     @default(now())
   update_at      DateTime     @updatedAt
+}
+
+model Notifications {
+  id             Int          @id @default(autoincrement())
+  title          String
+  description    String
+  status         String       @default("pending") // pending, confirmed, completed, canceled
+  professionalId Int
+  clientId       Int
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  client         Client       @relation(fields: [clientId], references: [id])
+  create_at      DateTime     @default(now())
+  update_at      DateTime     @updatedAt
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  endpoint  String
+  p256dh    String
+  auth      String
+  create_at DateTime @default(now())
+  update_at DateTime @updatedAt
+
+  @@index([userId])
 }

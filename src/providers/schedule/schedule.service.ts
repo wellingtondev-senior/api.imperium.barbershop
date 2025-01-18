@@ -65,7 +65,7 @@ export class ScheduleService {
       await this.smsService.sendAppointmentMessage({
         to: schedule.client.phoneCountry,
         client: schedule.client.cardName,
-        service: schedule.services.map(service => ({
+        service: schedule.services.map((service: { name: string, price: number }) => ({
           name: service.name,
           price: service.price
         })),

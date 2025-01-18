@@ -38,6 +38,7 @@
     "@nestjs/throttler": "^5.1.2",
     "@prisma/client": "^5.22.0",
     "@stripe/stripe-js": "^5.2.0",
+    "@types/web-push": "^3.6.4",
     "axios": "^1.7.2",
     "bcrypt": "^5.1.1",
     "bull": "^4.16.3",
@@ -65,6 +66,7 @@
     "swagger-ui-express": "^5.0.1",
     "tronweb": "^6.0.0",
     "ufc-scraper": "^0.1.6",
+    "web-push": "^3.6.7",
     "xmldom": "^0.6.0",
     "xpath": "^0.0.34"
   },

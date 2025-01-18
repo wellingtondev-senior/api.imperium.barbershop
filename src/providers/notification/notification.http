@@ -1,0 +1,47 @@
+@baseUrl = https://imperium-barbershop-api.dva83a.easypanel.host/v1
+@token = seu_token_jwt_aqui
+
+### Obter chave pública VAPID
+GET {{baseUrl}}/notifications/vapid-public-key
+Authorization: Bearer {{token}}
+
+### Inscrever-se para notificações push
+POST {{baseUrl}}/notifications/subscribe
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "userId": 1,
+    "subscription": {
+        "endpoint": "https://fcm.googleapis.com/fcm/send/example-endpoint",
+        "keys": {
+            "p256dh": "exemplo_chave_p256dh",
+            "auth": "exemplo_chave_auth"
+        }
+    }
+}
+
+### Enviar notificação para um usuário
+POST {{baseUrl}}/notifications/send
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "userId": 1,
+    "message": {
+        "title": "Novo Agendamento",
+        "body": "Você tem um novo agendamento para hoje!",
+        "icon": "/icon.png",
+        "data": {
+            "url": "/agendamentos"
+        }
+    }
+}
+
+### Buscar notificações por profissional
+GET {{baseUrl}}/notifications/professional/1
+Authorization: Bearer {{token}}
+
+### Remover uma notificação
+DELETE {{baseUrl}}/notifications/1
+Authorization: Bearer {{token}}
