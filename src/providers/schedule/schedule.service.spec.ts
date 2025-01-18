@@ -43,10 +43,10 @@ describe('ScheduleService', () => {
   };
 
   const mockSmsService = {
-    sendSms: jest.fn().mockResolvedValue({ 
+    sendAppointmentMessage: jest.fn().mockResolvedValue({
       success: true,
-      message: 'SMS adicionado à fila com sucesso'
-    }),
+      message: 'SMS sent successfully'
+    })
   };
 
   beforeEach(async () => {

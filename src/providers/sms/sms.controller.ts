@@ -1,19 +1,18 @@
-import { Controller, Post, Body, Version } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Body } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SmsService } from './sms.service';
-import { ReceivePayloadApiDto } from 'src/modulos/jobs/sms/dto/payload-api.dto';
+import { AppointmentDataDto } from './dto/sms.payload.dto';
 
 @ApiTags('SMS')
 @Controller('sms')
 export class SmsController {
     constructor(private readonly smsService: SmsService) {}
     
-    @Version('1')
-    @Post('send')
-    @ApiOperation({ summary: 'Enviar SMS' })
-    @ApiResponse({ status: 200, description: 'SMS enviado com sucesso' })
-    @ApiResponse({ status: 400, description: 'Requisição inválida' })
-    async sendSms(@Body() payload: ReceivePayloadApiDto) {
-        return this.smsService.sendSms(payload);
+    @Post()
+    @ApiOperation({ summary: 'Send SMS' })
+    @ApiResponse({ status: 200, description: 'SMS sent successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid request' })
+    async sendSms(@Body() payload: AppointmentDataDto) {
+        return this.smsService.sendAppointmentMessage(payload);
     }
 }

@@ -1,21 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SmsService } from './sms.service';
 import { SMSProducer } from 'src/modulos/jobs/sms/sms.producer';
-import { LoggerCustomService } from 'src/modulos/logger/logger.service';
-import { ReceivePayloadApiDto } from 'src/modulos/jobs/sms/dto/payload-api.dto';
+import { AppointmentDataDto } from './dto/sms.payload.dto';
 
 describe('SmsService', () => {
   let service: SmsService;
   let smsProducer: SMSProducer;
-  let loggerService: LoggerCustomService;
 
   const mockSMSProducer = {
-    sendSmsPayment: jest.fn(),
-  };
-
-  const mockLoggerService = {
-    warn: jest.fn(),
-    error: jest.fn(),
+    sendSms: jest.fn()
   };
 
   beforeEach(async () => {
@@ -24,72 +17,68 @@ describe('SmsService', () => {
         SmsService,
         {
           provide: SMSProducer,
-          useValue: mockSMSProducer,
-        },
-        {
-          provide: LoggerCustomService,
-          useValue: mockLoggerService,
-        },
+          useValue: mockSMSProducer
+        }
       ],
     }).compile();
 
     service = module.get<SmsService>(SmsService);
     smsProducer = module.get<SMSProducer>(SMSProducer);
-    loggerService = module.get<LoggerCustomService>(LoggerCustomService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('sendSms', () => {
-    it('should successfully send SMS', async () => {
-      const mockPayload: ReceivePayloadApiDto = {
-        to: '+5521979299562',
+  describe('sendAppointmentMessage', () => {
+    it('should send SMS successfully', async () => {
+      const mockPayload: AppointmentDataDto = {
+        to: '+5511999999999',
         client: 'John Doe',
-        service: [
-          { name: 'Corte de Cabelo', price: 50.00 }
-        ],
-        link: 'https://imperiumbarbershop.com.br',
+        service: [{
+          name: 'Haircut',
+          price: 50
+        }],
+        appointmentDate: new Date(),
+        barberName: 'Jane Smith',
+        link: 'https://example.com/confirmation/123'
       };
 
-      const expectedMessage = `Hello John Doe!\n\nYour appointment has been confirmed ✅\n\n📅 Services:\n• Corte de Cabelo: $ 50.00\n\n💰 Total: $ 50.00\n\nTo view your appointment details, please visit:\nhttps://imperiumbarbershop.com.br`;
-      
-      const expectedPayload = {
-        to: '+5521979299562',
-        message: expectedMessage
-      };
-
-      mockSMSProducer.sendSmsPayment.mockResolvedValueOnce({
+      mockSMSProducer.sendSms.mockResolvedValue({
         success: true,
-        message: 'SMS adicionado à fila com sucesso',
+        message: 'SMS sent successfully'
       });
 
-      const result = await service.sendSms(mockPayload);
+      const result = await service.sendAppointmentMessage(mockPayload);
 
       expect(result).toEqual({
         success: true,
-        message: 'SMS adicionado à fila com sucesso',
+        message: 'SMS sent successfully'
       });
-      expect(mockSMSProducer.sendSmsPayment).toHaveBeenCalledWith(expectedPayload);
-      expect(mockLoggerService.warn).toHaveBeenCalled();
+      expect(mockSMSProducer.sendSms).toHaveBeenCalled();
     });
 
-    it('should handle errors when sending SMS fails', async () => {
-      const mockPayload: ReceivePayloadApiDto = {
-        to: '+5521979299562',
+    it('should handle SMS sending failure', async () => {
+      const mockPayload: AppointmentDataDto = {
+        to: '+5511999999999',
         client: 'John Doe',
-        service: [
-          { name: 'Corte de Cabelo', price: 50.00 }
-        ],
-        link: 'https://imperiumbarbershop.com.br',
+        service: [{
+          name: 'Haircut',
+          price: 50
+        }],
+        appointmentDate: new Date(),
+        barberName: 'Jane Smith',
+        link: 'https://example.com/confirmation/123'
       };
 
-      const error = new Error('Failed to send SMS');
-      mockSMSProducer.sendSmsPayment.mockRejectedValueOnce(error);
+      mockSMSProducer.sendSms.mockRejectedValue(new Error('Failed to send SMS'));
 
-      await expect(service.sendSms(mockPayload)).rejects.toThrow('Erro ao enviar SMS: Failed to send SMS');
-      expect(mockLoggerService.error).toHaveBeenCalled();
+      await expect(service.sendAppointmentMessage(mockPayload))
+        .rejects.toThrow('Failed to send SMS');
     });
   });
 });

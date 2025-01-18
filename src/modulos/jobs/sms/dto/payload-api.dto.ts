@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsMobilePhone, IsArray } from 'class-validator';
+import { IsString, IsNotEmpty, IsMobilePhone } from 'class-validator';
 
 export class ReceivePayloadApiDto{
 
@@ -8,16 +8,6 @@ export class ReceivePayloadApiDto{
 
   @IsNotEmpty()
   @IsString()
-  client: string;
+  message: string;
 
-  @IsNotEmpty()
-  @IsArray()
-  service: Array<{
-    name: string;
-    price: number;
-  }>;
-
-  @IsNotEmpty()
-  @IsString()
-  link: string;
 }

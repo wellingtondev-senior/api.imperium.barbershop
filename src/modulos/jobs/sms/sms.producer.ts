@@ -1,20 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
-import {
-  AppointmentConfirmationDto,
-  AppointmentReminderDto,
-  AppointmentCancellationDto,
-  PromotionalMessageDto,
-} from './dto/sms.dto';
+import { ReceivePayloadApiDto } from './dto/payload-api.dto';
 
 @Injectable()
 export class SMSProducer {
   constructor(@InjectQueue('sms-queue') private readonly smsQueue: Queue) {}
 
-  private async addToQueue<T>(
+  private async addToQueue(
     jobName: string,
-    data: T,
+    data: ReceivePayloadApiDto,
   ): Promise<{ success: boolean; message: string; error?: string }> {
     try {
       await this.smsQueue.add(jobName, data, {
@@ -39,19 +34,7 @@ export class SMSProducer {
     }
   }
 
-  async sendAppointmentConfirmation(data: AppointmentConfirmationDto) {
-    return this.addToQueue('appointment-confirmation', data);
-  }
-
-  async sendAppointmentReminder(data: AppointmentReminderDto) {
-    return this.addToQueue('appointment-reminder', data);
-  }
-
-  async sendAppointmentCancellation(data: AppointmentCancellationDto) {
-    return this.addToQueue('appointment-cancellation', data);
-  }
-
-  async sendPromotionalMessage(data: PromotionalMessageDto) {
-    return this.addToQueue('promotional-message', data);
+  async sendSms(data: ReceivePayloadApiDto) {
+    return this.addToQueue('send-sms', data);
   }
 }

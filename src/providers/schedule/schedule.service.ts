@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { CreateScheduleDto, UpdateScheduleDto } from './dto/schedule.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { ServiceDto } from '../service/dto/service.dto';
-import { JsonValue } from '@prisma/client/runtime/library';
 import { SmsService } from '../sms/sms.service';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
@@ -63,14 +62,21 @@ export class ScheduleService {
         return;
       }
 
-      await this.smsService.sendSms({
+      await this.smsService.sendAppointmentMessage({
         to: schedule.client.phoneCountry,
         client: schedule.client.cardName,
-        service: schedule.services,
+        service: schedule.services.map(service => ({
+          name: service.name,
+          price: service.price
+        })),
+        appointmentDate: schedule.dateTime,
+        barberName: schedule.professional.name,
         link: `${process.env.URL_FRONTEND}/schedule/confirmation/${schedule.paymentId}`
       });
+
+      this.logger.log(`Confirmation SMS sent to ${schedule.client.cardName}`);
     } catch (error) {
-      this.logger.error('Error sending SMS:', error);
+      this.logger.error('Error sending confirmation SMS:', error);
       // We don't throw the error to avoid interrupting the main flow
     }
   }

@@ -1,81 +1,62 @@
-import { Injectable } from '@nestjs/common';
-import { ReceivePayloadApiDto } from 'src/modulos/jobs/sms/dto/payload-api.dto';
+import { Injectable, Logger } from '@nestjs/common';
 import { SMSProducer } from 'src/modulos/jobs/sms/sms.producer';
-import { LoggerCustomService } from 'src/modulos/logger/logger.service';
+import { AppointmentDataDto } from './dto/sms.payload.dto';
 
 @Injectable()
 export class SmsService {
-    private readonly className = this.constructor.name;
-    constructor(
-        private readonly smsProducer: SMSProducer,
-        private readonly loggerService: LoggerCustomService
-    ) {}
+  private readonly logger = new Logger(SmsService.name);
 
-    async sendSmsResponse(to: string, message: string) {
-        try {
-            await this.smsProducer.sendSmsPayment({
-                to: to,
-                message: message,
-                url_to_shorten: ''
-            });
-            this.loggerService.warn({
-                className: this.className,
-                functionName: 'sendSms',
-                message: `Enviado sms  com sucesso para ${to}`,
-              });
-        
-            return {
-                success: true,
-                message: 'SMS adicionado à fila com sucesso',
-            };
-        } catch (error) {
-            this.loggerService.error({
-                className: this.className,
-                functionName: 'sendSms',
-                message: `Erro ao envoiar sms para ${to}`,
-              });
-            throw new Error(`Erro ao enviar SMS: ${error.message}`);
-        }
-    }
-    async sendSms(receivePayloadApiDto:ReceivePayloadApiDto) {
-        const {to} = receivePayloadApiDto
-        try {
-           let message = `Hello ${receivePayloadApiDto.client}!\n\n`;
-           message += `Your appointment has been confirmed \n`;
-            message += `Services:\n`;
-           
-            let total = 0;
-           receivePayloadApiDto.service.forEach(service => {
-               message += ` ${service.name}: $ ${service.price.toFixed(2)}\n`;
-           total += service.price;
-           });
-           
-           message += `\n Total: $ ${total.toFixed(2)}\n\n`;
-           message += `To view your appointment details, please visit:\n`;
-           //message += `${receivePayloadApiDto.link}`;
+  constructor(private readonly smsProducer: SMSProducer) {}
 
-            await this.smsProducer.sendSmsPayment({
-                to: to,
-                message: message,
-                url_to_shorten: receivePayloadApiDto.link
-            });
-            this.loggerService.warn({
-                className: this.className,
-                functionName: 'sendSms',
-                message: `Enviado sms  com sucesso para ${to}`,
-              });
-        
-            return {
-                success: true,
-                message: 'SMS adicionado à fila com sucesso',
-            };
-        } catch (error) {
-            this.loggerService.error({
-                className: this.className,
-                functionName: 'sendSms',
-                message: `Erro ao envoiar sms para ${to}`,
-              });
-            throw new Error(`Erro ao enviar SMS: ${error.message}`);
-        }
+  private formatAppointmentMessage(data: AppointmentDataDto): string {
+    const { client, service, appointmentDate, barberName, link } = data;
+    
+    const services = service.map(item => 
+      `${item.name}: $${item.price.toFixed(2)}`
+    ).join('\n');
+
+    const total = service.reduce((sum, item) => sum + item.price, 0);
+
+    const formattedDate = appointmentDate.toLocaleString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    let message = `Hello ${client}!\n\n`;
+    message += `Your appointment has been scheduled for ${formattedDate} with ${barberName}.\n\n`;
+    message += `Services:\n${services}\n\n`;
+    message += `Total: $${total.toFixed(2)}`;
+
+    if (link) {
+      message += `\n\nView your appointment details at: ${link}`;
     }
+
+    return message;
+  }
+
+  async sendAppointmentMessage(data: AppointmentDataDto) {
+    try {
+      const message = this.formatAppointmentMessage(data);
+      
+      const result = await this.smsProducer.sendSms({
+        to: data.to,
+        message
+      });
+
+      if (result.success) {
+        this.logger.log(`SMS sent successfully to ${data.to}`);
+        return { success: true, message: 'SMS sent successfully' };
+      } else {
+        throw new Error(result.message || 'Failed to send SMS');
+      }
+    } catch (error) {
+      this.logger.error(`Error sending SMS: ${error.message}`);
+      throw error;
+    }
+  }
 }
