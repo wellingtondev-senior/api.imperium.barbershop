@@ -41,6 +41,7 @@ export class NotificationController {
   @UseGuards(RoleGuard)
   getVapidPublicKey() {
     const publicKey = this.webPushService.getVapidPublicKey();
+    console.log('VAPID public key sendo enviada:', publicKey);
     return { publicKey };
   }
   @Version('1')
