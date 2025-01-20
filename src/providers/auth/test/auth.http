@@ -2,7 +2,7 @@
 @baseUrl = https://imperium-barbershop-api.dva83a.easypanel.host/v1/auth
 @authToken = seu_token_jwt_aqui
 
-@email = wrm.net@gmail.com
+@email = zendevup@gmail.com
 @password = Ss121212#
 
 ### Login

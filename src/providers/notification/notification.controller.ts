@@ -11,7 +11,10 @@ import {
 import { NotificationService } from './notification.service';
 import { WebPushService } from '../../modulos/web-push/web-push.service';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { ApiTags } from '@nestjs/swagger';
 
+
+@ApiTags('Notifications')
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 export class NotificationController {
@@ -27,7 +30,7 @@ export class NotificationController {
     await this.webPushService.saveSubscription(payload.userId, payload.subscription);
     return { message: 'Subscription saved successfully!' };
   }
-
+  @Version('1')
   @Get('vapid-public-key')
   getVapidPublicKey() {
     const publicKey = this.webPushService.getVapidPublicKey();
