@@ -36,18 +36,18 @@ export class NotificationController {
     const publicKey = this.webPushService.getVapidPublicKey();
     return { publicKey };
   }
-
+  @Version('1')
   @Post('send')
   async sendNotification(@Body() payload: { userId: number; message: any }) {
     await this.webPushService.sendNotificationToUser(payload.userId, payload.message);
     return { message: 'Notification sent successfully!' };
   }
-
+  @Version('1')
   @Get('professional/:id')
   findByProfessional(@Param('id') id: string) {
     return this.notificationService.findByProfessional(+id);
   }
-
+  @Version('1')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.notificationService.remove(+id);
