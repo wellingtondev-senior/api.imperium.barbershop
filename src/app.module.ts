@@ -12,6 +12,7 @@ import { SendMailModule } from './modulos/jobs/sendmail/sendmail.module';
 import { ServiceModule } from './providers/service/service.module';
 import { PaymentModule } from './providers/payment/payment.module';
 import { SmsModule } from './providers/sms/sms.module';
+import { NotificationModule } from './providers/notification/notification.module';
 
 @Module({
   imports: [
@@ -34,7 +35,8 @@ import { SmsModule } from './providers/sms/sms.module';
     SendMailModule,
     ServiceModule ,
     PaymentModule,
-    SmsModule
+    SmsModule,
+    NotificationModule
   ],
   providers: [],
 })
