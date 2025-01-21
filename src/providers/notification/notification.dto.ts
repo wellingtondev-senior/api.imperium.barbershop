@@ -1,4 +1,16 @@
-import { IsString, IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsBoolean } from 'class-validator';
+
+export class SubscriptionDto {
+  @IsNumber()
+  userId: number;
+
+  @IsString()
+  fcmToken: string;
+
+  @IsBoolean()
+  @IsOptional()
+  active?: boolean;
+}
 
 export class CreateNotificationDto {
   @IsString()
@@ -16,6 +28,10 @@ export class CreateNotificationDto {
 
   @IsNumber()
   clientId: number;
+
+  @IsNumber()
+  @IsOptional()
+  scheduleId?: number;
 }
 
 export class UpdateNotificationDto {
@@ -30,12 +46,4 @@ export class UpdateNotificationDto {
   @IsString()
   @IsOptional()
   status?: string;
-
-  @IsNumber()
-  @IsOptional()
-  professionalId?: number;
-
-  @IsNumber()
-  @IsOptional()
-  clientId?: number;
 }

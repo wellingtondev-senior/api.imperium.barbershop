@@ -9,59 +9,79 @@ import {
   Version,
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import { WebPushService } from '../../modulos/web-push/web-push.service';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from 'src/enums/role.enum';
 import { RoleGuard } from 'src/guards/role.guard';
 import { Roles } from 'src/decorator/roles.decorator';
-
+import { CreateNotificationDto, SubscriptionDto } from './notification.dto';
 
 @ApiTags('Notifications')
 @Controller('notifications')
-
 export class NotificationController {
   constructor(
     private readonly notificationService: NotificationService,
-    private readonly webPushService: WebPushService,
   ) {}
 
+  // Endpoints de Subscrição
   @Version('1')
   @Post('subscribe')
-  @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(RoleGuard)
-  async subscribe(@Body() payload: { userId: number; subscription: any }) {
-   console.log(payload)
-    await this.webPushService.saveSubscription(payload.userId, payload.subscription);
+  @UseGuards(JwtAuthGuard)
+  async subscribe(@Body() payload: SubscriptionDto) {
+    await this.notificationService.saveSubscription(
+      payload.userId,
+      payload.fcmToken
+    );
     return { message: 'Subscription saved successfully!' };
   }
+
   @Version('1')
-  @Get('vapid-public-key')
-  @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(RoleGuard)
-  getVapidPublicKey() {
-    const publicKey = this.webPushService.getVapidPublicKey();
-    console.log('VAPID public key sendo enviada:', publicKey);
-    return { publicKey };
+  @Post('unsubscribe')
+  @UseGuards(JwtAuthGuard)
+  async unsubscribe(@Body() payload: SubscriptionDto) {
+    await this.notificationService.deactivateSubscription(
+      payload.userId,
+      payload.fcmToken
+    );
+    return { message: 'Subscription deactivated successfully!' };
   }
+
+  // Endpoints de Notificação
   @Version('1')
-  @Post('send')
+  @Post()
   @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(RoleGuard)
-  async sendNotification(@Body() payload: { userId: number; message: any }) {
-    await this.webPushService.sendNotificationToUser(payload.userId, payload.message);
-    return { message: 'Notification sent successfully!' };
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  async create(@Body() createNotificationDto: CreateNotificationDto) {
+    return this.notificationService.createNotification(createNotificationDto);
   }
+
+  @Version('1')
+  @Get()
+  @Roles(Role.ADM)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  findAll() {
+    return this.notificationService.findAllNotifications();
+  }
+
   @Version('1')
   @Get('professional/:id')
+  @UseGuards(JwtAuthGuard)
   findByProfessional(@Param('id') id: string) {
-    return this.notificationService.findByProfessional(+id);
+    return this.notificationService.findNotificationsByProfessional(+id);
   }
+
+  @Version('1')
+  @Get('client/:id')
+  @UseGuards(JwtAuthGuard)
+  findByClient(@Param('id') id: string) {
+    return this.notificationService.findNotificationsByClient(+id);
+  }
+
   @Version('1')
   @Delete(':id')
   @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtAuthGuard, RoleGuard)
   remove(@Param('id') id: string) {
-    return this.notificationService.remove(+id);
+    return this.notificationService.removeNotification(+id);
   }
 }

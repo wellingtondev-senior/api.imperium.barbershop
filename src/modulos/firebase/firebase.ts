@@ -1,0 +1,15 @@
+import { ServiceAccount } from 'firebase-admin';
+
+export const firebaseConfig = {
+  type: "service_account",
+  projectId: "gendeskpro-messaging",
+  privateKeyId: "b7b19e1b1bd20cf4936dfc48330e94f0b3e7981a",
+  privateKey: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDtsmyVjtFhDUS9\nZp2BqCjW87RGWRCwij8BqWVrQL6uIi0xZ+bSm65A7v9iyj5FccTC2fB6FVpvWZl1\naGd286rpAvY8VhhPRbDiJkXeIdguzP1thWhy8YBxsvtAiH12A7R4VQNsNfhB77Ky\nItc5eMj3FY0rqDiB5mczsmtP374bfR/TOVcNC9BtUDzyWzsBaf0r9MinwXPbtyGc\nAXJaFnqnVxtRC+HrBNcHDYO8lx1F6KAxRlssrpYfVGHWGTSGlT3xCpj6aR+gyJlF\nF/HeMWFLtn4XZ4KUycm2C00VNSf80H9g1J0YDftJodtB/0NsixuYfnRVZ7OR9x3P\nEHtrU1GfAgMBAAECggEAZ5cOZoGG8452SjrZ4uM35THxe4UeVmnxepZqKjtdvoML\nghAfkuKhJxBhgZrVV6t0zlxvxqzerE92pynYiYk5D3KogHQfBRFAvNZkNaI3VnIk\n8mGlOw7P5P1VLXMuhkuoD5cxNiwxJP9DOAoiFRx0LOaaDxAxjD8u8+NKjFVcwxpG\nQ9fvgRgaEJ1Auo/7tIe2+t6yPsJOGYv0/OOm0biEvkCUzgm5P4YcDDKVdsat0u2D\n7fG75zrGdDg0qNWyVdeS40J0wuoWYI5G0V5SunOeN2Dp6OYliJm1Vv6GuiifQs0b\nbXIF7n7tyGVyHYzxU69GkE9+2Ad9dZuokRxV2HVKpQKBgQD7K4zY3uvhzVmaV8E6\n/u+4MVW1lulEYqHXc5JZ1/pYLzphQH18BnGDi0kWTsXfnwmWsSDJCJnU+WUMhvgI\nK3AweYc+zfD0m9CE7kGNcQ1HBfCWAD8WHju5eyrvIIHts2S0JSnHqxVx1z7plbnG\nlP50E2kFGnitBHHbOYqwI2Qu3QKBgQDyRIyF1+cxtjq73RaKRSQ5NIaobXNv0zKj\nm1JpckFvWjQxFbW0BIROydyaoHG4UxXiOX0zOxjEsEwMfOfOzHdZkK/5lFJnYVZJ\nkwcrL3ebIXwXv7/FXbPZEtpUEDtOcOjE3mk5jEe+9UuTvCvmKXQVkXYVFoN5Ca0y\nuvr5Ru3UqwKBgA5MjWkvT7h8K1S5GDwWlWkkDeAXplIJV3Nflf5daFgq4CT3Oe2c\npEu72z5U37j6Yd5dWSN4xOE2DYWoDWjRqEJqOMPfj48ta7KVqc+2lu3rLaYsf2rv\n77CAjZIthJgWtW34C6fdWowvl9pOdtQSWWYcUMdEmYgoD59OaFHcwfBVAoGALXUx\nTNfjGI/R23gzh4RLtLQnZCkNVPky8kHtp715i7RIQMGLE5kZXlNAIn9idyyX2Zfh\n5x/6mMVfr6QsNsBk0Jh2fIUZJS69axa8bJz+e0xAJZCkIhtf6KZB8y4Mgr5q3q3A\n3rx0pd8O7EyNjCVRE870ciaESszHA9LTzrxBWfsCgYEAvPoMe/RGSuiB4019qOYB\nG62lTmb/3VCNQ/4dj5XWT0u1Pb+R4DM9wosIxVQrBSvswJUiZB1wL5imCPbmwgXN\n3IDurueHouye83ypcW16DokWmuSlq2sJNJM6laSrzpxNeIOEPXHp2+nMoOTvxmVr\n7AkuJeMUy2drrL6nLPfLtxo=\n-----END PRIVATE KEY-----\n",
+  clientEmail: "firebase-adminsdk-fbsvc@gendeskpro-messaging.iam.gserviceaccount.com",
+  clientId: "105679704388042670031",
+  authUri: "https://accounts.google.com/o/oauth2/auth",
+  tokenUri: "https://oauth2.googleapis.com/token",
+  authProviderX509CertUrl: "https://www.googleapis.com/oauth2/v1/certs",
+  clientX509CertUrl: "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40gendeskpro-messaging.iam.gserviceaccount.com",
+};
+

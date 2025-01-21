@@ -8,17 +8,20 @@ datasource db {
 }
 
 model User {
-  id           Int            @id @default(autoincrement())
-  email        String         @unique
-  password     String
-  name         String
-  role         String
-  active       Boolean        @default(false)
-  create_at    DateTime       @default(now())
-  update_at    DateTime       @updatedAt
-  professional Professional[]
-  credenciais  Credenciais[]
-  adm          Adm[]
+  id                       Int                        @id @default(autoincrement())
+  email                    String                     @unique
+  password                 String
+  name                     String
+  role                     String
+  active                   Boolean                    @default(false)
+  fcmToken                 String? // Token do Firebase Cloud Messaging
+  create_at                DateTime                   @default(now())
+  update_at                DateTime                   @updatedAt
+  professional             Professional[]
+  credenciais              Credenciais[]
+  adm                      Adm[]
+  notifications            Notification[]
+  NotificationSubscription NotificationSubscription[]
 
   @@index([email])
   @@index([role])
@@ -35,9 +38,9 @@ model Credenciais {
 }
 
 model Professional {
-  id              Int             @id @default(autoincrement())
+  id              Int            @id @default(autoincrement())
   name            String
-  email           String          @unique
+  email           String         @unique
   phone           String
   password        String
   document        String // Documento de identificação (CPF, CNPJ, etc)
@@ -46,21 +49,21 @@ model Professional {
   imageUrl        String? // URL adicional para imagem do profissional
   experienceYears Int?
   specialties     String[]
-  rating          Float?          @default(0)
+  rating          Float?         @default(0)
   location        String?
   bio             String?
-  isAvailable     Boolean         @default(true)
-  status          String          @default("active") // active ou inactive
+  isAvailable     Boolean        @default(true)
+  status          String         @default("active") // active ou inactive
   availability    String? // Disponibilidade específica
   workingHours    WorkingHours?
   socialMedia     SocialMedia?
-  create_at       DateTime        @default(now())
-  update_at       DateTime        @updatedAt
+  create_at       DateTime       @default(now())
+  update_at       DateTime       @updatedAt
   userId          Int
-  user            User            @relation(fields: [userId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
   services        Service[]
   schedules       Schedule[]
-  Notifications   Notifications[]
+  notifications   Notification[]
 
   @@index([isAvailable])
   @@index([status])
@@ -68,15 +71,15 @@ model Professional {
 }
 
 model Client {
-  id            Int             @id @default(autoincrement())
+  id            Int            @id @default(autoincrement())
   cardName      String
-  email         String          @unique
+  email         String         @unique
   phoneCountry  String
-  create_at     DateTime        @default(now())
-  update_at     DateTime        @updatedAt
+  create_at     DateTime       @default(now())
+  update_at     DateTime       @updatedAt
   schedules     Schedule[]
   Payment       Payment[]
-  Notifications Notifications[]
+  notifications Notification[]
 }
 
 model Adm {
@@ -119,19 +122,20 @@ model Service {
 }
 
 model Schedule {
-  id             Int          @id @default(autoincrement())
+  id             Int            @id @default(autoincrement())
   dateTime       DateTime // Data e horário do agendamento
   time           String
-  status         String       @default("pending") // pending, confirmed, completed, canceled
+  status         String         @default("pending") // pending, confirmed, completed, canceled
   professionalId Int
   clientId       Int
   services       Service[] // Relação muitos-para-muitos com serviços
   paymentId      String // Relação única com o pagamento
-  professional   Professional @relation(fields: [professionalId], references: [id])
-  client         Client       @relation(fields: [clientId], references: [id])
-  create_at      DateTime     @default(now())
-  update_at      DateTime     @updatedAt
-  Payment        Payment      @relation(fields: [paymentId], references: [id])
+  professional   Professional   @relation(fields: [professionalId], references: [id])
+  client         Client         @relation(fields: [clientId], references: [id])
+  create_at      DateTime       @default(now())
+  update_at      DateTime       @updatedAt
+  Payment        Payment        @relation(fields: [paymentId], references: [id])
+  notifications  Notification[]
 
   @@index([dateTime])
   @@index([status])
@@ -159,9 +163,6 @@ model Payment {
   create_at        DateTime   @default(now())
   update_at        DateTime   @updatedAt
   schedule         Schedule[]
-
-  @@index([status])
-  @@index([clientId])
 }
 
 model WorkingHours {
@@ -198,27 +199,37 @@ model SocialMedia {
   update_at      DateTime     @updatedAt
 }
 
-model Notifications {
+model NotificationSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int      // ID do usuário que receberá a notificação
+  fcmToken  String   // Token do Firebase Cloud Messaging
+  active    Boolean  @default(true)
+  create_at DateTime @default(now())
+  update_at DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, fcmToken])
+  @@index([userId])
+  @@index([fcmToken])
+}
+
+model Notification {
   id             Int          @id @default(autoincrement())
   title          String
   description    String
   status         String       @default("pending") // pending, confirmed, completed, canceled
-  professionalId Int
-  clientId       Int
-  professional   Professional @relation(fields: [professionalId], references: [id])
-  client         Client       @relation(fields: [clientId], references: [id])
+  scheduleId     Int? // ID opcional do agendamento relacionado
+  professionalId Int // ID do profissional
+  clientId       Int // ID do cliente
   create_at      DateTime     @default(now())
   update_at      DateTime     @updatedAt
-}
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  client         Client       @relation(fields: [clientId], references: [id])
+  schedule       Schedule?    @relation(fields: [scheduleId], references: [id])
+  User           User?        @relation(fields: [userId], references: [id])
+  userId         Int?
 
-model PushSubscription {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  endpoint  String
-  p256dh    String
-  auth      String
-  create_at DateTime @default(now())
-  update_at DateTime @updatedAt
-
-  @@index([userId])
+  @@index([professionalId])
+  @@index([clientId])
+  @@index([scheduleId])
 }
