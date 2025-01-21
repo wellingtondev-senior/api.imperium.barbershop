@@ -8,20 +8,20 @@ datasource db {
 }
 
 model User {
-  id                       Int                        @id @default(autoincrement())
-  email                    String                     @unique
-  password                 String
-  name                     String
-  role                     String
-  active                   Boolean                    @default(false)
-  fcmToken                 String? // Token do Firebase Cloud Messaging
-  create_at                DateTime                   @default(now())
-  update_at                DateTime                   @updatedAt
-  professional             Professional[]
-  credenciais              Credenciais[]
-  adm                      Adm[]
-  notifications            Notification[]
-  NotificationSubscription NotificationSubscription[]
+  id               Int               @id @default(autoincrement())
+  email            String            @unique
+  password         String
+  name             String
+  role             String
+  active           Boolean           @default(false)
+  fcmToken         String? // Token do Firebase Cloud Messaging
+  create_at        DateTime          @default(now())
+  update_at        DateTime          @updatedAt
+  professional     Professional[]
+  credenciais      Credenciais[]
+  adm              Adm[]
+  notifications    Notification[]
+  PushSubscription PushSubscription?
 
   @@index([email])
   @@index([role])
@@ -199,18 +199,19 @@ model SocialMedia {
   update_at      DateTime     @updatedAt
 }
 
-model NotificationSubscription {
+model PushSubscription {
   id        Int      @id @default(autoincrement())
-  userId    Int      // ID do usuário que receberá a notificação
-  fcmToken  String   // Token do Firebase Cloud Messaging
+  userId    Int
+  endpoint  String
+  p256dh    String
+  auth      String
   active    Boolean  @default(true)
   create_at DateTime @default(now())
   update_at DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id])
 
-  @@unique([userId, fcmToken])
+  @@unique([userId])
   @@index([userId])
-  @@index([fcmToken])
 }
 
 model Notification {

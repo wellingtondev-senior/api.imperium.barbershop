@@ -1,69 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { CreateNotificationDto, UpdateNotificationDto } from './notification.dto';
 import { PrismaService } from 'src/modulos/prisma/prisma.service';
-import { FirebaseAdminService } from 'src/modulos/firebase/firebase-admin.service';
+import { WebPushService } from 'src/modulos/web-push/web-push.service';
+import * as webPush from 'web-push';
 
 @Injectable()
 export class NotificationService {
   constructor(
     private prisma: PrismaService,
-    private firebaseAdmin: FirebaseAdminService
+    private webPushService: WebPushService,
   ) {}
 
   // Métodos de Subscrição
-  async saveSubscription(userId: number, fcmToken: string) {
-    return await this.prisma.notificationSubscription.upsert({
-      where: {
-        id: await this.findSubscriptionId(userId, fcmToken) || -1,
-      },
-      update: {
-        active: true,
-        update_at: new Date(),
-      },
-      create: {
-        userId,
-        fcmToken,
-        active: true,
-      },
-    });
+  async saveSubscription(userId: number, subscription: webPush.PushSubscription) {
+    return await this.webPushService.saveSubscription(userId, subscription);
   }
 
-  private async findSubscriptionId(userId: number, fcmToken: string): Promise<number | null> {
-    const subscription = await this.prisma.notificationSubscription.findFirst({
-      where: {
-        userId,
-        fcmToken,
-      },
-      select: {
-        id: true,
-      },
-    });
-    return subscription?.id || null;
-  }
-
-  async getActiveSubscription(userId: number): Promise<string | null> {
-    const subscription = await this.prisma.notificationSubscription.findFirst({
-      where: {
-        userId,
-        active: true,
-      },
-      orderBy: {
-        create_at: 'desc',
-      },
-    });
-    return subscription?.fcmToken || null;
-  }
-
-  async deactivateSubscription(userId: number, fcmToken: string) {
-    return await this.prisma.notificationSubscription.updateMany({
-      where: {
-        userId,
-        fcmToken,
-      },
-      data: {
-        active: false,
-      },
-    });
+  async deactivateSubscription(userId: number) {
+    return await this.webPushService.removeSubscription(userId);
   }
 
   // Métodos de Notificação
@@ -85,23 +39,27 @@ export class NotificationService {
     });
 
     // Enviar notificação push para o cliente
-    const clientToken = await this.getActiveSubscription(data.clientId);
-    if (clientToken) {
-      await this.firebaseAdmin.sendNotification(
-        clientToken,
-        notification.title,
-        notification.description
-      );
+    if (data.clientId) {
+      await this.webPushService.sendNotificationToUser(data.clientId, {
+        title: notification.title,
+        body: notification.description,
+        data: {
+          notificationId: notification.id,
+          type: 'client_notification'
+        }
+      });
     }
 
     // Enviar notificação push para o profissional
-    const professionalToken = await this.getActiveSubscription(data.professionalId);
-    if (professionalToken) {
-      await this.firebaseAdmin.sendNotification(
-        professionalToken,
-        notification.title,
-        notification.description
-      );
+    if (data.professionalId) {
+      await this.webPushService.sendNotificationToUser(data.professionalId, {
+        title: notification.title,
+        body: notification.description,
+        data: {
+          notificationId: notification.id,
+          type: 'professional_notification'
+        }
+      });
     }
 
     return notification;
