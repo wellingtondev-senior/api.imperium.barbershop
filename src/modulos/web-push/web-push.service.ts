@@ -10,16 +10,11 @@ export class WebPushService implements OnModuleInit {
   constructor(private prismaService: PrismaService) {
     // Gerar novas chaves VAPID se não existirem
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      console.log('Gerando novas chaves VAPID...');
       const newKeys = webPush.generateVAPIDKeys();
-      console.log('Chaves VAPID geradas:', newKeys);
       this.vapidKeys = {
         publicKey: newKeys.publicKey,
         privateKey: newKeys.privateKey,
       };
-      console.log('Novas chaves VAPID geradas. Adicione ao seu .env:');
-      console.log(`VAPID_PUBLIC_KEY=${this.vapidKeys.publicKey}`);
-      console.log(`VAPID_PRIVATE_KEY=${this.vapidKeys.privateKey}`);
     } else {
       this.vapidKeys = {
         publicKey: process.env.VAPID_PUBLIC_KEY,
@@ -30,7 +25,6 @@ export class WebPushService implements OnModuleInit {
 
   onModuleInit() {
     if (!process.env.VAPID_EMAIL) {
-      console.error('VAPID_EMAIL não configurado no .env');
       return;
     }
 
