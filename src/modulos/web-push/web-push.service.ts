@@ -12,6 +12,7 @@ export class WebPushService implements OnModuleInit {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
       console.log('Gerando novas chaves VAPID...');
       const newKeys = webPush.generateVAPIDKeys();
+      console.log('Chaves VAPID geradas:', newKeys);
       this.vapidKeys = {
         publicKey: newKeys.publicKey,
         privateKey: newKeys.privateKey,
