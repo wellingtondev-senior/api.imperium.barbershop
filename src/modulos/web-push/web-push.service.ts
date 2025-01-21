@@ -9,18 +9,12 @@ export class WebPushService implements OnModuleInit {
 
   constructor(private prismaService: PrismaService) {
     // Gerar novas chaves VAPID se não existirem
-    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      const newKeys = webPush.generateVAPIDKeys();
-      this.vapidKeys = {
-        publicKey: newKeys.publicKey,
-        privateKey: newKeys.privateKey,
-      };
-    } else {
+  
       this.vapidKeys = {
         publicKey: process.env.VAPID_PUBLIC_KEY,
         privateKey: process.env.VAPID_PRIVATE_KEY,
       };
-    }
+    
   }
 
   onModuleInit() {
