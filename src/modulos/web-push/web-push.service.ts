@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as webPush from 'web-push';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushSubscription as DbPushSubscription } from '@prisma/client';
+import { Role } from 'src/enums/role.enum';
 
 @Injectable()
 export class WebPushService implements OnModuleInit {
@@ -44,6 +45,7 @@ export class WebPushService implements OnModuleInit {
   }
 
   async saveSubscription(
+    role:Role,
     userId: number,
     subscription: webPush.PushSubscription,
   ): Promise<DbPushSubscription> {
@@ -56,6 +58,7 @@ export class WebPushService implements OnModuleInit {
         where: { userId },
         create: {
           userId,
+          role,
           endpoint: subscription.endpoint,
           p256dh: subscription.keys.p256dh,
           auth: subscription.keys.auth,

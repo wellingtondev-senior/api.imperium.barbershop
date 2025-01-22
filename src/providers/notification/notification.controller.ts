@@ -24,7 +24,7 @@ export class NotificationController {
   constructor(
     private readonly notificationService: NotificationService,
     private readonly webPushService: WebPushService,
-  ) {}
+  ) { }
 
   // Endpoints de Subscrição
   @Version('1')
@@ -38,11 +38,13 @@ export class NotificationController {
   @Version('1')
   @Post('subscribe')
   @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(RoleGuard)    
-  async subscribe(@Body() payload: { userId: number; subscription: webPush.PushSubscription }) {
+  @UseGuards(RoleGuard)
+  async subscribe(@Body() payload: { role: Role; userId: number; subscription: webPush.PushSubscription }) {
     await this.webPushService.saveSubscription(
+      payload.role,
       payload.userId,
-      payload.subscription
+      payload.subscription,
+
     );
     return { message: 'Subscription saved successfully!' };
   }
