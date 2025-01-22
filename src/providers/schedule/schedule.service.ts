@@ -3,6 +3,7 @@ import { CreateScheduleDto, UpdateScheduleDto } from './dto/schedule.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { ServiceDto } from '../service/dto/service.dto';
 import { SmsService } from '../sms/sms.service';
+import { NotificationService } from '../notification/notification.service';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 
@@ -12,7 +13,8 @@ export class ScheduleService {
 
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly smsService: SmsService
+    private readonly smsService: SmsService,
+    private readonly notificationService: NotificationService
   ) { }
 
   private combineDateAndTime(date: Date, time: string): Date {
@@ -172,8 +174,24 @@ export class ScheduleService {
         }
       });
 
-      // Send SMS confirmation
-      await this.sendScheduleConfirmationSMS(createdSchedule);
+      // Enviar notificações para o profissional e ADMs
+      await this.notificationService.sendScheduleNotification(createdSchedule);
+
+      // Enviar SMS se necessário
+      if (createdSchedule.client.phoneCountry) {
+        const appointmentData = {
+          to: createdSchedule.client.phoneCountry,
+          client: createdSchedule.client.cardName,
+          service: createdSchedule.services.map(service => ({
+            name: service.name,
+            price: service.price
+          })),
+          appointmentDate: createdSchedule.dateTime,
+          barberName: createdSchedule.professional.name
+        };
+        
+        await this.smsService.sendAppointmentMessage(appointmentData);
+      }
 
       return {
         success: true,

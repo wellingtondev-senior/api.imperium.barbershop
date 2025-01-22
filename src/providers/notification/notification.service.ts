@@ -105,4 +105,43 @@ export class NotificationService {
       where: { id },
     });
   }
+
+  async sendScheduleNotification(schedule: any) {
+    try {
+      // Buscar todas as inscrições de push dos ADMs
+      const admSubscriptions = await this.prisma.pushSubscription.findMany({
+        where: {
+          role: 'ADM'
+        }
+      });
+
+      // Criar a notificação para o profissional
+      const professionalNotification = await this.createNotification({
+        title: 'Novo Agendamento',
+        description: `Novo agendamento para ${schedule.time} com ${schedule.client.cardName}`,
+        status: 'pending',
+        professionalId: schedule.professionalId,
+        clientId: schedule.clientId,
+        scheduleId: schedule.id
+      });
+
+      // Enviar notificação push para todos os ADMs
+      for (const subscription of admSubscriptions) {
+        await this.webPushService.sendNotificationToUser(subscription.userId, {
+          title: 'Novo Agendamento',
+          body: `Novo agendamento para ${schedule.time} com ${schedule.client.cardName}`,
+          data: {
+            notificationId: professionalNotification.id,
+            type: 'schedule_notification',
+            scheduleId: schedule.id
+          }
+        });
+      }
+
+      return professionalNotification;
+    } catch (error) {
+      console.error('Erro ao enviar notificações de agendamento:', error);
+      throw error;
+    }
+  }
 }

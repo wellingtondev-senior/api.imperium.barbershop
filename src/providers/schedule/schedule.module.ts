@@ -7,6 +7,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { MailerModule } from '../mailer/mailer.module';
 import { CredenciaisModule } from 'src/modulos/credenciais/credenciais.module';
 import { SmsModule } from '../sms/sms.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -15,10 +16,10 @@ import { SmsModule } from '../sms/sms.module';
     JwtModule,
     MailerModule,
     CredenciaisModule,
-    SmsModule
+    SmsModule,
+    NotificationModule
   ],
   controllers: [ScheduleController],
   providers: [ScheduleService],
-  exports: [ScheduleService]
 })
-export class ScheduleModule {}
+export class ScheduleModule { }
