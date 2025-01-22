@@ -40,7 +40,7 @@ export class NotificationController {
   @Roles(Role.ADM, Role.PROFESSIONAL)
   @UseGuards(RoleGuard)    
   async subscribe(@Body() payload: { userId: number; subscription: webPush.PushSubscription }) {
-    await this.notificationService.saveSubscription(
+    await this.webPushService.saveSubscription(
       payload.userId,
       payload.subscription
     );
@@ -52,25 +52,18 @@ export class NotificationController {
   @Roles(Role.ADM, Role.PROFESSIONAL)
   @UseGuards(RoleGuard)
   async unsubscribe(@Body() payload: { userId: number }) {
-    await this.notificationService.deactivateSubscription(payload.userId);
+    await this.webPushService.removeSubscription(payload.userId);
     return { message: 'Subscription deactivated successfully!' };
   }
 
-  // Endpoints de Notificação
-  @Version('1')
-  @Post()
-  @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(RoleGuard)
-  async create(@Body() createNotificationDto: CreateNotificationDto) {
-    return this.notificationService.createNotification(createNotificationDto);
-  }
+
 
   @Version('1')
   @Get()
   @Roles(Role.ADM)
   @UseGuards(RoleGuard)
   findAll() {
-    return this.notificationService.findAllNotifications();
+    return this.notificationService.findAll();
   }
 
   @Version('1')
@@ -78,7 +71,7 @@ export class NotificationController {
   @Roles(Role.ADM, Role.PROFESSIONAL)
   @UseGuards(RoleGuard)
   findByProfessional(@Param('id') id: string) {
-    return this.notificationService.findNotificationsByProfessional(+id);
+    return this.notificationService.findByProfessional(+id);
   }
 
   @Version('1')
@@ -86,7 +79,7 @@ export class NotificationController {
   @Roles(Role.ADM, Role.PROFESSIONAL)
   @UseGuards(RoleGuard)
   findByClient(@Param('id') id: string) {
-    return this.notificationService.findNotificationsByClient(+id);
+    return this.notificationService.findByClient(+id);
   }
 
   @Version('1')
@@ -94,6 +87,6 @@ export class NotificationController {
   @Roles(Role.ADM, Role.PROFESSIONAL)
   @UseGuards(RoleGuard)
   remove(@Param('id') id: string) {
-    return this.notificationService.removeNotification(+id);
+    return this.notificationService.remove(+id);
   }
 }
