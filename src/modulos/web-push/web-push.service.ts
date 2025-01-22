@@ -51,16 +51,26 @@ export class WebPushService implements OnModuleInit {
     console.log('Subscription recebida:', subscription);
 
     try {
-      // Salvar a inscrição no banco de dados
-      const result = await this.prismaService.pushSubscription.create({
-        data: {
+      // Usar upsert para criar ou atualizar a subscription
+      const result = await this.prismaService.pushSubscription.upsert({
+        where: { userId },
+        create: {
           userId,
           endpoint: subscription.endpoint,
           p256dh: subscription.keys.p256dh,
           auth: subscription.keys.auth,
+          active: true
+        },
+        update: {
+          endpoint: subscription.endpoint,
+          p256dh: subscription.keys.p256dh,
+          auth: subscription.keys.auth,
+          active: true,
+          update_at: new Date()
         },
       });
-      console.log('Subscription salva com sucesso:', result);
+      
+      console.log('Subscription salva/atualizada com sucesso:', result);
       return result;
     } catch (error) {
       console.error('Erro ao salvar subscription:', error);
