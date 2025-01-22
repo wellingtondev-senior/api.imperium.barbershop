@@ -29,6 +29,8 @@ export class NotificationController {
   // Endpoints de Subscrição
   @Version('1')
   @Get('vapid-public-key')
+  @Roles(Role.ADM, Role.PROFESSIONAL)
+  @UseGuards(RoleGuard)
   getVapidPublicKey() {
     return { publicKey: this.webPushService.getVapidPublicKey() };
   }
@@ -36,7 +38,7 @@ export class NotificationController {
   @Version('1')
   @Post('subscribe')
   @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(JwtAuthGuard, RoleGuard)
+  @UseGuards(RoleGuard)    
   async subscribe(@Body() payload: { userId: number; subscription: webPush.PushSubscription }) {
     await this.notificationService.saveSubscription(
       payload.userId,
@@ -48,7 +50,7 @@ export class NotificationController {
   @Version('1')
   @Post('unsubscribe')
   @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(JwtAuthGuard, RoleGuard)
+  @UseGuards(RoleGuard)
   async unsubscribe(@Body() payload: { userId: number }) {
     await this.notificationService.deactivateSubscription(payload.userId);
     return { message: 'Subscription deactivated successfully!' };
@@ -58,7 +60,7 @@ export class NotificationController {
   @Version('1')
   @Post()
   @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(JwtAuthGuard, RoleGuard)
+  @UseGuards(RoleGuard)
   async create(@Body() createNotificationDto: CreateNotificationDto) {
     return this.notificationService.createNotification(createNotificationDto);
   }
@@ -66,7 +68,7 @@ export class NotificationController {
   @Version('1')
   @Get()
   @Roles(Role.ADM)
-  @UseGuards(JwtAuthGuard, RoleGuard)
+  @UseGuards(RoleGuard)
   findAll() {
     return this.notificationService.findAllNotifications();
   }
@@ -74,7 +76,7 @@ export class NotificationController {
   @Version('1')
   @Get('professional/:id')
   @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(JwtAuthGuard, RoleGuard)
+  @UseGuards(RoleGuard)
   findByProfessional(@Param('id') id: string) {
     return this.notificationService.findNotificationsByProfessional(+id);
   }
@@ -82,7 +84,7 @@ export class NotificationController {
   @Version('1')
   @Get('client/:id')
   @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(JwtAuthGuard, RoleGuard)
+  @UseGuards(RoleGuard)
   findByClient(@Param('id') id: string) {
     return this.notificationService.findNotificationsByClient(+id);
   }
@@ -90,7 +92,7 @@ export class NotificationController {
   @Version('1')
   @Delete(':id')
   @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(JwtAuthGuard, RoleGuard)
+  @UseGuards(RoleGuard)
   remove(@Param('id') id: string) {
     return this.notificationService.removeNotification(+id);
   }
