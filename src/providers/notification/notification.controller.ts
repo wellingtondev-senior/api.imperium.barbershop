@@ -53,8 +53,8 @@ export class NotificationController {
   @Post('unsubscribe')
   @Roles(Role.ADM, Role.PROFESSIONAL)
   @UseGuards(RoleGuard)
-  async unsubscribe(@Body() payload: { userId: number }) {
-    await this.webPushService.removeSubscription(payload.userId);
+  async unsubscribe(@Body() payload: { id: number; role: Role }) {
+    await this.webPushService.removeSubscription(payload.id, payload.role);
     return { message: 'Subscription deactivated successfully!' };
   }
 

@@ -84,15 +84,16 @@ model Client {
 }
 
 model Adm {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  cpf       String?
-  avatar    String?
-  create_at DateTime @default(now())
-  update_at DateTime @updatedAt
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  email               String                @unique
+  cpf                 String?
+  avatar              String?
+  create_at           DateTime              @default(now())
+  update_at           DateTime              @updatedAt
+  userId              Int
+  user                User                  @relation(fields: [userId], references: [id])
+  pushSubscriptionADM PushSubscriptionADM[]
 }
 
 model SessionHash {
@@ -216,6 +217,21 @@ model PushSubscription {
 
   @@unique([professionalId])
   @@index([professionalId])
+}
+
+model PushSubscriptionADM {
+  id        Int      @id @default(autoincrement())
+  role      String
+  endpoint  String
+  p256dh    String
+  auth      String
+  active    Boolean  @default(true)
+  create_at DateTime @default(now())
+  update_at DateTime @updatedAt
+  Adm       Adm    @relation(fields: [admId], references: [id])
+  admId     Int
+   @@unique([admId])
+  @@index([admId])
 }
 
 model Notification {

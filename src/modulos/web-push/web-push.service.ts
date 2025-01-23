@@ -1,7 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as webPush from 'web-push';
 import { PrismaService } from '../prisma/prisma.service';
-import { PushSubscription as DbPushSubscription } from '@prisma/client';
 import { Role } from 'src/enums/role.enum';
 
 @Injectable()
@@ -10,12 +9,12 @@ export class WebPushService implements OnModuleInit {
 
   constructor(private prismaService: PrismaService) {
     // Gerar novas chaves VAPID se não existirem
-  
-      this.vapidKeys = {
-        publicKey: process.env.VAPID_PUBLIC_KEY,
-        privateKey: process.env.VAPID_PRIVATE_KEY,
-      };
-    
+
+    this.vapidKeys = {
+      publicKey: process.env.VAPID_PUBLIC_KEY,
+      privateKey: process.env.VAPID_PRIVATE_KEY,
+    };
+
   }
 
   onModuleInit() {
@@ -44,41 +43,73 @@ export class WebPushService implements OnModuleInit {
     return this.vapidKeys.publicKey;
   }
 
-  async   saveSubscription(
-    role:Role,
+  async saveSubscription(
+    role: Role,
     id: number,
     subscription: webPush.PushSubscription,
-  ): Promise<DbPushSubscription> {
-    console.log('Salvando subscription para usuário:', id);
-    console.log('Subscription recebida:', subscription);
+  ) {
+    switch (role) {
+      case Role.ADM:
+        try {
+          // Usar upsert para criar ou atualizar a subscription
+          const result = await this.prismaService.pushSubscriptionADM.upsert({
+            where: { admId: id },
+            create: {
+              admId: id,
+              role,
+              endpoint: subscription.endpoint,
+              p256dh: subscription.keys.p256dh,
+              auth: subscription.keys.auth,
+              active: true
+            },
+            update: {
+              endpoint: subscription.endpoint,
+              p256dh: subscription.keys.p256dh,
+              auth: subscription.keys.auth,
+              active: true,
+              update_at: new Date()
+            },
+          });
 
-    try {
-      // Usar upsert para criar ou atualizar a subscription
-      const result = await this.prismaService.pushSubscription.upsert({
-        where: { professionalId: id },
-        create: {
-          professionalId: id,
-          role,
-          endpoint: subscription.endpoint,
-          p256dh: subscription.keys.p256dh,
-          auth: subscription.keys.auth,
-          active: true
-        },
-        update: {
-          endpoint: subscription.endpoint,
-          p256dh: subscription.keys.p256dh,
-          auth: subscription.keys.auth,
-          active: true,
-          update_at: new Date()
-        },
-      });
-      
-      console.log('Subscription salva/atualizada com sucesso:', result);
-      return result;
-    } catch (error) {
-      console.error('Erro ao salvar subscription:', error);
-      throw error;
+          console.log('Subscription salva/atualizada com sucesso:', result);
+          return result;
+        } catch (error) {
+          console.error('Erro ao salvar subscription:', error);
+          throw error;
+        }
+      case Role.PROFESSIONAL:
+        try {
+          // Usar upsert para criar ou atualizar a subscription
+          const result = await this.prismaService.pushSubscription.upsert({
+            where: { professionalId: id },
+            create: {
+              professionalId: id,
+              role,
+              endpoint: subscription.endpoint,
+              p256dh: subscription.keys.p256dh,
+              auth: subscription.keys.auth,
+              active: true
+            },
+            update: {
+              endpoint: subscription.endpoint,
+              p256dh: subscription.keys.p256dh,
+              auth: subscription.keys.auth,
+              active: true,
+              update_at: new Date()
+            },
+          });
+
+          console.log('Subscription salva/atualizada com sucesso:', result);
+          return result;
+        } catch (error) {
+          console.error('Erro ao salvar subscription:', error);
+          throw error;
+        }
+
+
     }
+
+
   }
 
   async sendNotification(
@@ -88,7 +119,7 @@ export class WebPushService implements OnModuleInit {
     try {
       console.log('Enviando notificação para:', subscription.endpoint);
       console.log('Payload:', payload);
-      
+
       await webPush.sendNotification(subscription, JSON.stringify(payload));
       console.log('Notificação enviada com sucesso');
       return true;
@@ -100,7 +131,7 @@ export class WebPushService implements OnModuleInit {
 
   async sendNotificationToUserADM(payload: any): Promise<boolean> {
     console.log('Enviando notificação para usuário:');
-    
+
     const dbSubscription = await this.prismaService.pushSubscription.findFirst({
       where: { role: Role.ADM },
     });
@@ -124,7 +155,7 @@ export class WebPushService implements OnModuleInit {
 
   async sendNotificationToUser(professionalId: number, payload: any): Promise<boolean> {
     console.log('Enviando notificação para usuário:', professionalId);
-    
+
     const dbSubscription = await this.prismaService.pushSubscription.findFirst({
       where: { professionalId },
     });
@@ -146,9 +177,19 @@ export class WebPushService implements OnModuleInit {
     return this.sendNotification(subscription, payload);
   }
 
-  async removeSubscription(professionalId: number) {
-    return await this.prismaService.pushSubscription.deleteMany({
-      where: { professionalId },
-    });
+  async removeSubscription(id: number, role: Role) {
+    switch (role) {
+      case Role.ADM:
+        return await this.prismaService.pushSubscriptionADM.deleteMany({
+          where: { admId: id },
+        });
+      case Role.PROFESSIONAL:
+        return await this.prismaService.pushSubscription.deleteMany({
+          where: { professionalId: id },
+        });
+      default:
+        throw new Error('Role inválida');
+    }
   }
+
 }
