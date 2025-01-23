@@ -44,20 +44,20 @@ export class WebPushService implements OnModuleInit {
     return this.vapidKeys.publicKey;
   }
 
-  async saveSubscription(
+  async   saveSubscription(
     role:Role,
-    professionalId: number,
+    id: number,
     subscription: webPush.PushSubscription,
   ): Promise<DbPushSubscription> {
-    console.log('Salvando subscription para usuário:', professionalId);
+    console.log('Salvando subscription para usuário:', id);
     console.log('Subscription recebida:', subscription);
 
     try {
       // Usar upsert para criar ou atualizar a subscription
       const result = await this.prismaService.pushSubscription.upsert({
-        where: { professionalId},
+        where: { professionalId: id },
         create: {
-          professionalId,
+          professionalId: id,
           role,
           endpoint: subscription.endpoint,
           p256dh: subscription.keys.p256dh,

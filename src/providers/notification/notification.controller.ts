@@ -39,10 +39,10 @@ export class NotificationController {
   @Post('subscribe')
   @Roles(Role.ADM, Role.PROFESSIONAL)
   @UseGuards(RoleGuard)
-  async subscribe(@Body() payload: { role: Role; professionalId: number; subscription: webPush.PushSubscription }) {
+  async subscribe(@Body() payload: { role: Role; id: number; subscription: webPush.PushSubscription }) {
     await this.webPushService.saveSubscription(
       payload.role,
-      payload.professionalId,
+      payload.id,
       payload.subscription,
 
     );
