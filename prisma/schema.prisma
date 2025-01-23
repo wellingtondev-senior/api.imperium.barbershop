@@ -8,19 +8,20 @@ datasource db {
 }
 
 model User {
-  id               Int               @id @default(autoincrement())
-  email            String            @unique
-  password         String
-  name             String
-  role             String
-  active           Boolean           @default(false)
-  fcmToken         String? // Token do Firebase Cloud Messaging
-  create_at        DateTime          @default(now())
-  update_at        DateTime          @updatedAt
-  professional     Professional[]
-  credenciais      Credenciais[]
-  adm              Adm[]
-  PushSubscription PushSubscription?
+  id                 Int               @id @default(autoincrement())
+  email              String            @unique
+  password           String
+  name               String
+  role               String
+  active             Boolean           @default(false)
+  fcmToken           String? // Token do Firebase Cloud Messaging
+  create_at          DateTime          @default(now())
+  update_at          DateTime          @updatedAt
+  professional       Professional[]
+  credenciais        Credenciais[]
+  adm                Adm[]
+  PushSubscription   PushSubscription? @relation(fields: [pushSubscriptionId], references: [id])
+  pushSubscriptionId Int?
 
   @@index([email])
   @@index([role])
@@ -37,32 +38,33 @@ model Credenciais {
 }
 
 model Professional {
-  id              Int            @id @default(autoincrement())
-  name            String
-  email           String         @unique
-  phone           String
-  password        String
-  document        String // Documento de identificação (CPF, CNPJ, etc)
-  type_doc        String // Tipo do documento
-  avatarUrl       String?
-  imageUrl        String? // URL adicional para imagem do profissional
-  experienceYears Int?
-  specialties     String[]
-  rating          Float?         @default(0)
-  location        String?
-  bio             String?
-  isAvailable     Boolean        @default(true)
-  status          String         @default("active") // active ou inactive
-  availability    String? // Disponibilidade específica
-  workingHours    WorkingHours?
-  socialMedia     SocialMedia?
-  create_at       DateTime       @default(now())
-  update_at       DateTime       @updatedAt
-  userId          Int
-  user            User           @relation(fields: [userId], references: [id])
-  services        Service[]
-  schedules       Schedule[]
-  notifications   Notification[]
+  id               Int               @id @default(autoincrement())
+  name             String
+  email            String            @unique
+  phone            String
+  password         String
+  document         String // Documento de identificação (CPF, CNPJ, etc)
+  type_doc         String // Tipo do documento
+  avatarUrl        String?
+  imageUrl         String? // URL adicional para imagem do profissional
+  experienceYears  Int?
+  specialties      String[]
+  rating           Float?            @default(0)
+  location         String?
+  bio              String?
+  isAvailable      Boolean           @default(true)
+  status           String            @default("active") // active ou inactive
+  availability     String? // Disponibilidade específica
+  workingHours     WorkingHours?
+  socialMedia      SocialMedia?
+  create_at        DateTime          @default(now())
+  update_at        DateTime          @updatedAt
+  userId           Int
+  user             User              @relation(fields: [userId], references: [id])
+  services         Service[]
+  schedules        Schedule[]
+  notifications    Notification[]
+  PushSubscription PushSubscription?
 
   @@index([isAvailable])
   @@index([status])
@@ -199,19 +201,21 @@ model SocialMedia {
 }
 
 model PushSubscription {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  role      String
-  endpoint  String
-  p256dh    String
-  auth      String
-  active    Boolean  @default(true)
-  create_at DateTime @default(now())
-  update_at DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
+  id             Int      @id @default(autoincrement())
+  professionalId Int
+  role           String
+  endpoint       String
+  p256dh         String
+  auth           String
+  active         Boolean  @default(true)
+  create_at      DateTime @default(now())
+  update_at      DateTime @updatedAt
 
-  @@unique([userId])
-  @@index([userId])
+  professional Professional @relation(fields: [professionalId], references: [id])
+  User         User[]
+
+  @@unique([professionalId])
+  @@index([professionalId])
 }
 
 model Notification {

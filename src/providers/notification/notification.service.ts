@@ -70,7 +70,7 @@ export class NotificationService {
       });
 
       // Enviar notificação push para o cliente
-      await this.webPushService.sendNotificationToUser(notification.clientId, {
+      await this.webPushService.sendNotificationToUserADM({
         title: notification.title,
         body: notification.description,
         data: {
@@ -127,7 +127,7 @@ export class NotificationService {
 
       // Enviar notificação push para todos os ADMs
       for (const subscription of admSubscriptions) {
-        await this.webPushService.sendNotificationToUser(subscription.userId, {
+        await this.webPushService.sendNotificationToUser(subscription.professionalId, {
           title: 'Novo Agendamento',
           body: `Novo agendamento para ${schedule.time} com ${schedule.client.cardName}`,
           data: {

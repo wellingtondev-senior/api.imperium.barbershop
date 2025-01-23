@@ -46,18 +46,18 @@ export class WebPushService implements OnModuleInit {
 
   async saveSubscription(
     role:Role,
-    userId: number,
+    professionalId: number,
     subscription: webPush.PushSubscription,
   ): Promise<DbPushSubscription> {
-    console.log('Salvando subscription para usuário:', userId);
+    console.log('Salvando subscription para usuário:', professionalId);
     console.log('Subscription recebida:', subscription);
 
     try {
       // Usar upsert para criar ou atualizar a subscription
       const result = await this.prismaService.pushSubscription.upsert({
-        where: { userId },
+        where: { professionalId},
         create: {
-          userId,
+          professionalId,
           role,
           endpoint: subscription.endpoint,
           p256dh: subscription.keys.p256dh,
@@ -98,15 +98,15 @@ export class WebPushService implements OnModuleInit {
     }
   }
 
-  async sendNotificationToUser(userId: number, payload: any): Promise<boolean> {
-    console.log('Enviando notificação para usuário:', userId);
+  async sendNotificationToUserADM(payload: any): Promise<boolean> {
+    console.log('Enviando notificação para usuário:');
     
     const dbSubscription = await this.prismaService.pushSubscription.findFirst({
-      where: { userId },
+      where: { role: Role.ADM },
     });
 
     if (!dbSubscription) {
-      console.log('Nenhuma subscription encontrada para o usuário:', userId);
+      console.log('Nenhuma subscription encontrada para o usuário:');
       return false;
     }
 
@@ -122,9 +122,33 @@ export class WebPushService implements OnModuleInit {
     return this.sendNotification(subscription, payload);
   }
 
-  async removeSubscription(userId: number) {
+  async sendNotificationToUser(professionalId: number, payload: any): Promise<boolean> {
+    console.log('Enviando notificação para usuário:', professionalId);
+    
+    const dbSubscription = await this.prismaService.pushSubscription.findFirst({
+      where: { professionalId },
+    });
+
+    if (!dbSubscription) {
+      console.log('Nenhuma subscription encontrada para o usuário:', professionalId);
+      return false;
+    }
+
+    // Converter subscription do banco para o formato do web-push
+    const subscription: webPush.PushSubscription = {
+      endpoint: dbSubscription.endpoint,
+      keys: {
+        p256dh: dbSubscription.p256dh,
+        auth: dbSubscription.auth,
+      },
+    };
+
+    return this.sendNotification(subscription, payload);
+  }
+
+  async removeSubscription(professionalId: number) {
     return await this.prismaService.pushSubscription.deleteMany({
-      where: { userId },
+      where: { professionalId },
     });
   }
 }
