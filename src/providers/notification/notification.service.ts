@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateNotificationDto, UpdateNotificationDto } from './notification.dto';
 import { WebPushService } from 'src/modulos/web-push/web-push.service';
 import { PrismaService } from 'src/modulos/prisma/prisma.service';
+import { Role } from 'src/enums/role.enum';
 
 @Injectable()
 export class NotificationService {
@@ -13,7 +14,7 @@ export class NotificationService {
   async findAll() {
     return this.prisma.notification.findMany({
       orderBy: {
-        create_at : 'desc',
+        create_at: 'desc',
       },
     });
   }
@@ -24,7 +25,7 @@ export class NotificationService {
         professionalId: professionalId,
       },
       orderBy: {
-        create_at : 'desc',
+        create_at: 'desc',
       },
     });
   }
@@ -35,7 +36,7 @@ export class NotificationService {
         clientId: clientId,
       },
       orderBy: {
-        create_at : 'desc',
+        create_at: 'desc',
       },
     });
   }
@@ -109,9 +110,13 @@ export class NotificationService {
   async sendScheduleNotification(schedule: any) {
     try {
       // Buscar todas as inscrições de push dos ADMs
-      const admSubscriptions = await this.prisma.pushSubscription.findMany({
+      const admSubscriptions = await this.prisma.pushSubscriptionADM.findMany({
         where: {
-          role: 'ADM'
+          role: Role.ADM,
+          active: true
+        },
+        include: {
+          Adm: true
         }
       });
 
@@ -127,7 +132,15 @@ export class NotificationService {
 
       // Enviar notificação push para todos os ADMs
       for (const subscription of admSubscriptions) {
-        await this.webPushService.sendNotificationToUser(subscription.professionalId, {
+        const webPushSubscription = {
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: subscription.p256dh,
+            auth: subscription.auth,
+          },
+        };
+
+        await this.webPushService.sendNotification(webPushSubscription, {
           title: 'Novo Agendamento',
           body: `Novo agendamento para ${schedule.time} com ${schedule.client.cardName}`,
           data: {
