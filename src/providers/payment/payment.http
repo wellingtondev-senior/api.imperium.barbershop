@@ -1,0 +1,23 @@
+@baseUrl = https://imperium-barbershop-api.dva83a.easypanel.host/v1
+@contentType = application/json
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IndybS5uZXRAZ21haWwuY29tIiwiY3JlYXRlX2F0IjoiMjAyNS0wMS0yM1QwMDo1Nzo0Ni43MzJaIiwidXBkYXRlX2F0IjoiMjAyNS0wMS0yM1QwMDo1ODoyMy45MjBaIiwicm9sZSI6IkFETSIsImFjdGl2ZSI6dHJ1ZSwidXNlciI6eyJpZCI6MSwiZW1haWwiOiJ3cm0ubmV0QGdtYWlsLmNvbSIsInBhc3N3b3JkIjoiJDJiJDEwJEkuWm1LbnNzNXl2bWVXSmRzMlFsM081WEZwdUFYZkJaT28vVlYyUWVJRW40cWkxTGx0cTlXIiwibmFtZSI6IldlbGxpbmd0b25BRE0iLCJyb2xlIjoiQURNIiwiYWN0aXZlIjp0cnVlLCJmY21Ub2tlbiI6bnVsbCwiY3JlYXRlX2F0IjoiMjAyNS0wMS0yM1QwMDo1Nzo0Ni43MzJaIiwidXBkYXRlX2F0IjoiMjAyNS0wMS0yM1QwMDo1ODoyMy45MjBaIiwicHVzaFN1YnNjcmlwdGlvbklkIjpudWxsLCJhZG0iOlt7ImlkIjoxLCJuYW1lIjoiV2VsbGluZ3RvbkFETSIsImVtYWlsIjoid3JtLm5ldEBnbWFpbC5jb20iLCJjcGYiOiIwMDAuMDAwLjAwMC0wMCIsImF2YXRhciI6bnVsbCwiY3JlYXRlX2F0IjoiMjAyNS0wMS0yM1QwMDo1Nzo0Ni43NTZaIiwidXBkYXRlX2F0IjoiMjAyNS0wMS0yM1QwMDo1Nzo0Ni43NTZaIiwidXNlcklkIjoxfV0sInByb2Zlc3Npb25hbCI6W119LCJ1c2VySWQiOjEsImlhdCI6MTczNzU5NTEzNiwiZXhwIjoxNzM3NjUyNzM2fQ.S3bRwpQT-w1JnV5wIDTruf9428g-7jLNAafDTknKpNU
+
+### List all payments
+GET {{baseUrl}}/payment
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+### List payments filtered by status
+GET {{baseUrl}}/payment?status=paid
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+### List pending payments
+GET {{baseUrl}}/payment?status=pending
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+### List cancelled payments
+GET {{baseUrl}}/payment?status=cancelled
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
