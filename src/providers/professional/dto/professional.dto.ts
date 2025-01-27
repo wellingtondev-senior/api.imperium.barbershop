@@ -28,47 +28,81 @@ export class WorkingHourDto {
 }
 
 export class WorkingHoursDto {
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => WorkingHourDto)
-  monday?: WorkingHourDto;
+  @ApiProperty({ description: 'Horário de início segunda-feira' })
+  @IsString()
+  mondayStart: string;
+
+  @ApiProperty({ description: 'Horário de término segunda-feira' })
+  @IsString()
+  mondayEnd: string;
+
+  @ApiProperty({ description: 'Horário de início terça-feira' })
+  @IsString()
+  tuesdayStart: string;
+
+  @ApiProperty({ description: 'Horário de término terça-feira' })
+  @IsString()
+  tuesdayEnd: string;
+
+  @ApiProperty({ description: 'Horário de início quarta-feira' })
+  @IsString()
+  wednesdayStart: string;
+
+  @ApiProperty({ description: 'Horário de término quarta-feira' })
+  @IsString()
+  wednesdayEnd: string;
+
+  @ApiProperty({ description: 'Horário de início quinta-feira' })
+  @IsString()
+  thursdayStart: string;
+
+  @ApiProperty({ description: 'Horário de término quinta-feira' })
+  @IsString()
+  thursdayEnd: string;
+
+  @ApiProperty({ description: 'Horário de início sexta-feira' })
+  @IsString()
+  fridayStart: string;
+
+  @ApiProperty({ description: 'Horário de término sexta-feira' })
+  @IsString()
+  fridayEnd: string;
+
+  @ApiProperty({ description: 'Horário de início sábado' })
+  @IsString()
+  saturdayStart: string;
+
+  @ApiProperty({ description: 'Horário de término sábado' })
+  @IsString()
+  saturdayEnd: string;
+
+  @ApiProperty({ description: 'Horário de início domingo' })
+  @IsString()
+  sundayStart: string;
+
+  @ApiProperty({ description: 'Horário de término domingo' })
+  @IsString()
+  sundayEnd: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @ValidateNested()
-  @Type(() => WorkingHourDto)
-  tuesday?: WorkingHourDto;
+  @IsInt()
+  id?: number;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @ValidateNested()
-  @Type(() => WorkingHourDto)
-  wednesday?: WorkingHourDto;
+  @IsInt()
+  professionalId?: number;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @ValidateNested()
-  @Type(() => WorkingHourDto)
-  thursday?: WorkingHourDto;
+  @IsDateString()
+  create_at?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @ValidateNested()
-  @Type(() => WorkingHourDto)
-  friday?: WorkingHourDto;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => WorkingHourDto)
-  saturday?: WorkingHourDto;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => WorkingHourDto)
-  sunday?: WorkingHourDto;
+  @IsDateString()
+  update_at?: string;
 }
 
 export class SocialMediaDto {

@@ -75,20 +75,20 @@ export class ProfessionalService {
           ...(professionalDto.workingHours && {
             workingHours: {
               create: {
-                mondayStart: professionalDto.workingHours.monday?.start,
-                mondayEnd: professionalDto.workingHours.monday?.end,
-                tuesdayStart: professionalDto.workingHours.tuesday?.start,
-                tuesdayEnd: professionalDto.workingHours.tuesday?.end,
-                wednesdayStart: professionalDto.workingHours.wednesday?.start,
-                wednesdayEnd: professionalDto.workingHours.wednesday?.end,
-                thursdayStart: professionalDto.workingHours.thursday?.start,
-                thursdayEnd: professionalDto.workingHours.thursday?.end,
-                fridayStart: professionalDto.workingHours.friday?.start,
-                fridayEnd: professionalDto.workingHours.friday?.end,
-                saturdayStart: professionalDto.workingHours.saturday?.start,
-                saturdayEnd: professionalDto.workingHours.saturday?.end,
-                sundayStart: professionalDto.workingHours.sunday?.start,
-                sundayEnd: professionalDto.workingHours.sunday?.end
+                mondayStart: professionalDto.workingHours.mondayStart,
+                mondayEnd: professionalDto.workingHours.mondayEnd,
+                tuesdayStart: professionalDto.workingHours.tuesdayStart,
+                tuesdayEnd: professionalDto.workingHours.tuesdayEnd,
+                wednesdayStart: professionalDto.workingHours.wednesdayStart,
+                wednesdayEnd: professionalDto.workingHours.wednesdayEnd,
+                thursdayStart: professionalDto.workingHours.thursdayStart,
+                thursdayEnd: professionalDto.workingHours.thursdayEnd,
+                fridayStart: professionalDto.workingHours.fridayStart,
+                fridayEnd: professionalDto.workingHours.fridayEnd,
+                saturdayStart: professionalDto.workingHours.saturdayStart,
+                saturdayEnd: professionalDto.workingHours.saturdayEnd,
+                sundayStart: professionalDto.workingHours.sundayStart,
+                sundayEnd: professionalDto.workingHours.sundayEnd
               }
             }
           }),
@@ -234,36 +234,36 @@ export class ProfessionalService {
             workingHours: {
               upsert: {
                 create: {
-                  mondayStart: professionalDto.workingHours.monday?.start,
-                  mondayEnd: professionalDto.workingHours.monday?.end,
-                  tuesdayStart: professionalDto.workingHours.tuesday?.start,
-                  tuesdayEnd: professionalDto.workingHours.tuesday?.end,
-                  wednesdayStart: professionalDto.workingHours.wednesday?.start,
-                  wednesdayEnd: professionalDto.workingHours.wednesday?.end,
-                  thursdayStart: professionalDto.workingHours.thursday?.start,
-                  thursdayEnd: professionalDto.workingHours.thursday?.end,
-                  fridayStart: professionalDto.workingHours.friday?.start,
-                  fridayEnd: professionalDto.workingHours.friday?.end,
-                  saturdayStart: professionalDto.workingHours.saturday?.start,
-                  saturdayEnd: professionalDto.workingHours.saturday?.end,
-                  sundayStart: professionalDto.workingHours.sunday?.start,
-                  sundayEnd: professionalDto.workingHours.sunday?.end
+                  mondayStart: professionalDto.workingHours.mondayStart,
+                  mondayEnd: professionalDto.workingHours.mondayEnd,
+                  tuesdayStart: professionalDto.workingHours.tuesdayStart,
+                  tuesdayEnd: professionalDto.workingHours.tuesdayEnd,
+                  wednesdayStart: professionalDto.workingHours.wednesdayStart,
+                  wednesdayEnd: professionalDto.workingHours.wednesdayEnd,
+                  thursdayStart: professionalDto.workingHours.thursdayStart,
+                  thursdayEnd: professionalDto.workingHours.thursdayEnd,
+                  fridayStart: professionalDto.workingHours.fridayStart,
+                  fridayEnd: professionalDto.workingHours.fridayEnd,
+                  saturdayStart: professionalDto.workingHours.saturdayStart,
+                  saturdayEnd: professionalDto.workingHours.saturdayEnd,
+                  sundayStart: professionalDto.workingHours.sundayStart,
+                  sundayEnd: professionalDto.workingHours.sundayEnd
                 },
                 update: {
-                  mondayStart: professionalDto.workingHours.monday?.start,
-                  mondayEnd: professionalDto.workingHours.monday?.end,
-                  tuesdayStart: professionalDto.workingHours.tuesday?.start,
-                  tuesdayEnd: professionalDto.workingHours.tuesday?.end,
-                  wednesdayStart: professionalDto.workingHours.wednesday?.start,
-                  wednesdayEnd: professionalDto.workingHours.wednesday?.end,
-                  thursdayStart: professionalDto.workingHours.thursday?.start,
-                  thursdayEnd: professionalDto.workingHours.thursday?.end,
-                  fridayStart: professionalDto.workingHours.friday?.start,
-                  fridayEnd: professionalDto.workingHours.friday?.end,
-                  saturdayStart: professionalDto.workingHours.saturday?.start,
-                  saturdayEnd: professionalDto.workingHours.saturday?.end,
-                  sundayStart: professionalDto.workingHours.sunday?.start,
-                  sundayEnd: professionalDto.workingHours.sunday?.end
+                  mondayStart: professionalDto.workingHours.mondayStart,
+                  mondayEnd: professionalDto.workingHours.mondayEnd,
+                  tuesdayStart: professionalDto.workingHours.tuesdayStart,
+                  tuesdayEnd: professionalDto.workingHours.tuesdayEnd,
+                  wednesdayStart: professionalDto.workingHours.wednesdayStart,
+                  wednesdayEnd: professionalDto.workingHours.wednesdayEnd,
+                  thursdayStart: professionalDto.workingHours.thursdayStart,
+                  thursdayEnd: professionalDto.workingHours.thursdayEnd,
+                  fridayStart: professionalDto.workingHours.fridayStart,
+                  fridayEnd: professionalDto.workingHours.fridayEnd,
+                  saturdayStart: professionalDto.workingHours.saturdayStart,
+                  saturdayEnd: professionalDto.workingHours.saturdayEnd,
+                  sundayStart: professionalDto.workingHours.sundayStart,
+                  sundayEnd: professionalDto.workingHours.sundayEnd
                 }
               }
             }
