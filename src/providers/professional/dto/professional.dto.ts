@@ -105,45 +105,41 @@ export class ProfessionalDto {
   @IsInt()
   id?: number;
 
-  @ApiProperty({ description: 'ID do usuário associado ao profissional' })
-  @IsNotEmpty()
-  @IsInt()
+  @ApiProperty({ required: true, description: 'ID do usuário associado ao profissional' })
+  @IsNotEmpty({ message: 'userId é obrigatório' })
+  @IsInt({ message: 'userId deve ser um número inteiro' })
   userId: number;
 
-  @ApiProperty({ description: 'Nome completo do profissional' })
-  @IsNotEmpty()
-  @IsString()
+  @ApiProperty({ required: true, description: 'Nome completo do profissional' })
+  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  @IsString({ message: 'Nome deve ser uma string' })
   name: string;
 
-  @ApiProperty({ description: 'Email do profissional' })
-  @IsNotEmpty()
-  @IsEmail()
+  @ApiProperty({ required: true, description: 'Email do profissional' })
+  @IsNotEmpty({ message: 'Email é obrigatório' })
+  @IsEmail({}, { message: 'Email inválido' })
   email: string;
 
-  @ApiProperty({ description: 'Telefone do profissional' })
-  @IsNotEmpty()
-  @IsString()
+  @ApiProperty({ required: true, description: 'Telefone do profissional' })
+  @IsNotEmpty({ message: 'Telefone é obrigatório' })
+  @IsString({ message: 'Telefone deve ser uma string' })
   phone: string;
 
-  @ApiProperty({ description: 'Documento de identificação (CPF, CNPJ, etc)' })
-  @IsNotEmpty()
-  @IsString()
+  @ApiProperty({ required: true, description: 'Documento de identificação (CPF, CNPJ, etc)' })
+  @IsNotEmpty({ message: 'Documento é obrigatório' })
+  @IsString({ message: 'Documento deve ser uma string' })
   document: string;
 
-  @ApiProperty({ description: 'Tipo do documento (CPF, CNPJ, etc)' })
-  @IsNotEmpty()
-  @IsString()
+  @ApiProperty({ required: true, description: 'Tipo do documento (CPF, CNPJ, etc)' })
+  @IsNotEmpty({ message: 'Tipo do documento é obrigatório' })
+  @IsString({ message: 'Tipo do documento deve ser uma string' })
   type_doc: string;
 
-
-
   // Autenticação
-  @ApiProperty({ description: 'Senha de acesso' })
-  @IsNotEmpty()
-  @IsString()
+  @ApiProperty({ required: true, description: 'Senha de acesso' })
+  @IsNotEmpty({ message: 'Senha é obrigatória' })
+  @IsString({ message: 'Senha deve ser uma string' })
   password: string;
-
-
 
   @ApiProperty({ required: false, description: 'Status de ativação da conta' })
   @IsOptional()
