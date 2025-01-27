@@ -74,22 +74,22 @@ export class WorkingHoursDto {
 export class SocialMediaDto {
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsUrl()
+  @IsString()
   instagram?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsUrl()
+  @IsString()
   facebook?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsUrl()
+  @IsString()
   twitter?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsUrl()
+  @IsString()
   linkedin?: string;
 }
 
