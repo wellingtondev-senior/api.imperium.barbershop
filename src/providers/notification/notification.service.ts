@@ -16,6 +16,11 @@ export class NotificationService {
       orderBy: {
         create_at: 'desc',
       },
+      include: {
+        professional: true,
+        client: true,
+        schedule: true,
+      }
     });
   }
 
@@ -27,6 +32,11 @@ export class NotificationService {
       orderBy: {
         create_at: 'desc',
       },
+      include: {
+        professional: true,
+        client: true,
+        schedule: true,
+      }
     });
   }
 

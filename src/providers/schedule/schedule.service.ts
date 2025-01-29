@@ -177,9 +177,9 @@ export class ScheduleService {
       // Enviar notificações para o profissional e ADMs
       await this.notificationService.sendScheduleNotification(createdSchedule);
 
-      // Enviar SMS se necessário
+      // Enviar SMS para o cliente
       if (createdSchedule.client.phoneCountry) {
-        const appointmentData = {
+        const clientAppointmentData = {
           to: createdSchedule.client.phoneCountry,
           client: createdSchedule.client.cardName,
           service: createdSchedule.services.map(service => ({
@@ -190,7 +190,23 @@ export class ScheduleService {
           barberName: createdSchedule.professional.name
         };
         
-        await this.smsService.sendAppointmentMessage(appointmentData);
+        await this.smsService.sendAppointmentMessage(clientAppointmentData, false);
+      }
+
+      // Enviar SMS para o profissional
+      if (createdSchedule.professional.phone) {
+        const professionalAppointmentData = {
+          to: createdSchedule.professional.phone,
+          client: createdSchedule.client.cardName,
+          service: createdSchedule.services.map(service => ({
+            name: service.name,
+            price: service.price
+          })),
+          appointmentDate: createdSchedule.dateTime,
+          barberName: createdSchedule.professional.name
+        };
+        
+        await this.smsService.sendAppointmentMessage(professionalAppointmentData, true);
       }
 
       return {
