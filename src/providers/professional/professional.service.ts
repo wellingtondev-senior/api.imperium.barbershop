@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ProfessionalDto } from './dto/professional.dto';
+import { UpdateProfessionalDto } from './dto/update-professional.dto';
 import { PrismaService } from '../../modulos/prisma/prisma.service';
 import { LoggerCustomService } from '../../modulos/logger/logger.service';
 import { SessionHashService } from '../session-hash/session-hash.service';
@@ -210,7 +211,7 @@ export class ProfessionalService {
     }
   }
 
-  async update(id: number, professionalDto: ProfessionalDto) {
+  async update(id: number, professionalDto: UpdateProfessionalDto) {
     try {
       const professional = await this.prismaService.professional.update({
         where: { id },

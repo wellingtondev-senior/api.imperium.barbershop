@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, HttpCode } from '@nestjs/common';
 import { ProfessionalService } from './professional.service';
 import { ProfessionalDto } from './dto/professional.dto';
+import { UpdateProfessionalDto } from './dto/update-professional.dto';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/decorator/roles.decorator';
 import { Role } from 'src/enums/role.enum';
@@ -50,14 +51,14 @@ export class ProfessionalController {
   @Version('1')
   @Patch(':id')
   @ApiOperation({ summary: 'update a professional' })
-  @ApiBody({description: 'Objeto JSON contendo dados', type: ProfessionalDto })
+  @ApiBody({description: 'Objeto JSON contendo dados', type: UpdateProfessionalDto })
   @Roles(Role.ADM)
   @UseGuards(RoleGuard)
   @HttpCode(200)
   @ApiResponse(ProfessionalSuccessResponse)
   update(
     @Param('id') id: number, 
-    @Body() professionalDto: ProfessionalDto) {
+    @Body() professionalDto: UpdateProfessionalDto) {
     return this.professionalService.update(id, professionalDto);
   }
 
