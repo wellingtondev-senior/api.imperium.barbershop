@@ -42,6 +42,7 @@ export class ScheduleController {
   findOne(@Param('id') id: string) {
     return this.scheduleService.findOne(+id);
   }
+  
   @Version('1')
   @Get('payment/:paymentId')
   @ApiOperation({ summary: 'Buscar agendamento por PaymentId' })
