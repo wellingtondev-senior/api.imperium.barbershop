@@ -317,13 +317,31 @@ export class ProfessionalService {
 
   async remove(profissionalId: number, userId: number) {
     try {
-      // 1. Verificar e tratar agendamentos existentes primeiro
+      // 0. Verificar se o profissional existe
+      const professional = await this.prismaService.professional.findUnique({
+        where: { id: profissionalId },
+        include: {
+          user: true,
+          workingHours: true,
+          socialMedia: true,
+          services: true
+        }
+      });
+
+      if (!professional) {
+        throw new HttpException({
+          statusCode: HttpStatus.NOT_FOUND,
+          message: `Profissional com ID ${profissionalId} não encontrado`
+        }, HttpStatus.NOT_FOUND);
+      }
+
+      // 1. Verificar e tratar agendamentos existentes
       const hasSchedules = await this.prismaService.schedule.findFirst({
         where: { professionalId: profissionalId }
       });
 
       if (hasSchedules) {
-        const professional = await this.prismaService.professional.update({
+        const updatedProfessional = await this.prismaService.professional.update({
           where: { id: profissionalId },
           data: {
             status: 'inactive',
@@ -339,47 +357,64 @@ export class ProfessionalService {
 
         return {
           statusCode: HttpStatus.OK,
-          message: "Professional marked as inactive due to existing schedules"
+          message: "Professional marked as inactive due to existing schedules",
+          data: updatedProfessional
         };
       }
 
-      // 2. Deletar serviços primeiro devido à relação com schedules
-      await this.prismaService.service.deleteMany({
-        where: { professionalId: profissionalId }
-      });
-
-      // 3. Deletar horários de trabalho
-      await this.prismaService.workingHours.deleteMany({
-        where: { professionalId: profissionalId }
-      });
-
-      // 4. Deletar mídias sociais
-      await this.prismaService.socialMedia.deleteMany({
-        where: { professionalId: profissionalId }
-      });
-
-      // 5. Deletar o profissional
-      const professional = await this.prismaService.professional.delete({
-        where: { id: profissionalId }
-      });
-
-      // 6. Deletar credenciais
-      await this.credenciaisService.delete(userId);
-
-      // 7. Por último, deletar o usuário
-      await this.prismaService.user.delete({
+      // 2. Verificar se o usuário existe
+      const user = await this.prismaService.user.findUnique({
         where: { id: userId }
+      });
+
+      if (!user) {
+        throw new HttpException({
+          statusCode: HttpStatus.NOT_FOUND,
+          message: `Usuário com ID ${userId} não encontrado`
+        }, HttpStatus.NOT_FOUND);
+      }
+
+      // 3. Deletar em ordem para evitar problemas de chave estrangeira
+      await this.prismaService.$transaction(async (prisma) => {
+        // 3.1 Deletar serviços
+        await prisma.service.deleteMany({
+          where: { professionalId: profissionalId }
+        });
+
+        // 3.2 Deletar horários de trabalho
+        await prisma.workingHours.deleteMany({
+          where: { professionalId: profissionalId }
+        });
+
+        // 3.3 Deletar mídias sociais
+        await prisma.socialMedia.deleteMany({
+          where: { professionalId: profissionalId }
+        });
+
+        // 3.4 Deletar o profissional
+        await prisma.professional.delete({
+          where: { id: profissionalId }
+        });
+
+        // 3.5 Deletar credenciais
+        await this.credenciaisService.delete(userId);
+
+        // 3.6 Por último, deletar o usuário
+        await prisma.user.delete({
+          where: { id: userId }
+        });
       });
 
       this.loggerService.log({
         className: this.className,
         functionName: 'remove',
-        message: `Deleted professional with ID: ${professional.id}`
+        message: `Successfully deleted professional with ID: ${profissionalId} and user with ID: ${userId}`
       });
 
       return {
         statusCode: HttpStatus.OK,
-        message: professional
+        message: "Professional successfully deleted",
+        data: professional
       };
     } catch (error) {
       this.loggerService.error({
@@ -387,7 +422,18 @@ export class ProfessionalService {
         functionName: 'remove',
         message: `Error deleting professional: ${error.message}`
       });
-      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
+
+      // Se for um erro HTTP conhecido, repassar
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // Para outros erros, retornar uma mensagem genérica
+      throw new HttpException({
+        statusCode: HttpStatus.NOT_ACCEPTABLE,
+        message: "Erro ao excluir profissional",
+        error: error.message
+      }, HttpStatus.NOT_ACCEPTABLE);
     }
   }
 
