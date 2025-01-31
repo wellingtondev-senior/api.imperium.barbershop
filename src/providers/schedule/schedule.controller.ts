@@ -33,9 +33,9 @@ export class ScheduleController {
   findAll() {
     return this.scheduleService.findAll();
   }
-
-  @Get(':id')
   @Version('1')
+  @Get(':id')
+  @UseGuards(RoleGuard)
   @ApiOperation({ summary: 'Buscar agendamento por ID' })
   @ApiResponse(ScheduleCreateSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
@@ -53,6 +53,8 @@ export class ScheduleController {
 
   @Version('1')
   @Get('professional/:professionalId')
+  @Roles(Role.ADM, Role.PROFESSIONAL)
+  @UseGuards(RoleGuard)
   @ApiOperation({ summary: 'Buscar agendamentos por ID do profissional' })
   @ApiResponse(ScheduleListSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
@@ -63,7 +65,8 @@ export class ScheduleController {
   @Patch(':id')
   @Version('1')
   @ApiOperation({ summary: 'Atualizar status do agendamento' })
-
+  @Roles(Role.ADM, Role.PROFESSIONAL)
+  @UseGuards(RoleGuard)
   @ApiResponse(ScheduleUpdateSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
   update(@Param('id') id: string, @Body() updateScheduleDto: UpdateScheduleDto) {
@@ -72,7 +75,8 @@ export class ScheduleController {
 
   @Delete(':id')
   @Version('1')
-  @Roles(Role.ADM)
+  @Roles(Role.ADM, Role.PROFESSIONAL)
+  @UseGuards(RoleGuard)
   @ApiOperation({ summary: 'Cancelar agendamento' })
   @ApiResponse(ScheduleUpdateSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
