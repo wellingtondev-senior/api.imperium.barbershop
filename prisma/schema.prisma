@@ -47,7 +47,6 @@ model Professional {
   type_doc         String // Tipo do documento
   avatarUrl        String?
   imageUrl         String?
-  imageUrlActive   Boolean           @default(true) // URL adicional para imagem do profissional
   experienceYears  Int?
   specialties      String[]
   rating           Float?            @default(0)

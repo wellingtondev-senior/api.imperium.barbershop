@@ -294,7 +294,13 @@ export class ScheduleService {
         where: { professionalId },
         orderBy: {
           dateTime: 'desc'
+        },
+        include: {
+          professional: true,
+          client: true,
+          services: true,
         }
+
       });
 
       return {
