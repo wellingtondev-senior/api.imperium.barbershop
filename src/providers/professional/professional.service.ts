@@ -457,7 +457,12 @@ export class ProfessionalService {
         // 3.5 Deletar credenciais
         await this.credenciaisService.delete(userId);
 
-        // 3.6 Por último, deletar o usuário
+        // 3.6 Deletar qualquer registro na tabela Adm que referencie este usuário
+        await prisma.adm.deleteMany({
+          where: { userId: userId }
+        });
+
+        // 3.7 Por último, deletar o usuário
         await prisma.user.delete({
           where: { id: userId }
         });
@@ -466,19 +471,19 @@ export class ProfessionalService {
       this.loggerService.log({
         className: this.className,
         functionName: 'remove',
-        message: `Successfully deleted professional with ID: ${profissionalId} and user with ID: ${userId}`
+        message: `Profissional com ID ${profissionalId} e usuário com ID ${userId} deletados com sucesso`
       });
 
       return {
         statusCode: HttpStatus.OK,
-        message: "Professional successfully deleted",
+        message: "Profissional excluído com sucesso",
         data: professional
       };
     } catch (error) {
       this.loggerService.error({
         className: this.className,
         functionName: 'remove',
-        message: `Error deleting professional: ${error.message}`
+        message: `Erro ao deletar profissional: ${error.message}`
       });
 
       // Se for um erro HTTP conhecido, repassar
@@ -486,11 +491,20 @@ export class ProfessionalService {
         throw error;
       }
 
+      // Para erros de chave estrangeira do Prisma
+      if (error.code === 'P2003') {
+        throw new HttpException({
+          statusCode: HttpStatus.CONFLICT,
+          message: "Não foi possível excluir o profissional",
+          error: "Existem registros vinculados que precisam ser removidos primeiro"
+        }, HttpStatus.CONFLICT);
+      }
+
       // Para outros erros, retornar uma mensagem genérica
       throw new HttpException({
         statusCode: HttpStatus.NOT_ACCEPTABLE,
         message: "Erro ao excluir profissional",
-        error: error.message
+        error: "Ocorreu um erro ao tentar excluir o profissional. Por favor, tente novamente."
       }, HttpStatus.NOT_ACCEPTABLE);
     }
   }
