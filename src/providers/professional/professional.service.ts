@@ -153,9 +153,39 @@ export class ProfessionalService {
       this.loggerService.error({
         className: this.className,
         functionName: 'create',
-        message: `Error creating professional: ${error.message}`
+        message: `Erro ao criar profissional: ${error.message}`
       });
-      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
+
+      // Se já for um HttpException, apenas repassa
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // Tratamento específico para erros de unique constraint
+      if (error.code === 'P2002') {
+        const field = error.meta?.target[0];
+        throw new HttpException({
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Dados duplicados',
+          error: `O campo ${field} já está sendo utilizado por outro profissional. Por favor, utilize outro valor.`
+        }, HttpStatus.CONFLICT);
+      }
+
+      // Tratamento específico para erros de email
+      if (error.message.toLowerCase().includes('email')) {
+        throw new HttpException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Email inválido',
+          error: 'O endereço de email fornecido é inválido ou já está em uso. Por favor, verifique e tente novamente.'
+        }, HttpStatus.BAD_REQUEST);
+      }
+
+      // Erro genérico
+      throw new HttpException({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Erro interno',
+        error: 'Ocorreu um erro ao criar o profissional. Por favor, tente novamente mais tarde.'
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -205,9 +235,18 @@ export class ProfessionalService {
       this.loggerService.error({
         className: this.className,
         functionName: 'findOne',
-        message: `Error fetching professional: ${error.message}`
+        message: `Erro ao buscar profissional: ${error.message}`
       });
-      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Profissional não encontrado',
+        error: `Não foi possível encontrar um profissional com o ID ${id}. Verifique se o ID está correto e tente novamente.`
+      }, HttpStatus.NOT_FOUND);
     }
   }
 
@@ -309,9 +348,28 @@ export class ProfessionalService {
       this.loggerService.error({
         className: this.className,
         functionName: 'update',
-        message: `Error updating professional: ${error.message}`
+        message: `Erro ao atualizar profissional: ${error.message}`
       });
-      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // Tratamento específico para erros de unique constraint
+      if (error.code === 'P2002') {
+        const field = error.meta?.target[0];
+        throw new HttpException({
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Dados duplicados',
+          error: `O campo ${field} já está sendo utilizado por outro profissional. Por favor, utilize outro valor.`
+        }, HttpStatus.CONFLICT);
+      }
+
+      throw new HttpException({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Erro ao atualizar',
+        error: 'Ocorreu um erro ao atualizar o profissional. Por favor, tente novamente mais tarde.'
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -456,9 +514,18 @@ export class ProfessionalService {
       this.loggerService.error({
         className: this.className,
         functionName: 'findByEmail',
-        message: `Error fetching professional by email: ${error.message}`
+        message: `Erro ao buscar profissional por email: ${error.message}`
       });
-      throw new HttpException(error.message, HttpStatus.NOT_ACCEPTABLE);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Profissional não encontrado',
+        error: `Não foi possível encontrar um profissional com o email ${email}. Verifique se o email está correto e tente novamente.`
+      }, HttpStatus.NOT_FOUND);
     }
   }
 }

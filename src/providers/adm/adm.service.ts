@@ -28,7 +28,7 @@ export class AdmService {
 
       if (existingUser) {
         throw new HttpException(
-          'Email already registered',
+          'Este email já está cadastrado no sistema. Por favor, utilize outro email ou faça login com sua conta existente.',
           HttpStatus.CONFLICT
         );
       }
@@ -106,7 +106,7 @@ export class AdmService {
       if (error.code === 'P2002') {
         const field = error.meta?.target[0];
         throw new HttpException(
-          `${field} already exists`,
+          `O campo ${field} já está sendo utilizado por outro usuário. Por favor, escolha um valor diferente.`,
           HttpStatus.CONFLICT
         );
       }
@@ -114,13 +114,13 @@ export class AdmService {
       // Tratamento específico para erros de email
       if (error.message.includes('Email')) {
         throw new HttpException(
-          error.message,
+          'O endereço de email fornecido é inválido ou já está em uso. Por favor, verifique e tente novamente.',
           HttpStatus.BAD_REQUEST
         );
       }
 
       throw new HttpException(
-        'Internal server error while creating administrator',
+        'Ocorreu um erro interno ao criar o administrador. Por favor, tente novamente mais tarde.',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
