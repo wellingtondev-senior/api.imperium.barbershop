@@ -373,7 +373,7 @@ export class ProfessionalService {
     }
   }
 
-  async remove(profissionalId: number, userId: number) {
+  async remove(profissionalId: number, adminUserId: number) {
     try {
       // 0. Verificar se o profissional existe
       const professional = await this.prismaService.professional.findUnique({
@@ -393,7 +393,19 @@ export class ProfessionalService {
         }, HttpStatus.NOT_FOUND);
       }
 
-      // 1. Verificar e tratar agendamentos existentes
+      // 1. Verificar se o admin existe
+      const admin = await this.prismaService.adm.findFirst({
+        where: { userId: adminUserId }
+      });
+
+      if (!admin) {
+        throw new HttpException({
+          statusCode: HttpStatus.NOT_FOUND,
+          message: `Administrador não encontrado`
+        }, HttpStatus.NOT_FOUND);
+      }
+
+      // 2. Verificar e tratar agendamentos existentes
       const hasSchedules = await this.prismaService.schedule.findFirst({
         where: { professionalId: profissionalId }
       });
@@ -410,26 +422,14 @@ export class ProfessionalService {
         this.loggerService.log({
           className: this.className,
           functionName: 'remove',
-          message: `Professional with ID ${profissionalId} marked as inactive due to existing schedules`
+          message: `Profissional com ID ${profissionalId} marcado como inativo devido a agendamentos existentes. Ação realizada pelo admin ${admin.name}`
         });
 
         return {
           statusCode: HttpStatus.OK,
-          message: "Professional marked as inactive due to existing schedules",
+          message: "Profissional marcado como inativo devido a agendamentos existentes",
           data: updatedProfessional
         };
-      }
-
-      // 2. Verificar se o usuário existe
-      const user = await this.prismaService.user.findUnique({
-        where: { id: userId }
-      });
-
-      if (!user) {
-        throw new HttpException({
-          statusCode: HttpStatus.NOT_FOUND,
-          message: `Usuário com ID ${userId} não encontrado`
-        }, HttpStatus.NOT_FOUND);
       }
 
       // 3. Deletar em ordem para evitar problemas de chave estrangeira
@@ -454,21 +454,23 @@ export class ProfessionalService {
           where: { id: profissionalId }
         });
 
-        // 3.5 Deletar credenciais
-        await this.credenciaisService.delete(userId);
+        // 3.5 Deletar credenciais do profissional
+        if (professional.userId) {
+          await this.credenciaisService.delete(professional.userId);
+        }
 
-        // 3.6 Deletar qualquer registro na tabela Adm que referencie este usuário
-     
-        // 3.7 Por último, deletar o usuário
-        await prisma.user.delete({
-          where: { id: professional.userId }
-        });
+        // 3.6 Por último, deletar o usuário do profissional
+        if (professional.userId) {
+          await prisma.user.delete({
+            where: { id: professional.userId }
+          });
+        }
       });
 
       this.loggerService.log({
         className: this.className,
         functionName: 'remove',
-        message: `Profissional com ID ${profissionalId} e usuário com ID ${userId} deletados com sucesso`
+        message: `Profissional com ID ${profissionalId} excluído com sucesso pelo admin ${admin.name}`
       });
 
       return {
@@ -483,12 +485,10 @@ export class ProfessionalService {
         message: `Erro ao deletar profissional: ${error.message}`
       });
 
-      // Se for um erro HTTP conhecido, repassar
       if (error instanceof HttpException) {
         throw error;
       }
 
-      // Para erros de chave estrangeira do Prisma
       if (error.code === 'P2003') {
         throw new HttpException({
           statusCode: HttpStatus.CONFLICT,
@@ -497,7 +497,6 @@ export class ProfessionalService {
         }, HttpStatus.CONFLICT);
       }
 
-      // Para outros erros, retornar uma mensagem genérica
       throw new HttpException({
         statusCode: HttpStatus.NOT_ACCEPTABLE,
         message: "Erro ao excluir profissional",
