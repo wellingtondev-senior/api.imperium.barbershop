@@ -458,13 +458,10 @@ export class ProfessionalService {
         await this.credenciaisService.delete(userId);
 
         // 3.6 Deletar qualquer registro na tabela Adm que referencie este usuário
-        await prisma.adm.deleteMany({
-          where: { userId: userId }
-        });
-
+     
         // 3.7 Por último, deletar o usuário
         await prisma.user.delete({
-          where: { id: userId }
+          where: { id: professional.userId }
         });
       });
 
