@@ -177,60 +177,140 @@ export class AdmService {
 
   async update(id: number, admDto: AdmDto) {
     try {
+      // Buscar o administrador com suas relações
       const admin = await this.prismaService.adm.findUnique({
-        where: { id }
+        where: { id },
+        include: {
+          user: true
+        }
       });
 
       if (!admin) {
-        throw new HttpException('Administrator not found', HttpStatus.NOT_FOUND);
+        throw new HttpException('Administrador não encontrado', HttpStatus.NOT_FOUND);
       }
 
-      // Verificar se o novo email já está em uso (se foi alterado)
+      // Verificar se o novo email já está em uso (excluindo o próprio admin)
       if (admDto.email !== admin.email) {
-        const existingEmail = await this.prismaService.adm.findUnique({
-          where: { email: admDto.email }
-        });
+        const [existingAdminEmail, existingUserEmail] = await Promise.all([
+          this.prismaService.adm.findFirst({
+            where: { 
+              email: admDto.email,
+              id: { not: admin.id }
+            }
+          }),
+          this.prismaService.user.findFirst({
+            where: { 
+              email: admDto.email,
+              id: { not: admin.userId }
+            }
+          })
+        ]);
 
-        if (existingEmail) {
-          throw new HttpException('Email already in use', HttpStatus.CONFLICT);
+        if (existingAdminEmail || existingUserEmail) {
+          throw new HttpException('Este email já está em uso por outro usuário', HttpStatus.CONFLICT);
         }
       }
 
-      const updatedAdmin = await this.prismaService.adm.update({
-        where: { id },
-        data: {
+      // Usar transação para garantir consistência
+      return await this.prismaService.$transaction(async (prisma) => {
+        // Preparar dados de atualização
+        const updateData: any = {
           name: admDto.name,
           email: admDto.email,
           cpf: admDto.cpf || null
+        };
+
+        // Atualizar o administrador
+        const updatedAdmin = await prisma.adm.update({
+          where: { id },
+          data: updateData
+        });
+
+        // Preparar dados de atualização do usuário
+        const userUpdateData: any = {
+          email: admDto.email,
+          name: admDto.name
+        };
+
+        // Se houver nova senha, adicionar ao update
+        if (admDto.password) {
+          userUpdateData.password = await bcrypt.hash(admDto.password, 10);
         }
+
+        // Atualizar o usuário
+        await prisma.user.update({
+          where: { id: admin.userId },
+          data: userUpdateData
+        });
+
+        // Buscar e atualizar credenciais
+        const credentials = await prisma.credenciais.findFirst({
+          where: { userId: admin.userId }
+        });
+
+        if (credentials) {
+          const credentialsUpdateData: any = {
+            email: admDto.email
+          };
+
+          if (admDto.password) {
+            credentialsUpdateData.password = userUpdateData.password;
+          }
+
+          await prisma.credenciais.update({
+            where: { id: credentials.id },
+            data: credentialsUpdateData
+          });
+        } else if (admDto.password) {
+          // Se não existir credenciais e houver senha, criar
+          await prisma.credenciais.create({
+            data: {
+              userId: admin.userId,
+              email: admDto.email,
+              password: userUpdateData.password
+            }
+          });
+        }
+
+        this.loggerService.log({
+          className: this.className,
+          functionName: 'update',
+          message: `Administrador ${admin.id} atualizado com sucesso`
+        });
+
+        return {
+          statusCode: HttpStatus.OK,
+          message: {
+            ...updatedAdmin,
+            user: await prisma.user.findUnique({
+              where: { id: admin.userId }
+            })
+          }
+        };
       });
 
-      if (admDto.password) {
-        const hashedPassword = await bcrypt.hash(admDto.password, 10);
-        await this.prismaService.credenciais.update({
-          where: { email: admin.email },
-          data: {
-            password: hashedPassword
-          }
-        });
-      }
-
-      return {
-        statusCode: HttpStatus.OK,
-        message: updatedAdmin
-      };
     } catch (error) {
       this.loggerService.error({
         className: this.className,
         functionName: 'update',
-        message: `Error updating administrator: ${error.message}`
+        message: `Erro ao atualizar administrador: ${error.message}`
       });
 
       if (error instanceof HttpException) {
         throw error;
       }
 
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      if (error.code === 'P2002') {
+        throw new HttpException(
+          'Dados únicos já existem no sistema',
+          HttpStatus.CONFLICT
+        );
+      }
+
+      throw new HttpException(
+        'Erro interno ao atualizar administrador',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
