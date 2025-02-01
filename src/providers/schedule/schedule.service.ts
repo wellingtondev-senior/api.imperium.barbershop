@@ -278,7 +278,12 @@ export class ScheduleService {
   async findByProfessional(professionalId: number) {
     try {
       const professional = await this.prismaService.professional.findUnique({
-        where: { id: professionalId }
+        where: { id: professionalId },
+        include: {
+          schedules: true,
+          user: true,
+          services: true,
+        }
       });
 
       if (!professional) {
