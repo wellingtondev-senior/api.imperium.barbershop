@@ -29,7 +29,7 @@ export class PaymentService {
     );
 
     return `Hello ${schedule.client.cardName}!\n\n` +
-           `Your appointment has been ${schedule.status === 'confirmed' ? 'confirmed' : 'updated'}.\n\n` +
+           `Your appointment has been ${schedule.status_schedule === 'confirmed' ? 'confirmed' : 'updated'}.\n\n` +
            `Services:\n${services}\n\n` +
            `Total: $${total.toFixed(2)}\n\n` +
            `To view your appointment details, visit:\n` +
@@ -125,6 +125,18 @@ export class PaymentService {
 
   private async sendScheduleNotification(schedule: any, paymentId: string): Promise<void> {
     if (schedule?.client?.phoneCountry) {
+      // Prepara a mensagem com base no status
+      let statusMessage = '';
+      if (schedule.status_schedule) {
+        statusMessage = `Appointment status: ${schedule.status_schedule}`;
+      }
+      if (schedule.status_payment) {
+        statusMessage += `\nPayment status: ${schedule.status_payment}`;
+      }
+      if (typeof schedule.is_confirmed !== 'undefined') {
+        statusMessage += `\nConfirmation status: ${schedule.is_confirmed ? 'Confirmed' : 'Not confirmed'}`;
+      }
+
       await this.smsService.sendAppointmentMessage({
         to: schedule.client.phoneCountry,
         client: schedule.client.cardName,
@@ -132,9 +144,10 @@ export class PaymentService {
           name: service.name,
           price: service.price
         })),
-        appointmentDate: schedule.date,
+        appointmentDate: schedule.dateTime,
         barberName: schedule.professional.name,
-        link: `${this.link}/${paymentId}`
+        link: `${this.link}/${paymentId}`,
+        additionalMessage: statusMessage
       });
 
       this.logger.log(`SMS sent to ${schedule.client.phoneCountry} for schedule ${schedule.id}`);
@@ -162,7 +175,11 @@ export class PaymentService {
       if (schedule) {
         await this.prismaService.schedule.update({
           where: { id: schedule.id },
-          data: { status: 'confirmed' }
+          data: { 
+            status_schedule: 'confirmed',
+            status_payment: 'confirmed',
+            is_confirmed: true
+          }
         });
 
         await this.sendScheduleNotification(schedule, paymentIntent.id);
@@ -197,7 +214,11 @@ export class PaymentService {
       if (schedule) {
         await this.prismaService.schedule.update({
           where: { id: schedule.id },
-          data: { status: 'canceled' }
+          data: { 
+            status_schedule: 'canceled',
+            status_payment: 'canceled',
+            is_confirmed: false
+          }
         });
 
         await this.sendScheduleNotification(schedule, paymentIntent.id);
@@ -232,7 +253,11 @@ export class PaymentService {
       if (schedule) {
         await this.prismaService.schedule.update({
           where: { id: schedule.id },
-          data: { status: 'canceled' }
+          data: { 
+            status_schedule: 'canceled',
+            status_payment: 'canceled',
+            is_confirmed: false
+          }
         });
 
         await this.sendScheduleNotification(schedule, paymentIntent.id);
@@ -267,7 +292,11 @@ export class PaymentService {
       if (schedule) {
         await this.prismaService.schedule.update({
           where: { id: schedule.id },
-          data: { status: 'canceled' }
+          data: { 
+            status_schedule: 'canceled',
+            status_payment: 'canceled',
+            is_confirmed: false
+          }
         });
 
         await this.sendScheduleNotification(schedule, refund.payment_intent);
@@ -302,7 +331,11 @@ export class PaymentService {
       if (schedule) {
         await this.prismaService.schedule.update({
           where: { id: schedule.id },
-          data: { status: 'canceled' }
+          data: { 
+            status_schedule: 'canceled',
+            status_payment: 'canceled',
+            is_confirmed: false
+          }
         });
 
         await this.sendScheduleNotification(schedule, refund.payment_intent);
@@ -337,7 +370,11 @@ export class PaymentService {
       if (schedule) {
         await this.prismaService.schedule.update({
           where: { id: schedule.id },
-          data: { status: 'canceled' }
+          data: { 
+            status_schedule: 'canceled',
+            status_payment: 'canceled',
+            is_confirmed: false
+          }
         });
 
         await this.sendScheduleNotification(schedule, refund.payment_intent);
@@ -383,7 +420,11 @@ export class PaymentService {
       if (schedule) {
         await this.prismaService.schedule.update({
           where: { id: schedule.id },
-          data: { status: 'pending' }
+          data: { 
+            status_schedule: 'pending',
+            status_payment: 'pending',
+            is_confirmed: false
+          }
         });
 
         await this.sendScheduleNotification(schedule, charge.payment_intent);
@@ -418,7 +459,11 @@ export class PaymentService {
       if (schedule) {
         await this.prismaService.schedule.update({
           where: { id: schedule.id },
-          data: { status: 'canceled' }
+          data: { 
+            status_schedule: 'canceled',
+            status_payment: 'canceled',
+            is_confirmed: false
+          }
         });
 
         await this.sendScheduleNotification(schedule, charge.payment_intent);
@@ -436,7 +481,10 @@ export class PaymentService {
     try {
       const query = this.prismaService.payment.findMany({
         where: status ? {
-          status: status
+          OR: [
+            { status: status },
+            { schedule: { some: { status_payment: status } } }
+          ]
         } : {},
         include: {
           schedule: {
@@ -445,7 +493,8 @@ export class PaymentService {
               professional: true,
               services: true
             }
-          }
+          },
+          client: true
         }
       });
 

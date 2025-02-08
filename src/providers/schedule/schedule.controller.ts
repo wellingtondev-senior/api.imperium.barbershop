@@ -84,4 +84,23 @@ export class ScheduleController {
   remove(@Param('id') id: string) {
     return this.scheduleService.remove(+id);
   }
+
+  @Version('1')
+  @Post('in-store')
+  @HttpCode(201)
+  @Roles(Role.ADM, Role.PROFESSIONAL)
+  @UseGuards(RoleGuard)
+  @ApiOperation({ summary: 'Criar novo agendamento para pagamento no balcão' })
+  @ApiBody({ description: 'Objeto JSON contendo dados', type: CreateScheduleDto })
+  @ApiResponse(ScheduleCreateSuccessResponse)
+  @ApiResponse(ScheduleErrorResponse)
+  createInStore(@Body() createScheduleDto: CreateScheduleDto) {
+    // Força o tipo de pagamento como 'in_store'
+    createScheduleDto.payment = {
+      ...createScheduleDto.payment,
+      type: 'in_store',
+      status: 'pending'
+    };
+    return this.scheduleService.create(createScheduleDto);
+  }
 }

@@ -57,31 +57,7 @@ export class ScheduleService {
     }
   }
 
-  private async sendScheduleConfirmationSMS(schedule: any) {
-    try {
-      if (!schedule || !schedule.services || !schedule.client || !schedule.professional) {
-        this.logger.warn('Missing required schedule information for SMS');
-        return;
-      }
 
-      await this.smsService.sendAppointmentMessage({
-        to: schedule.client.phoneCountry,
-        client: schedule.client.cardName,
-        service: schedule.services.map((service: { name: string, price: number }) => ({
-          name: service.name,
-          price: service.price
-        })),
-        appointmentDate: schedule.dateTime,
-        barberName: schedule.professional.name,
-        link: `${process.env.URL_FRONTEND}/schedule/confirmation/${schedule.paymentId}`
-      });
-
-      this.logger.log(`Confirmation SMS sent to ${schedule.client.cardName}`);
-    } catch (error) {
-      this.logger.error('Error sending confirmation SMS:', error);
-      // We don't throw the error to avoid interrupting the main flow
-    }
-  }
 
   async create(createScheduleDto: CreateScheduleDto) {
     try {
@@ -128,35 +104,43 @@ export class ScheduleService {
         throw new BadRequestException('One or more services not found');
       }
 
-      // Primeiro criamos o payment
+      // Criamos um ID único para pagamentos no balcão
+      const isInStorePayment = payment.type === 'in_store';
+      const paymentId = isInStorePayment ? `in_store_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` : payment.id;
+
+      // Criamos o payment com dados apropriados para o tipo de pagamento
       const createdPayment = await this.prismaService.payment.create({
         data: {
-          id: payment.id,
-          object: 'payment_intent',
-          type: 'payment_intent.created',
-          api_version: "2024-11-20.acacia",
-          created: payment.created,
-          data: JSON.parse(JSON.stringify({ object: payment })),
-          livemode: payment.livemode,
+          id: paymentId,
+          object: isInStorePayment ? 'in_store_payment' : 'payment_intent',
+          type: isInStorePayment ? 'in_store.created' : 'payment_intent.created',
+          api_version: isInStorePayment ? '1.0.0' : '2024-11-20.acacia',
+          created: isInStorePayment ? Math.floor(Date.now() / 1000) : payment.created,
+          data: JSON.parse(JSON.stringify({ object: isInStorePayment ? { type: 'in_store' } : payment })),
+          livemode: isInStorePayment ? false : payment.livemode,
           pending_webhooks: 0,
           request: JSON.parse(JSON.stringify({
-            id: payment.id,
+            id: paymentId,
             idempotency_key: null
           })),
           amount: payment.amount,
-          currency: payment.currency,
-          status: payment?.status,
-          payment_method: payment.payment_method as string,
-          client_secret: payment.client_secret,
+          currency: isInStorePayment ? 'USD' : payment.currency,
+          status: isInStorePayment ? 'pending' : payment.status,
+          payment_method: isInStorePayment ? 'in_store' : payment.payment_method as string,
+          client_secret: isInStorePayment ? null : payment.client_secret,
           clientId: client.id,
         }
       });
 
-      // Depois criamos o schedule já com o payment existente
+      // Criamos o schedule com configurações específicas para cada tipo de pagamento
       const createdSchedule = await this.prismaService.schedule.create({
         data: {
           dateTime,
           time,
+          status_schedule: 'pending',
+          status_payment: isInStorePayment ? 'pending' : (payment.status || 'pending'),
+          type_payment: isInStorePayment ? 'in_store' : (payment.type || 'credit_card'),
+          is_confirmed: isInStorePayment ? false : (payment.status === 'succeeded'),
           professionalId: createScheduleDto.professionalId,
           clientId: client.id,
           services: {
@@ -179,6 +163,8 @@ export class ScheduleService {
 
       // Enviar SMS para o cliente
       if (createdSchedule.client.phoneCountry) {
+        const statusMessage = createdSchedule.status_schedule;
+
         const clientAppointmentData = {
           to: createdSchedule.client.phoneCountry,
           client: createdSchedule.client.cardName,
@@ -187,7 +173,9 @@ export class ScheduleService {
             price: service.price
           })),
           appointmentDate: createdSchedule.dateTime,
-          barberName: createdSchedule.professional.name
+          barberName: createdSchedule.professional.name,
+          link: `${process.env.URL_FRONTEND}/schedule/confirmation/${createdSchedule.paymentId}`,
+          additionalMessage: statusMessage
         };
         
         await this.smsService.sendAppointmentMessage(clientAppointmentData, false);
@@ -203,7 +191,8 @@ export class ScheduleService {
             price: service.price
           })),
           appointmentDate: createdSchedule.dateTime,
-          barberName: createdSchedule.professional.name
+          barberName: createdSchedule.professional.name,
+        
         };
         
         await this.smsService.sendAppointmentMessage(professionalAppointmentData, true);
@@ -395,7 +384,12 @@ export class ScheduleService {
   async findByStatus(status: string) {
     try {
       const schedules = await this.prismaService.schedule.findMany({
-        where: { status },
+        where: {
+          OR: [
+            { status_schedule: status },
+            { status_payment: status }
+          ]
+        },
         include: {
           professional: true,
           client: true,
@@ -459,7 +453,13 @@ export class ScheduleService {
   async update(id: number, updateScheduleDto: UpdateScheduleDto) {
     try {
       const schedule = await this.prismaService.schedule.findUnique({
-        where: { id }
+        where: { id },
+        include: {
+          professional: true,
+          client: true,
+          services: true,
+          Payment: true
+        }
       });
 
       if (!schedule) {
@@ -469,7 +469,10 @@ export class ScheduleService {
       const updatedSchedule = await this.prismaService.schedule.update({
         where: { id },
         data: {
-          status: updateScheduleDto.status
+          ...(updateScheduleDto.status_schedule && { status_schedule: updateScheduleDto.status_schedule }),
+          ...(updateScheduleDto.status_payment && { status_payment: updateScheduleDto.status_payment }),
+          ...(updateScheduleDto.type_payment && { type_payment: updateScheduleDto.type_payment }),
+          ...(typeof updateScheduleDto.is_confirmed !== 'undefined' && { is_confirmed: updateScheduleDto.is_confirmed })
         },
         include: {
           professional: true,
@@ -479,10 +482,54 @@ export class ScheduleService {
         }
       });
 
+      let smsStatus = { sent: false, message: 'No SMS needed' };
+
+      // Verifica se houve mudança de status que requer notificação
+      if (
+        (updateScheduleDto.status_schedule && updateScheduleDto.status_schedule !== schedule.status_schedule) ||
+        (updateScheduleDto.status_payment && updateScheduleDto.status_payment !== schedule.status_payment) ||
+        (typeof updateScheduleDto.is_confirmed !== 'undefined' && updateScheduleDto.is_confirmed !== schedule.is_confirmed)
+      ) {
+        try {
+          // Prepara a mensagem com base no novo status
+          let statusMessage = '';
+          if (updateScheduleDto.status_schedule) {
+            statusMessage = `Appointment status updated to: ${updateScheduleDto.status_schedule}`;
+          }
+          if (updateScheduleDto.status_payment) {
+            statusMessage += `\nPayment status: ${updateScheduleDto.status_payment}`;
+          }
+          if (typeof updateScheduleDto.is_confirmed !== 'undefined') {
+            statusMessage += `\nConfirmation status: ${updateScheduleDto.is_confirmed ? 'Confirmed' : 'Not confirmed'}`;
+          }
+
+          // Envia SMS para o cliente
+          if (updatedSchedule.client.phoneCountry) {
+            await this.smsService.sendAppointmentMessage({
+              to: updatedSchedule.client.phoneCountry,
+              client: updatedSchedule.client.cardName,
+              service: updatedSchedule.services.map(service => ({
+                name: service.name,
+                price: service.price
+              })),
+              appointmentDate: updatedSchedule.dateTime,
+              barberName: updatedSchedule.professional.name,
+              link: `${process.env.URL_FRONTEND}/schedule/confirmation/${updatedSchedule.paymentId}`,
+              additionalMessage: statusMessage
+            });
+            smsStatus = { sent: true, message: 'Status update SMS sent successfully' };
+          }
+        } catch (smsError) {
+          this.logger.error('Error sending status update SMS:', smsError);
+          smsStatus = { sent: false, message: 'Failed to send status update SMS' };
+        }
+      }
+
       return {
         success: true,
         message: 'Schedule updated successfully',
-        data: updatedSchedule
+        data: updatedSchedule,
+        notification: smsStatus
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -509,7 +556,9 @@ export class ScheduleService {
       await this.prismaService.schedule.update({
         where: { id },
         data: {
-          status: "canceled",
+          status_schedule: "canceled",
+          status_payment: "canceled",
+          is_confirmed: false,
           Payment: {
             update: {
               where: { id: schedule.Payment ? schedule.Payment[0].id : undefined },

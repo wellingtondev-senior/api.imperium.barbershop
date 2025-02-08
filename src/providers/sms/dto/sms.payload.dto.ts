@@ -39,4 +39,19 @@ export class AppointmentDataDto {
   @IsUrl()
   @IsOptional()
   link?: string;
+
+  @IsString()
+  @IsOptional()
+  additionalMessage?: string;
+
+  @IsString()
+  @IsOptional()
+  status_schedule?: string;
+
+  @IsString()
+  @IsOptional()
+  status_payment?: string;
+
+  @IsOptional()
+  is_confirmed?: boolean;
 }

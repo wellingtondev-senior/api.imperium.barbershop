@@ -15,11 +15,11 @@ export interface PaymentData {
   status: string;
   payment_method: string;
   livemode: boolean;
-  type?: string;
-  api_version?: string;
-  pending_webhooks?: number;
-  request?: any;
-  data?: any;
+  type: string;
+  api_version: string;
+  pending_webhooks: number;
+  request: any;
+  data: any;
 }
 
 export class CreateScheduleDto {
@@ -33,9 +33,8 @@ export class CreateScheduleDto {
   id?: number;
 
   @ApiProperty({
-    description: 'ID do agendamento (opcional)',
-    example: 1,
-    required: false
+    description: 'ID do profissional',
+    example: 1
   })
   @IsInt()
   @IsNotEmpty()
@@ -95,9 +94,36 @@ export class CreateScheduleDto {
 export class UpdateScheduleDto {
   @ApiProperty({
     description: 'Status do agendamento',
-    example: 'confirmed'
+    example: 'confirmed',
+    enum: ['pending', 'confirmed', 'completed', 'canceled']
   })
   @IsString()
-  @IsNotEmpty()
-  status: string;
+  @IsEnum(['pending', 'confirmed', 'completed', 'canceled'])
+  @IsOptional()
+  status_schedule?: string;
+
+  @ApiProperty({
+    description: 'Status do pagamento',
+    example: 'confirmed',
+    enum: ['pending', 'confirmed', 'completed', 'canceled']
+  })
+  @IsString()
+  @IsEnum(['pending', 'confirmed', 'completed', 'canceled'])
+  @IsOptional()
+  status_payment?: string;
+
+  @ApiProperty({
+    description: 'Tipo de pagamento',
+    example: 'credit_card'
+  })
+  @IsString()
+  @IsOptional()
+  type_payment?: string;
+
+  @ApiProperty({
+    description: 'Confirmação do agendamento',
+    example: true
+  })
+  @IsOptional()
+  is_confirmed?: boolean;
 }

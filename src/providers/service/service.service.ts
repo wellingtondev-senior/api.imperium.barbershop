@@ -161,7 +161,7 @@ export class ServiceService {
       const hasActiveSchedules = await this.prismaService.schedule.findFirst({
         where: {
            id,
-          status: {
+          status_schedule: {
             in: ['pending', 'confirmed'],
           },
         },

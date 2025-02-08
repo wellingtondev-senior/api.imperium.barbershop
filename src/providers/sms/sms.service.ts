@@ -41,7 +41,7 @@ export class SmsService {
   }
 
   private formatProfessionalAppointmentMessage(data: AppointmentDataDto): string {
-    const { client, service, appointmentDate } = data;
+    const { client, service, appointmentDate, additionalMessage } = data;
 
     const totalValue = service.reduce((acc, item) => acc + item.price, 0);
     const services = service.map(item => item.name).join(', ');
@@ -52,6 +52,10 @@ export class SmsService {
     message += `Data: ${formattedDate}\n`;
     message += `Serviços: ${services}\n`;
     message += `Valor Total: $${totalValue.toFixed(2)}`;
+
+    if (additionalMessage) {
+      message += `\n\nStatus:\n${additionalMessage}`;
+    }
 
     return message;
   }

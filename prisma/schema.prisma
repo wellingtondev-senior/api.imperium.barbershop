@@ -124,23 +124,27 @@ model Service {
 }
 
 model Schedule {
-  id             Int            @id @default(autoincrement())
-  dateTime       DateTime // Data e horário do agendamento
-  time           String
-  status         String         @default("pending") // pending, confirmed, completed, canceled
-  professionalId Int
-  clientId       Int
-  services       Service[] // Relação muitos-para-muitos com serviços
-  paymentId      String // Relação única com o pagamento
-  professional   Professional   @relation(fields: [professionalId], references: [id])
-  client         Client         @relation(fields: [clientId], references: [id])
-  create_at      DateTime       @default(now())
-  update_at      DateTime       @updatedAt
-  Payment        Payment        @relation(fields: [paymentId], references: [id])
-  notifications  Notification[]
+  id              Int            @id @default(autoincrement())
+  dateTime        DateTime // Data e horário do agendamento
+  time            String
+  status_schedule String         @default("pending") // pending, confirmed, completed, canceled
+  status_payment  String         @default("pending") // pending, confirmed, completed, canceled
+  type_payment    String?
+  is_confirmed    Boolean        @default(false)
+  professionalId  Int
+  clientId        Int
+  services        Service[] // Relação muitos-para-muitos com serviços
+  paymentId       String // Relação única com o pagamento
+  professional    Professional   @relation(fields: [professionalId], references: [id])
+  client          Client         @relation(fields: [clientId], references: [id])
+  create_at       DateTime       @default(now())
+  update_at       DateTime       @updatedAt
+  Payment         Payment        @relation(fields: [paymentId], references: [id])
+  notifications   Notification[]
 
   @@index([dateTime])
-  @@index([status])
+  @@index([status_schedule])
+  @@index([status_payment])
 }
 
 model Payment {
@@ -228,9 +232,10 @@ model PushSubscriptionADM {
   active    Boolean  @default(true)
   create_at DateTime @default(now())
   update_at DateTime @updatedAt
-  Adm       Adm    @relation(fields: [admId], references: [id])
+  Adm       Adm      @relation(fields: [admId], references: [id])
   admId     Int
-   @@unique([admId])
+
+  @@unique([admId])
   @@index([admId])
 }
 
