@@ -88,8 +88,6 @@ export class ScheduleController {
   @Version('1')
   @Post('in-store')
   @HttpCode(201)
-  @Roles(Role.ADM, Role.PROFESSIONAL)
-  @UseGuards(RoleGuard)
   @ApiOperation({ summary: 'Criar novo agendamento para pagamento no balcão' })
   @ApiBody({ description: 'Objeto JSON contendo dados', type: CreateScheduleDto })
   @ApiResponse(ScheduleCreateSuccessResponse)
