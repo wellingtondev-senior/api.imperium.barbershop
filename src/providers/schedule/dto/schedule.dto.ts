@@ -104,11 +104,11 @@ export class UpdateScheduleDto {
 
   @ApiProperty({
     description: 'Status do pagamento',
-    example: 'confirmed',
-    enum: ['pending', 'confirmed', 'completed', 'canceled']
+    example: 'succeeded',
+    enum: ['pending', 'succeeded', 'canceled']
   })
   @IsString()
-  @IsEnum(['pending', 'confirmed', 'completed', 'canceled'])
+  @IsEnum(['pending', 'succeeded', 'canceled'])
   @IsOptional()
   status_payment?: string;
 
