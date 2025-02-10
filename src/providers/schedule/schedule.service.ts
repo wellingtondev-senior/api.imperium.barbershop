@@ -59,89 +59,136 @@ export class ScheduleService {
 
 
 
-  async create(createScheduleDto: CreateScheduleDto) {
-    try {
-      const { clientInfo, payment, services, date, time } = createScheduleDto;
+  private async validateAndPrepareSchedule(createScheduleDto: CreateScheduleDto) {
+    const { clientInfo, services, date, time } = createScheduleDto;
 
-      // Check if professional exists
-      const professional = await this.prismaService.professional.findUnique({
-        where: { id: createScheduleDto.professionalId }
-      });
+    // Check if professional exists
+    const professional = await this.prismaService.professional.findUnique({
+      where: { id: createScheduleDto.professionalId }
+    });
 
-      if (!professional) {
-        throw new BadRequestException('Professional not found');
-      }
+    if (!professional) {
+      throw new BadRequestException('Professional not found');
+    }
 
-      // Combina date e time em um único DateTime
-      const dateTime = this.combineDateAndTime(date, time);
+    // Combina date e time em um único DateTime
+    const dateTime = this.combineDateAndTime(date, time);
 
-      // Find or create client
-      let client = await this.prismaService.client.findFirst({
-        where: { email: clientInfo.email }
-      });
+    // Find or create client
+    let client = await this.prismaService.client.findFirst({
+      where: { email: clientInfo.email }
+    });
 
-      if (!client) {
-        client = await this.prismaService.client.create({
-          data: {
-            cardName: clientInfo.cardName,
-            email: clientInfo.email,
-            phoneCountry: "+" + clientInfo.phoneCountry
-          }
-        });
-      }
-
-      // Verify if all services exist
-      const serviceIds = services.map((service: ServiceDto) => service.id);
-      const servicesExist = await this.prismaService.service.findMany({
-        where: {
-          id: {
-            in: serviceIds
-          }
+    if (!client) {
+      client = await this.prismaService.client.create({
+        data: {
+          cardName: clientInfo.cardName,
+          email: clientInfo.email,
+          phoneCountry: "+" + clientInfo.phoneCountry
         }
       });
+    }
 
-      if (servicesExist.length !== serviceIds.length) {
-        throw new BadRequestException('One or more services not found');
+    // Verify if all services exist
+    const serviceIds = services.map((service: ServiceDto) => service.id);
+    const servicesExist = await this.prismaService.service.findMany({
+      where: {
+        id: {
+          in: serviceIds
+        }
       }
+    });
 
-      // Criamos um ID único para pagamentos no balcão
-      const isInStorePayment = payment.type === 'in_store';
-      const paymentId = isInStorePayment ? `in_store_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` : payment.id;
+    if (servicesExist.length !== serviceIds.length) {
+      throw new BadRequestException('One or more services not found');
+    }
 
-      // Criamos o payment com dados apropriados para o tipo de pagamento
+    return { professional, client, dateTime };
+  }
+
+  private async sendNotifications(createdSchedule: any) {
+    // Enviar notificações para o profissional e ADMs
+    await this.notificationService.sendScheduleNotification(createdSchedule);
+
+    // Enviar SMS para o cliente
+    if (createdSchedule.client.phoneCountry) {
+      const statusMessage = createdSchedule.status_schedule;
+
+      const clientAppointmentData = {
+        to: createdSchedule.client.phoneCountry,
+        client: createdSchedule.client.cardName,
+        service: createdSchedule.services.map(service => ({
+          name: service.name,
+          price: service.price
+        })),
+        appointmentDate: createdSchedule.dateTime,
+        barberName: createdSchedule.professional.name,
+        link: `${process.env.URL_FRONTEND}/schedule/confirmation/${createdSchedule.paymentId}`,
+        additionalMessage: statusMessage
+      };
+      
+      await this.smsService.sendAppointmentMessage(clientAppointmentData, false);
+    }
+
+    // Enviar SMS para o profissional
+    if (createdSchedule.professional.phone) {
+      const professionalAppointmentData = {
+        to: createdSchedule.professional.phone,
+        client: createdSchedule.client.cardName,
+        service: createdSchedule.services.map(service => ({
+          name: service.name,
+          price: service.price
+        })),
+        appointmentDate: createdSchedule.dateTime,
+        barberName: createdSchedule.professional.name,
+      };
+      
+      await this.smsService.sendAppointmentMessage(professionalAppointmentData, true);
+    }
+  }
+
+  async createInStore(createScheduleDto: CreateScheduleDto) {
+    try {
+      const { payment, services, time } = createScheduleDto;
+      const { professional, client, dateTime } = await this.validateAndPrepareSchedule(createScheduleDto);
+
+      // Criar ID único para pagamento no balcão
+      const paymentId = `in_store_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Criar pagamento no balcão
       const createdPayment = await this.prismaService.payment.create({
         data: {
           id: paymentId,
-          object: isInStorePayment ? 'in_store_payment' : 'payment_intent',
-          type: isInStorePayment ? 'in_store.created' : 'payment_intent.created',
-          api_version: isInStorePayment ? '1.0.0' : '2024-11-20.acacia',
-          created: isInStorePayment ? Math.floor(Date.now() / 1000) : payment.created,
-          data: JSON.parse(JSON.stringify({ object: isInStorePayment ? { type: 'in_store' } : payment })),
-          livemode: isInStorePayment ? false : payment.livemode,
+          object: 'in_store_payment',
+          type: 'in_store.created',
+          api_version: '1.0.0',
+          created: Math.floor(Date.now() / 1000),
+          data: JSON.parse(JSON.stringify({ object: { type: 'in_store' } })),
+          livemode: false,
           pending_webhooks: 0,
           request: JSON.parse(JSON.stringify({
             id: paymentId,
             idempotency_key: null
           })),
           amount: payment.amount,
-          currency: isInStorePayment ? 'USD' : payment.currency,
-          status: isInStorePayment ? 'pending' : payment.status,
-          payment_method: isInStorePayment ? 'in_store' : payment.payment_method as string,
-          client_secret: isInStorePayment ? null : payment.client_secret,
+          currency: 'USD',
+          status: 'pending',
+          payment_method: 'in_store',
+          client_secret: null,
           clientId: client.id,
         }
       });
 
-      // Criamos o schedule com configurações específicas para cada tipo de pagamento
+      // Criar agendamento
       const createdSchedule = await this.prismaService.schedule.create({
         data: {
           dateTime,
           time,
           status_schedule: 'pending',
-          status_payment: isInStorePayment ? 'pending' : (payment.status || 'pending'),
-          type_payment: isInStorePayment ? 'in_store' : (payment.type || 'credit_card'),
-          is_confirmed: isInStorePayment ? false : (payment.status === 'succeeded'),
-          professionalId: createScheduleDto.professionalId,
+          status_payment: 'pending',
+          type_payment: 'in_store',
+          is_confirmed: false,
+          professionalId: professional.id,
           clientId: client.id,
           services: {
             connect: services.map((service) => ({
@@ -158,45 +205,7 @@ export class ScheduleService {
         }
       });
 
-      // Enviar notificações para o profissional e ADMs
-      await this.notificationService.sendScheduleNotification(createdSchedule);
-
-      // Enviar SMS para o cliente
-      if (createdSchedule.client.phoneCountry) {
-        const statusMessage = createdSchedule.status_schedule;
-
-        const clientAppointmentData = {
-          to: createdSchedule.client.phoneCountry,
-          client: createdSchedule.client.cardName,
-          service: createdSchedule.services.map(service => ({
-            name: service.name,
-            price: service.price
-          })),
-          appointmentDate: createdSchedule.dateTime,
-          barberName: createdSchedule.professional.name,
-          link: `${process.env.URL_FRONTEND}/schedule/confirmation/${createdSchedule.paymentId}`,
-          additionalMessage: statusMessage
-        };
-        
-        await this.smsService.sendAppointmentMessage(clientAppointmentData, false);
-      }
-
-      // Enviar SMS para o profissional
-      if (createdSchedule.professional.phone) {
-        const professionalAppointmentData = {
-          to: createdSchedule.professional.phone,
-          client: createdSchedule.client.cardName,
-          service: createdSchedule.services.map(service => ({
-            name: service.name,
-            price: service.price
-          })),
-          appointmentDate: createdSchedule.dateTime,
-          barberName: createdSchedule.professional.name,
-        
-        };
-        
-        await this.smsService.sendAppointmentMessage(professionalAppointmentData, true);
-      }
+      await this.sendNotifications(createdSchedule);
 
       return {
         success: true,
@@ -207,7 +216,77 @@ export class ScheduleService {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new Error(`Error creating schedule: ${error.message}`);
+      throw new Error(`Error creating in-store schedule: ${error.message}`);
+    }
+  }
+
+  async createWithCard(createScheduleDto: CreateScheduleDto) {
+    try {
+      const { payment, services, time } = createScheduleDto;
+      const { professional, client, dateTime } = await this.validateAndPrepareSchedule(createScheduleDto);
+
+      // Criar pagamento com cartão
+      const createdPayment = await this.prismaService.payment.create({
+        data: {
+          id: payment.id,
+          object: 'payment_intent',
+          type: 'payment_intent.created',
+          api_version: '2024-11-20.acacia',
+          created: payment.created,
+          data: JSON.parse(JSON.stringify({ object: payment })),
+          livemode: payment.livemode,
+          pending_webhooks: 0,
+          request: JSON.parse(JSON.stringify({
+            id: payment.id,
+            idempotency_key: null
+          })),
+          amount: payment.amount,
+          currency: payment.currency,
+          status: payment.status,
+          payment_method: payment.payment_method as string,
+          client_secret: payment.client_secret,
+          clientId: client.id,
+        }
+      });
+
+      // Criar agendamento
+      const createdSchedule = await this.prismaService.schedule.create({
+        data: {
+          dateTime,
+          time,
+          status_schedule: 'pending',
+          status_payment: payment.status || 'pending',
+          type_payment: 'credit_card',
+          is_confirmed: payment.status === 'succeeded',
+          professionalId: professional.id,
+          clientId: client.id,
+          services: {
+            connect: services.map((service) => ({
+              id: service.id
+            }))
+          },
+          paymentId: createdPayment.id
+        },
+        include: {
+          client: true,
+          professional: true,
+          services: true,
+          Payment: true
+        }
+      });
+
+      await this.sendNotifications(createdSchedule);
+
+      return {
+        success: true,
+        message: 'Schedule created successfully',
+        data: createdSchedule
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new Error(`Error creating card payment schedule: ${error.message}`);
     }
   }
 

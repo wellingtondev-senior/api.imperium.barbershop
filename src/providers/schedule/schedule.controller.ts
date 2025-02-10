@@ -16,12 +16,17 @@ export class ScheduleController {
   @Version('1')
   @Post()
   @HttpCode(201)
-  @ApiOperation({ summary: 'Criar novo agendamento' })
+  @ApiOperation({ summary: 'Criar novo agendamento com pagamento em cartão' })
   @ApiBody({ description: 'Objeto JSON contendo dados', type: CreateScheduleDto })
   @ApiResponse(ScheduleCreateSuccessResponse)
   @ApiResponse(ScheduleErrorResponse)
-  create(@Body() createScheduleDto: CreateScheduleDto) {
-    return this.scheduleService.create(createScheduleDto);
+  createWithCard(@Body() createScheduleDto: CreateScheduleDto) {
+    // Força o tipo de pagamento como 'credit_card'
+    createScheduleDto.payment = {
+      ...createScheduleDto.payment,
+      type: 'credit_card'
+    };
+    return this.scheduleService.createWithCard(createScheduleDto);
   }
   @Version('1')
   @Get()
@@ -99,6 +104,8 @@ export class ScheduleController {
       type: 'in_store',
       status: 'pending'
     };
-    return this.scheduleService.create(createScheduleDto);
+    return this.scheduleService.createInStore(createScheduleDto);
   }
+
+
 }
