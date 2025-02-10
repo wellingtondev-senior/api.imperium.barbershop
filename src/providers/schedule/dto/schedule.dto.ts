@@ -95,10 +95,10 @@ export class UpdateScheduleDto {
   @ApiProperty({
     description: 'Status do agendamento',
     example: 'confirmed',
-    enum: ['pending', 'confirmed', 'completed', 'canceled']
+    enum: ['pending', 'confirmed', 'in-progress', 'completed', 'canceled', 'succeeded']
   })
   @IsString()
-  @IsEnum(['pending', 'confirmed', 'completed', 'canceled'])
+  @IsEnum(['pending', 'confirmed', 'in-progress', 'completed', 'canceled', 'succeeded'])
   @IsOptional()
   status_schedule?: string;
 
