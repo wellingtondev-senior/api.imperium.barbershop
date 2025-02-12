@@ -24,8 +24,8 @@ export class ProfessionalController {
   @UseGuards(RoleGuard)
   @HttpCode(201)
   @ApiResponse(ProfessionalSuccessResponse) 
-  create(@Body() admDto : ProfessionalDto ) {
-    return this.professionalService.create(admDto);
+  create(@Body() professionalDto : ProfessionalDto ) {
+    return this.professionalService.create(professionalDto);
   }
 
   @Version('1')
