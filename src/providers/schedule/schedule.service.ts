@@ -73,7 +73,7 @@ export class ScheduleService {
 
     // Combina date e time em um único DateTime
     const dateTime = this.combineDateAndTime(date, time);
-
+    
     // Find or create client
     let client = await this.prismaService.client.findFirst({
       where: { email: clientInfo.email }
